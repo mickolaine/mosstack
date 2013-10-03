@@ -3,7 +3,7 @@ Created on 25.9.2013
 
 @author: micko
 
-Testilisäys. Miten gitti toimii
+Testilisäys. Miten gitti toimii <--- Nevermind this
 '''
 
 from astropy.io import fits
