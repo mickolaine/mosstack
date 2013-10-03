@@ -1,10 +1,12 @@
 '''
 Created on 2.10.2013
 
-@author: micko
+@author: Mikko Laine
 
 This file contains everything required for registering the photos.
 '''
+
+import numpy
 
 class Reg:
     '''
@@ -15,7 +17,12 @@ class Reg:
     def __init__(self):
         pass
 
-
+    
+    def map(self, image, p):
+        '''
+        Creates a two colour map of given image. Limiting colour must be adjustable somehow. For now a by percentage p
+        '''
+        pass
 
 
 class alingment:
