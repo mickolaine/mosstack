@@ -1,0 +1,30 @@
+This document will explain how to install pyAstroStack. For now, it only
+contains list of dependencies. PyAstroStack relies heavily on other open source
+projects and actually for now it could be considered only as a script to
+automate some tasks. My intention is to make a full program with GUI and all,
+but since my programming experience and time to do this are heavily limited,
+I can't promise anything.
+
+
+PyAstroStack will need these to work
+
+Rawtran - http://integral.physics.muni.cz/rawtran/
+This will convert raw photos into fits-files. The task could probably be done
+with just Dcraw, but I'll see about changing that behaviour later on. Rawtran
+does the stuff for now. I couldn't find this on any distro so you'll have to
+install it manually.
+
+DCRaw - http://www.cybercom.net/~dcoffin/dcraw/
+Rawtran requires this. This can be found on any Linux distribution.
+
+AstroPy - http://www.astropy.org/
+For now I'm only using PyFITS from this package, but since authors of PyFITS
+recommend using AstroPy, that's what I'll do. I'll try to change behaviour of
+my programs so that it checks which one is installed, AstroPy or just PyFITS
+and use the one found. Gentoo has this on Portage, but Ubuntu does not. Can be
+installed with pip (http://www.pip-installer.org/en/latest/) by running
+"pip install astropy". Pip can be found on several distros
+
+NumPy - http://www.numpy.org/
+AstroPy requires this. Also used by straight import in order to fiddle with
+numpy.arrays. This should be in your distros package manager.
