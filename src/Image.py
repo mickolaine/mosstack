@@ -7,6 +7,7 @@ Created on 2.10.2013
 from astropy.io import fits
 from os.path import splitext,basename,exists
 from subprocess import call,check_output
+import conf
 
 class Image(object):
     '''
@@ -19,6 +20,8 @@ class Image(object):
         #TODO: Support for other raws
         '''
         self.rawpath  = rawpath
+        self.name     = "light"     # Here could be more than a generic name. This is required for temporary files.
+        
         self.convert()
         
         self.hdu      = fits.open(self.fitspath)
@@ -85,6 +88,7 @@ class Batch:
         '''
         
         i = Image(rawpath)
+        i.number = len(self.list) + 1
         
         '''
         # For the rest, check if they match with the first one. If not, try to fix #TODO: This should probably be done with try-except structure    

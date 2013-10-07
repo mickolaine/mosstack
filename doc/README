@@ -1,0 +1,38 @@
+This file will eventually explain the whole process of stacking astronomical
+images with pyAstroStack. For now I only copy & paste important information I
+need to remember.
+
+
+
+
+#### Pattern matching ####
+SExtractor gives xy-coordinates of all the stars in an image. This information
+will somehow be processed into geometric translation and rotation information.
+This article seems to hold all the necessary information:
+http://adsabs.harvard.edu/abs/1986AJ.....91.1244G
+
+Bibliographic information:
+Title:				A pattern-matching algorithm for two-dimensional coordinate
+					lists
+Authors: 			Groth, E. J.
+Affiliation:		AA(Princeton University, NJ)
+Publication:		Astronomical Journal (ISSN 0004-6256), vol. 91, May 1986,
+					p. 1244-1248. (AJ Homepage)
+Publication Date:	05/1986
+Category:			Astronomy
+Origin:				STI
+NASA/STI Keywords:	ASTROMETRY, ASTRONOMICAL COORDINATES, POSITION (LOCATION),
+					STAR DISTRIBUTION, ALGORITHMS, ASTRONOMICAL PHOTOGRAPHY, 
+					HISTOGRAMS, MATCHING, TRIANGLES
+DOI:				10.1086/114099
+Bibliographic Code:	1986AJ.....91.1244G
+
+Now all I have to do is read and understand that.
+
+Here's another:
+http://onlinelibrary.wiley.com/doi/10.1111/j.1365-2664.2005.01117.x/full
+
+ARZOUMANIAN, Z., HOLMBERG, J. and NORMAN, B. (2005), An astronomical 
+pattern-matching algorithm for computer-aided identification of whale sharks 
+Rhincodon typus. Journal of Applied Ecology, 42: 999–1011. 
+doi: 10.1111/j.1365-2664.2005.01117.x
