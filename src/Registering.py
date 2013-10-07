@@ -30,7 +30,7 @@ class Reg:
         
         for i in range(len(image.image.data[1])):      # 1 is for the green channel
             for j in range(len(image.image.data[1][i])):
-                if image.image.data[1][i][j] > 64000.0*p:
+                if image.image.data[1][i][j] > 65535.0*p:
                     new[i][j] = True
         
         return new
