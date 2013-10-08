@@ -150,10 +150,16 @@ if __name__ == '__main__':
     light = Image.Batch(type = "light")
     for i in conf.rawlist:
         light.add(conf.rawprefix + i)
-        
+    
+    temp = Registering.Sextractor(light.list[0])
+    sensitivity = temp.findSensitivity()
+    del temp
+    
     for i in light.list:
         s = Registering.Sextractor(i)
+        s.setSensitivity(sensitivity[0], sensitivity[1])
         i.coordinates = s.getCoordinates()
-    input("Press Enter to end program.")
+        s.makeTriangles()
+    #input("Press Enter to end program.")
         
         

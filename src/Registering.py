@@ -11,6 +11,7 @@ This file contains everything required for registering the photos.
 
 import numpy
 from subprocess import call
+from subprocess import check_output
 import conf
 
 class Reg:
@@ -146,14 +147,43 @@ class Sextractor:
         f = open(self.confname, "w")
         for i in self.config:
             f.write(i + " " + self.config[i] + "\n")   
+
+    def findSensitivity(self):
+        '''
+        Run SExtractor on different DETECT_MINAREA and THRESH, in order to find suitable number of stars.
+        I'll choose 25 as minimum and 50 as maximum. There are about n^3 triangles for n vertices, so n should
+        be kept small.
+        '''
+        print("Looking for suitable DETECT_MINAREA...")
+        x = 0
+        min = 25
+        max = 50
+        
+        while x > max or x < min:
+            self.createConf()
+            self.execSEx()
+            x = float(check_output(["tail", "-1", self.catname]).split()[0])
+            if x < min:
+                self.config["DETECT_MINAREA"] = str(float(self.config["DETECT_MINAREA"])*.9)
+                self.config["DETECT_THRESH"] = str(float(self.config["DETECT_THRESH"])*.9)
+                print("DETECT_MINAREA too big. Trying " + self.config["DETECT_MINAREA"])
+            elif x > max:
+                self.config["DETECT_MINAREA"] = str(float(self.config["DETECT_MINAREA"])*1.2)
+                self.config["DETECT_THRESH"] = str(float(self.config["DETECT_THRESH"])*1.2)
+                print("DETECT_MINAREA too small. Trying " + self.config["DETECT_MINAREA"])
+                
+        print("Found " + self.config["DETECT_MINAREA"] + " & " + self.config["DETECT_THRESH"])
+        return (self.config["DETECT_MINAREA"], self.config["DETECT_THRESH"])
+        
         
     def execSEx(self):
         '''
         Executing SExtractor
         The attribute cwd is required because sextractor is looking for several files from current working directory
         '''
+        commandlist = [conf.sex, self.image.fitspath, "-c", self.confname]
         
-        call([conf.sex, self.image.fitspath, "-c", self.confname], cwd=conf.path)
+        call(commandlist, cwd=conf.path)
         
     def getCoordinates(self):
         '''
@@ -172,7 +202,26 @@ class Sextractor:
                 self.coord.append((float(i.split()[4]), float(i.split()[5])))
         
         return self.coord 
-                
+    
+    def makeTriangles(self):
+        '''
+        Makes all possible triangles from coordinates in self.coord
+        #TODO: Maybe should do only some, but I'll see first how this works
+        '''
+        
+        self.tri = []
+        n = 0
+        for i in self.coord:
+            for j in self.coord:
+                if i == j:
+                    break
+                for k in self.coord:
+                    if (j == k) or (i == k):
+                        break
+                    n=n+1
+                    self.tri.append((i, j, k))      #TODO: Check if this is enough information
+        print("Total number of triangles in image " + self.image.name + str(self.image.number) + " is " + str(n) + ".")
+    
 class alingment:
     '''
     Class for alignment information of a photo

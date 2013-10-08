@@ -71,7 +71,12 @@ class Image(object):
             print("Can't continue. Exiting.")
             exit()
 
-        
+    
+    
+    
+    
+    
+    
 class Batch:
     '''
     Batch holds a list of photos loaded with astropy's fits.open
