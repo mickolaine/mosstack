@@ -13,6 +13,7 @@ import numpy
 from subprocess import call
 from subprocess import check_output
 import conf
+import math
 
 class Reg:
     '''
@@ -23,7 +24,48 @@ class Reg:
     def __init__(self):
         pass
 
+
+    def match(self, i1, i2):
+        '''
+        Matches image i1 to i2
+        '''
+        
+        ep = 0.001
+        xi = 3*ep
+        
+        for im in (i1,i2):  #TODO: Move this to a better place. It doesn't belong here.
+            for tri in im.tri:      # tri is a list of coordinates. ((x1,y1),(x2,y2),(x3,y3))
+                x1 = tri[0][0]
+                y1 = tri[0][1]
+                x2 = tri[1][0]
+                y2 = tri[1][1]
+                x3 = tri[2][0]
+                y3 = tri[2][1]
+                
+                r3 = math.sqrt((x3-x1)**2 + (y3-y1)**2) 
+                r2 = math.sqrt((x2-x1)**2 + (y2-y1)**2)
+                
+                R=r3/r2
+                C=((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1))/(r3*r2)
+                
+                tR = math.sqrt(2*R**2*ep**2*(1/r3**2 - C/(r2*r3) + 1/r2**2))
+                
+                S = math.sqrt(1-C**2)                  #Sine of angle at vertex 1
+                
+                tC = 2*S**2*ep**2*(1/r3**2 - C/(r2*r3) + 1/r2**2) + 3*C**2*ep**4*(1/r3**2 - C/(r2*r3) + 1/r2**2)**2
+                
+                tri.append(R)
+                tri.append(C)
+                tri.append(tR)
+                tri.append(tC)
+            
+        
+        
+        
+        
+        
     
+    """ Probably not needed. Remove when certain.
     def map(self, image, p):
         '''
         Creates a two colour map of given image. Limiting colour must be adjustable somehow. For now a by percentage p
@@ -40,7 +82,7 @@ class Reg:
                     new[i][j] = True
         
         return new
-                    
+     """               
 
 
 class Sextractor:
@@ -69,8 +111,8 @@ class Sextractor:
 
 #------------------------------- Extraction ----------------------------------             
                        "DETECT_TYPE":       "CCD",            # CCD (linear) or PHOTO (with gamma correction)
-                       "DETECT_MINAREA":    "10",             # minimum number of pixels above threshold
-                       "DETECT_THRESH":     "2.5",            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
+                       "DETECT_MINAREA":    "70",             # minimum number of pixels above threshold
+                       "DETECT_THRESH":     "6.5",            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
                        "ANALYSIS_THRESH":   "2.5",            # <sigmas> or <threshold>,<ZP> in mag.arcsec-2
 
                        "FILTER":            "Y",              # apply filter for detection (Y or N)?
@@ -137,7 +179,7 @@ class Sextractor:
         
         self.config["DETECT_MINAREA"]  = str(area)
         self.config["DETECT_THRESH"]   = str(sigma)
-        self.config["ANALYSIS_THRESH"] = str(sigma)
+        self.config["ANALYSIS_THRESH"] = str(sigma)    # This doesn't seem to affect to the number of stars detected
         
     def createConf(self):
         '''
@@ -209,7 +251,7 @@ class Sextractor:
         #TODO: Maybe should do only some, but I'll see first how this works
         '''
         
-        self.tri = []
+        self.image.tri = []
         n = 0
         for i in self.coord:
             for j in self.coord:
@@ -219,8 +261,10 @@ class Sextractor:
                     if (j == k) or (i == k):
                         break
                     n=n+1
-                    self.tri.append((i, j, k))      #TODO: Check if this is enough information
+                    self.image.tri.append([i, j, k])      #TODO: Check if this is enough information
         print("Total number of triangles in image " + self.image.name + str(self.image.number) + " is " + str(n) + ".")
+    
+    
     
 class alingment:
     '''

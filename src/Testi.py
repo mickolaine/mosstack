@@ -147,6 +147,7 @@ if __name__ == '__main__':
 
 if __name__ == '__main__':
     
+    R = Registering.Reg()
     light = Image.Batch(type = "light")
     for i in conf.rawlist:
         light.add(conf.rawprefix + i)
@@ -160,6 +161,10 @@ if __name__ == '__main__':
         s.setSensitivity(sensitivity[0], sensitivity[1])
         i.coordinates = s.getCoordinates()
         s.makeTriangles()
+    
+    for i in light.list:
+        R.match(light.list[0], i)
+    #print(light.list[0].tri)
     #input("Press Enter to end program.")
         
         
