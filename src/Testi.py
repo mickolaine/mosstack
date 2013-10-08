@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 '''
 Created on 25.9.2013
 
@@ -11,7 +14,9 @@ import numpy
 from subprocess import check_output
 import Registering
 import Image
+import conf
 
+"""
 class Batch:
     '''
     Batch holds a list of photos loaded with astropy's fits.open
@@ -87,9 +92,9 @@ class Batch:
         
         self.new = self.new / n
         print(self.new)
-            
+"""           
 
-
+""" VANHA
 if __name__ == '__main__':
     root  = "/media/data/Temp/iris/"
     
@@ -98,6 +103,7 @@ if __name__ == '__main__':
     flat  = Batch()
     dark  = Batch()
     
+ 
     lightn = root + "andromeda"
     biasn  = root + "bias"
     flatn  = root + "flat"
@@ -109,6 +115,8 @@ if __name__ == '__main__':
     for i in range(1,31):
         bias.add( biasn  + str(i) + ".fits")
         #print("Added " + biasn + str(i) + ".fits, dimensions X = " + str(len(bias.list[i-1][0].data[0])) + ", Y = " + str(len(bias.list[i-1][0].data[0][0])))
+
+
     biasDim = [len(bias.list[0][0].data[0]), len(bias.list[0][0].data[0][0])]
     print(str(biasDim))
     bias.formatNew(biasDim[0], biasDim[1])
@@ -135,3 +143,17 @@ if __name__ == '__main__':
     print(flat.new)
     
     input("Press any key to end program.")
+"""
+
+if __name__ == '__main__':
+    
+    light = Image.Batch(type = "light")
+    for i in conf.rawlist:
+        light.add(conf.rawprefix + i)
+        
+    for i in light.list:
+        s = Registering.Sextractor(i)
+        i.coordinates = s.getCoordinates()
+    input("Press Enter to end program.")
+        
+        

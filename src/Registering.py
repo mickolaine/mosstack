@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 '''
 Created on 2.10.2013
 
@@ -52,11 +55,13 @@ class Sextractor:
         Initializes the object and common configuration values
         '''
         
-        self.catname = "cat-" + image.name + image.number + ".cat"
+        self.image = image
+        
+        self.catname = conf.path + self.image.name + str(self.image.number) + ".cat"
         
         self.config = {
 #-------------------------------- Catalog ------------------------------------                       
-                       "CATALOG_NAME":      self.catname      # name of the output catalog
+                       "CATALOG_NAME":      self.catname,     # name of the output catalog
                        "CATALOG_TYPE":      "ASCII_HEAD",     # NONE,ASCII,ASCII_HEAD, ASCII_SKYCAT,
                                                               # ASCII_VOTABLE, FITS_1.0 or FITS_LDAC
                        "PARAMETERS_NAME":   "default.param",  # name of the file containing catalog contents
@@ -137,17 +142,18 @@ class Sextractor:
         '''
         Creates configuration file for SExtractor.
         '''
-        self.confname = conf.path + image.name + image.number + ".sex"
+        self.confname = conf.path + self.image.name + str(self.image.number) + ".sex"
         f = open(self.confname, "w")
         for i in self.config:
-            f.write(i + " " + self.config[i])   
+            f.write(i + " " + self.config[i] + "\n")   
         
     def execSEx(self):
         '''
         Executing SExtractor
+        The attribute cwd is required because sextractor is looking for several files from current working directory
         '''
         
-        call([conf.sex, image.fitspath, "-c", self.confname])
+        call([conf.sex, self.image.fitspath, "-c", self.confname], cwd=conf.path)
         
     def getCoordinates(self):
         '''
@@ -163,7 +169,7 @@ class Sextractor:
             if i.split()[0] == "#":
                 pass
             else:
-                self.coord.append(float(i.split()[4]), float(i.split()[5]))
+                self.coord.append((float(i.split()[4]), float(i.split()[5])))
         
         return self.coord 
                 
