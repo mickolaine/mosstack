@@ -25,6 +25,8 @@ class Image(object):
         '''
         self.rawpath  = rawpath
         self.number   = number
+        self.tri      = []          # List for triangles
+        self.match    = []          # List for matching triangles with reference picture
         self.name     = "light"     # Here could be more than a generic name. This is required for temporary files. #TODO: Maybe get this from Batch somehow
         
         self.convert()

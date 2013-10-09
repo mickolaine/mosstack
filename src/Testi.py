@@ -163,7 +163,12 @@ if __name__ == '__main__':
         s.makeTriangles()
     
     for i in light.list:
+        R.step1(i)
+    for i in light.list:
+        if light.list.index(i) == 0:       # 0 is the reference image. No need to match image with itself
+            continue
         R.match(light.list[0], i)
+    
     #print(light.list[0].tri)
     #input("Press Enter to end program.")
         

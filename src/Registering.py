@@ -24,6 +24,40 @@ class Reg:
     def __init__(self):
         pass
 
+    def step1(self, image):
+        '''
+        Calculates R,C,tR and tC for every triangle in image
+        '''
+        
+        ep = 0.3
+        xi = 3.*ep
+        
+        for tri in image.tri:      # tri is a list of coordinates. ((x1,y1),(x2,y2),(x3,y3))
+            x1 = tri[0][0]
+            y1 = tri[0][1]
+            x2 = tri[1][0]
+            y2 = tri[1][1]
+            x3 = tri[2][0]
+            y3 = tri[2][1]
+            
+            r3 = math.sqrt((x3-x1)**2 + (y3-y1)**2) 
+            r2 = math.sqrt((x2-x1)**2 + (y2-y1)**2)
+            
+            R=r3/r2
+            C=((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1))/(r3*r2)     #Cosine of angle at vertex 1
+            
+            tR = math.sqrt(2.*R**2.*ep**2.*(1./r3**2. - C/(r2*r3) + 1./r2**2.))
+            
+            S = 1.-C**2.                                    #Sine^2 of angle at vertex 1
+                       #      V----- S should be S**2 and on above line S should be sqrt of 1-C**2, but this might be faster. I don't know if python optimizes this. 
+            tC = math.sqrt(2.*S*ep**2.*(1./r3**2. - C/(r2*r3) + 1./r2**2.) + 3.*C**2.*ep**4.*(1./r3**2. - C/(r2*r3) + 1./r2**2.)**2.)
+            
+            tri.append(R)
+            tri.append(C)
+            tri.append(tR)
+            tri.append(tC)
+        print("Step 1 complete for image " + str(image.number) + ".")
+                
 
     def match(self, i1, i2):
         '''
@@ -32,32 +66,24 @@ class Reg:
         
         ep = 0.001
         xi = 3*ep
+        matches = 0
         
-        for im in (i1,i2):  #TODO: Move this to a better place. It doesn't belong here.
-            for tri in im.tri:      # tri is a list of coordinates. ((x1,y1),(x2,y2),(x3,y3))
-                x1 = tri[0][0]
-                y1 = tri[0][1]
-                x2 = tri[1][0]
-                y2 = tri[1][1]
-                x3 = tri[2][0]
-                y3 = tri[2][1]
+        for tri1 in i1.tri:
+            for tri2 in i2.tri:
+                Ra = tri1[3]
+                Rb = tri2[3]
+                tRa = tri1[5]
+                tRb = tri2[5]
+                Ca = tri1[4]
+                Cb = tri2[4]
+                tCa = tri1[6]
+                tCb = tri2[6]
                 
-                r3 = math.sqrt((x3-x1)**2 + (y3-y1)**2) 
-                r2 = math.sqrt((x2-x1)**2 + (y2-y1)**2)
-                
-                R=r3/r2
-                C=((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1))/(r3*r2)
-                
-                tR = math.sqrt(2*R**2*ep**2*(1/r3**2 - C/(r2*r3) + 1/r2**2))
-                
-                S = math.sqrt(1-C**2)                  #Sine of angle at vertex 1
-                
-                tC = 2*S**2*ep**2*(1/r3**2 - C/(r2*r3) + 1/r2**2) + 3*C**2*ep**4*(1/r3**2 - C/(r2*r3) + 1/r2**2)**2
-                
-                tri.append(R)
-                tri.append(C)
-                tri.append(tR)
-                tri.append(tC)
+                if ((Ra-Rb)**2 < (tRa**2 + tRb**2)) & ((Ca-Cb)**2 < (tCa**2 + tCb**2)):
+                    i2.match.append((tri1, tri2))
+                    matches = matches + 1
+        print("Matching done for image " + str(i2.number) + ".")
+        print("    " + str(matches) + " matches found.")
             
         
         
@@ -199,7 +225,7 @@ class Sextractor:
         print("Looking for suitable DETECT_MINAREA...")
         x = 0
         min = 25
-        max = 50
+        max = 30                #TODO: Max value has to be lower than 50. looking for optimal. 30 seems to make batch of 30 images last only 4 minutes. that's quite good
         
         while x > max or x < min:
             self.createConf()
