@@ -7,9 +7,17 @@ This file includes global variables. Someone on the Internet said declaring a va
 suggested something like this.
 '''
 
+from subprocess import check_output
+class configurator:
+    def __init__(self):
+        pass
+    
+    def findSEx(self):
+        pass
+
 path     = "/media/data/Temp/astrostack/"             # Working path to use during procedure
 
-sex      = "sex"                                     # Name of SExtractor executable
+sex      = "sex"                                     # Name of SExtractor executable. sex is default
 
 rawprefix = "/media/Dee/Astrokuvat/2013-09-25/Andromeda/"
 rawlist = (

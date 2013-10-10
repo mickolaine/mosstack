@@ -13,7 +13,8 @@ import numpy
 from subprocess import call
 from subprocess import check_output
 import conf
-import math
+from math import sqrt, log, fabs
+from operator import itemgetter
 
 class Reg:
     '''
@@ -40,17 +41,17 @@ class Reg:
             x3 = tri[2][0]
             y3 = tri[2][1]
             
-            r3 = math.sqrt((x3-x1)**2 + (y3-y1)**2) 
-            r2 = math.sqrt((x2-x1)**2 + (y2-y1)**2)
+            r3 = sqrt((x3-x1)**2 + (y3-y1)**2) 
+            r2 = sqrt((x2-x1)**2 + (y2-y1)**2)
             
             R=r3/r2
             C=((x3-x1)*(x2-x1)+(y3-y1)*(y2-y1))/(r3*r2)     #Cosine of angle at vertex 1
             
-            tR = math.sqrt(2.*R**2.*ep**2.*(1./r3**2. - C/(r2*r3) + 1./r2**2.))
+            tR = sqrt(2.*R**2.*ep**2.*(1./r3**2. - C/(r2*r3) + 1./r2**2.))
             
             S = 1.-C**2.                                    #Sine^2 of angle at vertex 1
                        #      V----- S should be S**2 and on above line S should be sqrt of 1-C**2, but this might be faster. I don't know if python optimizes this. 
-            tC = math.sqrt(2.*S*ep**2.*(1./r3**2. - C/(r2*r3) + 1./r2**2.) + 3.*C**2.*ep**4.*(1./r3**2. - C/(r2*r3) + 1./r2**2.)**2.)
+            tC = sqrt(2.*S*ep**2.*(1./r3**2. - C/(r2*r3) + 1./r2**2.) + 3.*C**2.*ep**4.*(1./r3**2. - C/(r2*r3) + 1./r2**2.)**2.)
             
             tri.append(R)
             tri.append(C)
@@ -67,8 +68,11 @@ class Reg:
         ep = 0.001
         xi = 3*ep
         matches = 0
+        temp = ()
+        best = None            #temporary variable to hold information about the best R-ratio.
         
         for tri1 in i1.tri:
+                        
             for tri2 in i2.tri:
                 Ra = tri1[3]
                 Rb = tri2[3]
@@ -79,17 +83,101 @@ class Reg:
                 tCa = tri1[6]
                 tCb = tri2[6]
                 
+                # Run the check described in articles equations (7) and (8)
                 if ((Ra-Rb)**2 < (tRa**2 + tRb**2)) & ((Ca-Cb)**2 < (tCa**2 + tCb**2)):
-                    i2.match.append((tri1, tri2))
-                    matches = matches + 1
+                    
+                    #Test if newfound match is better than the previous found with same tri1
+                    if (best is not None) and ((Ra-Rb)**2 < best):
+                        #if so, save it for later use
+                        best = (Ra-Rb)**2
+                        temp = [tri1, tri2]
+                                   
+            i2.match.append(temp)
+            matches = matches + 1
         print("Matching done for image " + str(i2.number) + ".")
         print("    " + str(matches) + " matches found.")
             
+    def reduce(self, image):
+        '''
+        Reduces number of matched triangles. Essentially removes a portion of false matches. Probably no correct matches are removed.
+        '''
         
+        for match in image.match:
+            x1 = match[0][0][0]
+            y1 = match[0][0][1]
+            x2 = match[0][1][0]
+            y2 = match[0][1][1]
+            x3 = match[0][2][0]
+            y3 = match[0][2][1]
+            
+            pA = (sqrt((x1-x2)**2+(y1-y2)**2) + sqrt((x1-x3)**2+(y1-y3)**2) + sqrt((x3-x2)**2+(y3-y2)**2))
+            
+            x1 = match[1][0][0]
+            y1 = match[1][0][1]
+            x2 = match[1][1][0]
+            y2 = match[1][1][1]
+            x3 = match[1][2][0]
+            y3 = match[1][2][1]
+            
+            pB = (sqrt((x1-x2)**2+(y1-y2)**2) + sqrt((x1-x3)**2+(y1-y3)**2) + sqrt((x3-x2)**2+(y3-y2)**2))
+            match.append(log(pA) - log(pB))         # Value log(M) as described in equation (10). this will be match[2]
+            
+                
+        newlist = []
+        doItAgain = True
         
+        while doItAgain:
+            mean = 0.
+            variance = 0.
+            for match in image.match:                       # Calculate average value
+                mean = mean + match[2]/len(image.match)
+            for match in image.match:                       # Calculate variance which is sigma**2
+                variance = variance + (fabs(mean - match[2])**2)/len(image.match)
+            sigma = sqrt(variance)
+            
+            doItAgain = False
+            for match in image.match:
+                if fabs(image.match[2] - mean) < sigma*2:
+                    newlist.append(match)
+                else:
+                    doItAgain = True                        # If you end up here, while has to be run again
+            image.match = newlist                           # Save new list and do again if necessary
+                    
+    
+    
+    def vote(self, image):
+        '''
+        Count probabilities for vertex matches. Choose the most popular one, disregard the rest.
+        Votes mean how many times two vertices have been matched on previous steps. This is required
+        to get rid of false matches. I probably need only few matching vertices so this method suites
+        me well.
         
+        Creates list image.pairs, which has pairs (image.coordinate, reference.coordinate, votes) sorted by votes, biggest first
+        '''
         
+        pairs = {}          # vertex pair as the key and votes as the value
         
+        for m in image.match:
+            for i in range(3):
+                key = (m[1][i], m[0][i])
+                if key in pairs:
+                    pairs[key] = pairs[key] + 1
+                else:
+                    pairs[key] = 1
+        
+        newpairs = {}
+        for key in pairs:
+            if pairs[key] > 2:              # Should be >1 but I really don't need that much points. # TODO: Check if this works
+                newpairs[key] = pairs[key]
+        pairs = newpairs
+        # TODO: More tests here to reduce the number of pairs
+
+        final=[]
+        for key in pairs:
+            final.append((key[0], key[1], pairs[key]))
+        
+        sorted(final, key=itemgetter(2), reverse=True)
+        image.pairs = final
     
     """ Probably not needed. Remove when certain.
     def map(self, image, p):

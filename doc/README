@@ -2,7 +2,23 @@ This file will eventually explain the whole process of stacking astronomical
 images with pyAstroStack. For now I only copy & paste important information I
 need to remember.
 
+#### Converting images ####
+My intention is that pyAstroStack could handle all kinds of images as its
+input. At the moment it assumes everything is DSLR's raw-photos and runs
+everything through rawtran.
+Rawtran converts raw-images with DCRaw into FITS format. Fits is great with
+astronomical data and it's easy to handle with AstroPy.
 
+
+#### Extracting stellar data ####
+Input images are assumed to have a lot of stars in them. Aligning images so
+that all the stars are in same places on every photo requires coordinates of
+several stars from each image. I do this with SExtractor.
+Running SExtractor returns coordinates of several stars (depending on settings
+maybe from 20 to 20000 or even more). The pattern matching algorithm says its
+running time is proportional to n^4.5 where n is number of stars. That's why
+SExtractor need to be set so it finds max 40 stars. That's more than enough for
+pattern matching to work.
 
 
 #### Pattern matching ####
@@ -28,11 +44,3 @@ DOI:				10.1086/114099
 Bibliographic Code:	1986AJ.....91.1244G
 
 Now all I have to do is read and understand that.
-
-Here's another:
-http://onlinelibrary.wiley.com/doi/10.1111/j.1365-2664.2005.01117.x/full
-
-ARZOUMANIAN, Z., HOLMBERG, J. and NORMAN, B. (2005), An astronomical 
-pattern-matching algorithm for computer-aided identification of whale sharks 
-Rhincodon typus. Journal of Applied Ecology, 42: 999–1011. 
-doi: 10.1111/j.1365-2664.2005.01117.x
