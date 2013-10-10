@@ -64,38 +64,41 @@ class Reg:
         '''
         Matches image i1 to i2
         '''
-        
+        print("Received reference image " + str(i1.number) + " and image " + str(i2.number) + " to match")
         ep = 0.001
-        xi = 3*ep
-        matches = 0
-        temp = ()
-        best = None            #temporary variable to hold information about the best R-ratio.
+        xi = 3*ep            
         
         for tri1 in i1.tri:
-                        
+            temp = ()
+            best = None        #temporary variable to hold information about the best R-ratio.
             for tri2 in i2.tri:
-                Ra = tri1[3]
-                Rb = tri2[3]
+                
+                Ra  = tri1[3]
+                Rb  = tri2[3]
                 tRa = tri1[5]
                 tRb = tri2[5]
-                Ca = tri1[4]
-                Cb = tri2[4]
+                Ca  = tri1[4]
+                Cb  = tri2[4]
                 tCa = tri1[6]
                 tCb = tri2[6]
                 
                 # Run the check described in articles equations (7) and (8)
                 if ((Ra-Rb)**2 < (tRa**2 + tRb**2)) & ((Ca-Cb)**2 < (tCa**2 + tCb**2)):
+                    # print("Found! Ra-Rb = " + str((Ra-Rb)))   #Debugging
                     
                     #Test if newfound match is better than the previous found with same tri1
-                    if (best is not None) and ((Ra-Rb)**2 < best):
+                    if (best is None) or ((Ra-Rb)**2 < best):
                         #if so, save it for later use
                         best = (Ra-Rb)**2
                         temp = [tri1, tri2]
-                                   
-            i2.match.append(temp)
-            matches = matches + 1
+            if best is not None:       
+                # print("Adding triangles " + str(temp[0]) + " and " + str(temp[1]) + " as a match.")      # Debugging
+                i2.match.append(temp)
+            del temp
+            del best
         print("Matching done for image " + str(i2.number) + ".")
-        print("    " + str(matches) + " matches found.")
+        print("    " + str(len(i2.match)) + " matches found.")
+        #print(i2.match)                #Debugging
             
     def reduce(self, image):
         '''
@@ -123,10 +126,13 @@ class Reg:
             match.append(log(pA) - log(pB))         # Value log(M) as described in equation (10). this will be match[2]
             
                 
-        newlist = []
         doItAgain = True
+        print("List has originally lenght of  " + str(len(image.match)))
+        
+        times = 0
         
         while doItAgain:
+            newlist = []
             mean = 0.
             variance = 0.
             for match in image.match:                       # Calculate average value
@@ -137,12 +143,15 @@ class Reg:
             
             doItAgain = False
             for match in image.match:
-                if fabs(image.match[2] - mean) < sigma*2:
+                # print(match[2])                            #Debugging
+                if fabs(match[2] - mean) < sigma*2:
                     newlist.append(match)
                 else:
                     doItAgain = True                        # If you end up here, while has to be run again
             image.match = newlist                           # Save new list and do again if necessary
-                    
+            del newlist
+            times = times + 1
+        print("After reduction the length is " + str(len(image.match)))            
     
     
     def vote(self, image):
@@ -154,7 +163,7 @@ class Reg:
         
         Creates list image.pairs, which has pairs (image.coordinate, reference.coordinate, votes) sorted by votes, biggest first
         '''
-        
+        print("Voting")
         pairs = {}          # vertex pair as the key and votes as the value
         
         for m in image.match:
@@ -178,6 +187,7 @@ class Reg:
         
         sorted(final, key=itemgetter(2), reverse=True)
         image.pairs = final
+        print("After voting there are " + str(len(image.pairs)) + " pairs found")
     
     """ Probably not needed. Remove when certain.
     def map(self, image, p):

@@ -164,10 +164,14 @@ if __name__ == '__main__':
     
     for i in light.list:
         R.step1(i)
+        
     for i in light.list:
-        if light.list.index(i) == 0:       # 0 is the reference image. No need to match image with itself
+        if i.number == 0:       # 0 is the reference image. No need to match image with itself
             continue
+        print("Starting to match image " + str(i.number) + " to reference image " + str(0))
         R.match(light.list[0], i)
+        R.reduce(i)
+        R.vote(i)
     
     #print(light.list[0].tri)
     #input("Press Enter to end program.")

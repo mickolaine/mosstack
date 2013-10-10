@@ -101,7 +101,7 @@ class Batch:
         Add a photo to the batch. Maybe run some checks while at it.
         '''
         
-        number = len(self.list) + 1     # Define index number for images
+        number = len(self.list)         # Define index number for images
         i = Image(rawpath, number)   
         
         '''

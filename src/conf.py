@@ -20,6 +20,7 @@ path     = "/media/data/Temp/astrostack/"             # Working path to use duri
 sex      = "sex"                                     # Name of SExtractor executable. sex is default
 
 rawprefix = "/media/Dee/Astrokuvat/2013-09-25/Andromeda/"
+shortlist = ("Andromeda_2013-09-25_19.06.54.175028.cr2", "Andromeda_2013-09-25_19.15.11.803218.cr2", "Andromeda_2013-09-25_19.08.09.317766.cr2", "Andromeda_2013-09-25_19.15.40.536755.cr2")
 rawlist = (
 "Andromeda_2013-09-25_19.06.54.175028.cr2", "Andromeda_2013-09-25_19.15.11.803218.cr2", "Andromeda_2013-09-25_19.08.09.317766.cr2", "Andromeda_2013-09-25_19.15.40.536755.cr2",
 "Andromeda_2013-09-25_19.08.37.571008.cr2", "Andromeda_2013-09-25_19.16.08.441205.cr2", "Andromeda_2013-09-25_19.09.05.428895.cr2", "Andromeda_2013-09-25_19.16.36.976464.cr2",
