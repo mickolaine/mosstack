@@ -13,7 +13,7 @@ import numpy
 from subprocess import call
 from subprocess import check_output
 import conf
-from math import sqrt, log, fabs
+from math import sqrt, log, fabs, acos
 from operator import itemgetter
 
 class Reg:
@@ -185,9 +185,49 @@ class Reg:
         for key in pairs:
             final.append((key[0], key[1], pairs[key]))
         
-        sorted(final, key=itemgetter(2), reverse=True)
+        final = sorted(final, key=itemgetter(2), reverse=True)
         image.pairs = final
         print("After voting there are " + str(len(image.pairs)) + " pairs found")
+        for p in image.pairs:
+            print(p)
+    
+    def affineTransform(self, image):
+        '''
+        Calculates required translation and rotation
+        '''
+        
+        for p in image.pairs:
+            px1 = p[0][0]
+            py1 = p[0][1]
+            px2 = p[1][0]
+            py2 = p[1][1]
+            
+            transx = px2 - px1         #TODO: Check direction               
+            transy = py2 - py1
+            rot = 0.
+            for s in image.pairs:
+                if p == s:
+                    continue
+                
+                sx1 = s[0][0]
+                sy1 = s[0][1]
+                sx2 = s[1][0]
+                sy2 = s[1][1]
+                
+                qx2 = s[1][0] + transx
+                qy2 = s[1][1] + transy
+                
+                a = (sx2-sx1)**2+(sy2-sy1)**2       #These are actually a**2
+                
+                b = (qx2-sx1)**2+(qy2-sy1)**2       # b**2
+                
+                c = (qx2-sx2)**2+(qy2-sy2)**2       # and c**2, but since power of two is needed more, I don't take sqrts here yet
+                
+                
+                rot = rot + acos((a+b-c)/(2*sqrt(a*b)))/(len(image.pairs)-1)        #Calculates an average of all possible angles
+                
+            return (transx, transy), rot
+    
     
     """ Probably not needed. Remove when certain.
     def map(self, image, p):
