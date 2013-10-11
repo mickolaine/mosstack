@@ -172,9 +172,13 @@ if __name__ == '__main__':
         R.match(light.list[0], i)
         R.reduce(i)
         R.vote(i)
-        t, r = R.affineTransform(i)
-        print(str(t))
-        print(str(r))
+        #t, r = R.affineTransform(i)
+        #print(R.transformMatrix(i))
+        
+        R.transform(i)
+        
+        #print(str(t))
+        #print(str(r))
     
     #print(light.list[0].tri)
     #input("Press Enter to end program.")

@@ -12,6 +12,7 @@ from os.path import splitext,basename,exists
 from subprocess import call,check_output
 import conf
 import Registering
+import numpy
 
 class Image(object):
     '''
@@ -33,6 +34,7 @@ class Image(object):
         
         self.hdu      = fits.open(self.fitspath)
         self.image    = self.hdu[0]
+        self.data     = self.image.data
         
         # Get the shape of image and the EXIF orientation. These are required to check the rotation of photos.
         # Mainly for dark, bias and flat, but might be handy with lights as well.
@@ -73,7 +75,15 @@ class Image(object):
             print("Can't continue. Exiting.")
             exit()
 
-    
+    def newdata(self, r, g, b):
+        '''
+        Creates a new Fits from given data
+        '''
+        
+        regpath = conf.path + "reg" + str(self.number) + ".fits"
+        
+        data = numpy.array([r,g,b])
+        fits.writeto(regpath, data, fits.getheader(self.fitspath))
     
     
     
