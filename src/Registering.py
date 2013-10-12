@@ -21,7 +21,7 @@ from skimage import transform as tf
 
 class Reg:
     '''
-    Class Reg holds the math. Might be a static class to hold only functions called from elsewhere. We'll see... #TODO: Fix the description when you know.
+    Class Reg holds the math. 
     '''
 
     
@@ -65,9 +65,11 @@ class Reg:
 
     def match(self, i1, i2):
         '''
-        Matches image i1 to i2
+        Matches image i1(ref) to i2
+        
         '''
-        print("Received reference image " + str(i1.number) + " and image " + str(i2.number) + " to match")
+        
+        print("Starting to match image " + str(i2.number) + " to reference image " + str(i1.number))
         ep = 0.001
         xi = 3*ep            
         
@@ -179,10 +181,9 @@ class Reg:
         
         newpairs = {}
         for key in pairs:
-            if pairs[key] > 2:              # Should be >1 but I really don't need that much points. # TODO: Check if this works
+            if pairs[key] > 2:                      # Should be >1 but I really don't need that much points. # TODO: Check if this works
                 newpairs[key] = pairs[key]
         pairs = newpairs
-        # TODO: More tests here to reduce the number of pairs
 
         final=[]
         for key in pairs:
@@ -193,56 +194,11 @@ class Reg:
         print("After voting there are " + str(len(image.pairs)) + " pairs found")
         for p in image.pairs:
             print(p)
-    
-    def affineTransform(self, image):           ##### NOT NEEDED
-        '''
-        Calculates required translation and rotation
-        '''
-        
-        p = image.pairs[0]          #TODO: Choose this somehow. Maybe from center. Now it's the first in list which means the most certain pair
-        
-        px1 = p[0][0]
-        py1 = p[0][1]
-        px2 = p[1][0]
-        py2 = p[1][1]
-        
-        transx = px2 - px1         #TODO: Check direction               
-        transy = py2 - py1
-        rot = 0.
-        for s in image.pairs:
-            if p == s:
-                continue
             
-            sx1 = s[0][0]
-            sy1 = s[0][1]
-            sx2 = s[1][0]
-            sy2 = s[1][1]
-            
-            qx2 = s[1][0] + transx
-            qy2 = s[1][1] + transy
-            
-            a = (sx2-sx1)**2+(sy2-sy1)**2       #These are actually a**2
-            
-            b = (qx2-sx1)**2+(qy2-sy1)**2       # b**2
-            
-            c = (qx2-sx2)**2+(qy2-sy2)**2       # and c**2, but since power of two is needed more, I don't take sqrts here yet
-            
-            
-            rot = rot + acos((a+b-c)/(2*sqrt(a*b)))/(len(image.pairs)-1)        #Calculates an average of all possible angles
-            
-             
-        return (transx, transy), rot
-    
-        r = image.data[0]
-        g = image.data[1]
-        b = image.data[2]
-        
-        trans = self.transformMatrix(image)
-        
         
     def transform(self, image):
         '''
-        Rotates and translates the image
+        Rotates and translates the image.
         '''
         
         trans = self.transformMatrix(image)
@@ -251,20 +207,21 @@ class Reg:
         g = image.image.data[1]
         b = image.image.data[2]
         
-        r = r/100000.               # warp needs float values between -1 and 1. This'll put them between 0 and 0.6something. Better fix this
+        scalar = 65536.
+        
+        r = r/scalar               # warp needs float values between -1 and 1. This'll put them between 0 and 1
         r = tf.warp(r, trans)
-        r = r*100000.               # I only hope this won't lose precision
+        r = r*scalar               # I only hope this won't lose precision
         
-        g = g/100000.
+        g = g/scalar
         g = tf.warp(g, trans)
-        g = g*100000.
+        g = g*scalar
         
-        b = b/100000.
+        b = b/scalar
         b = tf.warp(b, trans)
-        b = b*100000.
+        b = b*scalar
 
-        image.newdata(r, g, b)
-        
+        image.newdata(r, g, b)        
         
         
     def transformMatrix(self, image):
@@ -277,37 +234,14 @@ class Reg:
         for i in image.pairs:
             src.append(i[1])
             dst.append(i[0])
-            #src.append((i[0][1], i[0][0]))
-            #dst.append((i[1][1], i[1][0]))
         
         src = numpy.array(src)
         dst = numpy.array(dst)
         
         tform = tf.estimate_transform(ttype="affine", src=src, dst=dst)
         
-        #tform.estimate(src, dst)
-        
         return tform
-        
-    
-    """ Probably not needed. Remove when certain.
-    def map(self, image, p):
-        '''
-        Creates a two colour map of given image. Limiting colour must be adjustable somehow. For now a by percentage p
-        For now it only uses green channel to find luminosities of pixels. The goal is to find stars and I'm making
-        a wild guess they're visible in each channel.
-        '''
-        
-        new = numpy.array(numpy.zeros((image.x, image.y)), dtype=bool)
-        
-        
-        for i in range(len(image.image.data[1])):      # 1 is for the green channel
-            for j in range(len(image.image.data[1][i])):
-                if image.image.data[1][i][j] > 65535.0*p:
-                    new[i][j] = True
-        
-        return new
-     """               
+                  
 
 
 class Sextractor:
@@ -488,14 +422,3 @@ class Sextractor:
                     n=n+1
                     self.image.tri.append([i, j, k])      #TODO: Check if this is enough information
         print("Total number of triangles in image " + self.image.name + str(self.image.number) + " is " + str(n) + ".")
-    
-    
-    
-class alingment:
-    '''
-    Class for alignment information of a photo
-    '''
-       
-        
-    def __init_(self, orientation = None):
-        self.orientation = orientation

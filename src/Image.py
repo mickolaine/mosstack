@@ -19,30 +19,34 @@ class Image(object):
     classdocs
     '''
 
-    def __init__(self, rawpath, number):
+    def __init__(self, rawpath = None, number = None):
         '''
         Constructor requires a filename of a raw image. I have a Canon EOS 1100D so Canon CR2 is what I originally write this for.
         #TODO: Support for other raws
         '''
-        self.rawpath  = rawpath
-        self.number   = number
-        self.tri      = []          # List for triangles
-        self.match    = []          # List for matching triangles with reference picture
-        self.name     = "light"     # Here could be more than a generic name. This is required for temporary files. #TODO: Maybe get this from Batch somehow
         
-        self.convert()
-        
-        self.hdu      = fits.open(self.fitspath)
-        self.image    = self.hdu[0]
-        self.data     = self.image.data
-        
-        # Get the shape of image and the EXIF orientation. These are required to check the rotation of photos.
-        # Mainly for dark, bias and flat, but might be handy with lights as well.
-        self.x = self.image.shape[2]
-        self.y = self.image.shape[1]
-        self.orientation = int(check_output(["exiftool", "-Orientation", "-n", "-T", rawpath]).strip())
-        
-        print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y) + ", Orientation from EXIF: " + str(self.orientation))
+        if rawpath == None:         # If no path given, create an empty image object
+            pass
+        else:
+            self.rawpath  = rawpath
+            self.number   = number
+            self.tri      = []          # List for triangles
+            self.match    = []          # List for matching triangles with reference picture
+            self.name     = "light"     # Here could be more than a generic name. This is required for temporary files. #TODO: Maybe get this from Batch somehow
+            
+            self.convert()
+            
+            self.hdu      = fits.open(self.fitspath)
+            self.image    = self.hdu[0]
+            self.data     = self.image.data
+            
+            # Get the shape of image and the EXIF orientation. These are required to check the rotation of photos.
+            # Mainly for dark, bias and flat, but might be handy with lights as well.
+            self.x = self.image.shape[2]
+            self.y = self.image.shape[1]
+            self.orientation = int(check_output(["exiftool", "-Orientation", "-n", "-T", rawpath]).strip())
+            
+            print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y) + ", Orientation from EXIF: " + str(self.orientation))
         
         
     def isOK(self, image):
@@ -86,14 +90,34 @@ class Image(object):
         
         
         
-    def writeNew(self):
+    def writeNew(self, name):
         '''
         Writes new data to Fits
         '''
-        regpath = conf.path + "reg" + str(self.number) + ".fits"
-        data = numpy.array([self.r, self.g, self.b])
+        regpath = conf.path + name + ".fits"
+        data = numpy.array([self.r, self.g, self.b], dtype=numpy.float32)
+        
+        hdu = fits.PrimaryHDU()          # To create a default header
+        
+        fits.writeto(regpath, data, hdu.header)
+
+        
+    def save(self):
+        '''
+        Saves newdata into fits and loads that as self.hdu, self.image, self.data
+        '''
+        
+        self.name     = "reg"
+        regpath       = conf.path + "reg" + str(self.number) + ".fits"
+        data          = numpy.array([self.r, self.g, self.b], dtype=numpy.float32)
+        
         fits.writeto(regpath, data, fits.getheader(self.fitspath))
-    
+        
+
+        self.fitspath = regpath
+        self.hdu      = fits.open(self.fitspath)
+        self.image    = self.hdu[0]
+        self.data     = self.image.data
     
     
 class Batch:
@@ -103,15 +127,16 @@ class Batch:
     #TODO: For now math is also here, but I'll probably move it elsewhere later
     '''
 
-    def __init__(self, type = None):
+    def __init__(self, type = None, name = None):
         '''
         Constructor loads all necessary objects and sets some default values
         list will have Image.Image type objects which will hold all the information of one image.
         '''
-        self.type = type                # Define type of batch. Possibilities are light, flat, bias and dark 
-        self.list = []                  # Empty list for Images
-        self.reg  = Registering.Reg()   # This might be required. Maybe not
-    
+        self.type   = type                # Define type of batch. Possibilities are light, flat, bias and dark 
+        self.list   = []                  # Empty list for Images
+        self.reg    = Registering.Reg()   # This might be required. Maybe not
+        self.refnum = None                # list index where the reference image can be found
+        self.name   = name
                     
     def add(self, rawpath):
         '''
@@ -135,13 +160,32 @@ class Batch:
         
         self.list.append(i)
         
+    def setRef(self, ref):
+        '''
+        Set image in list[ref] as the reference image. Required only for lights
+        '''
+        self.refnum = ref
+        
+        #im = self.list[self.refnum]
+        
+        #im.newdata(im.data[0], im.data[1], im.data[3])
+        
+    
+    
+    def refimg(self):
+        '''
+        Returns the reference image
+        '''
+        return self.list[self.refnum]
+    
+      
        
     def formatNew(self, x, y):
         '''
         Format a new empty numpy.array for the imagestack
         '''
         
-        self.new = numpy.array(numpy.zeros((3, x, y)), ndmin=3, dtype=float)
+        self.new = numpy.array(numpy.zeros((3, x, y)), ndmin=3, dtype=float32)
 
 
 
