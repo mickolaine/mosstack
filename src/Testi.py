@@ -14,6 +14,7 @@ import numpy
 from subprocess import check_output
 import Registering
 import Image
+import Stacking
 import conf
 
 """
@@ -148,6 +149,7 @@ if __name__ == '__main__':
 if __name__ == '__main__':
     
     R = Registering.Reg()
+    S = Stacking.Median()
     light = Image.Batch(type = "light")
     for i in conf.rawlist:
         light.add(conf.rawprefix + i)
@@ -176,6 +178,7 @@ if __name__ == '__main__':
         #print(R.transformMatrix(i))
         
         R.transform(i)
+    S.stack(light)
         
         #print(str(t))
         #print(str(r))

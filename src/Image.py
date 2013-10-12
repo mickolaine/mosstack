@@ -77,15 +77,22 @@ class Image(object):
 
     def newdata(self, r, g, b):
         '''
-        Creates a new Fits from given data
+        Saves new data
         '''
         
-        regpath = conf.path + "reg" + str(self.number) + ".fits"
+        self.r = r
+        self.g = g
+        self.b = b
         
-        data = numpy.array([r,g,b])
+        
+        
+    def writeNew(self):
+        '''
+        Writes new data to Fits
+        '''
+        regpath = conf.path + "reg" + str(self.number) + ".fits"
+        data = numpy.array([self.r, self.g, self.b])
         fits.writeto(regpath, data, fits.getheader(self.fitspath))
-    
-    
     
     
     
