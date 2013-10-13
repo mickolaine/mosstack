@@ -9,6 +9,9 @@ everything through rawtran.
 Rawtran converts raw-images with DCRaw into FITS format. Fits is great with
 astronomical data and it's easy to handle with AstroPy.
 
+Command "dcraw -T -4 -t 0 -D tiedosto.pääte" should be what I need if I wanted
+to use dcraw itself.
+
 
 #### Extracting stellar data ####
 Input images are assumed to have a lot of stars in them. Aligning images so

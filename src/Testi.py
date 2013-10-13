@@ -40,7 +40,14 @@ import conf
 if __name__ == '__main__':
     
     R = Registering.Reg()
-    S = Stacking.Median()
+    S = Stacking.Mean()
+    
+    bias  = Image.Batch(type = "bias")
+    
+    dark  = Image.Batch(type = "dark")
+    
+    flat  = Image.Batch(type = "bias")
+    
     light = Image.Batch(type = "light", name = "Andromeda")
     for i in conf.rawlist:
         light.add(conf.rawprefix + i)

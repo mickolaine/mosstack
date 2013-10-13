@@ -30,7 +30,7 @@ class Reg:
 
     def step1(self, image):
         '''
-        Calculates R,C,tR and tC for every triangle in image
+        Calculates R,C,tR and tC for every triangle in image. These quantities are described in article #TODO: Cite the article
         '''
         
         ep = 0.3
@@ -65,7 +65,9 @@ class Reg:
 
     def match(self, i1, i2):
         '''
-        Matches image i1(ref) to i2
+        Matches triangles in image i1(ref) to triangles in i2. Creates a list of matching triangles and
+        their properties in object i2.
+        #TODO:Cite the article
         
         '''
         
@@ -198,7 +200,7 @@ class Reg:
         
     def transform(self, image):
         '''
-        Rotates and translates the image.
+        Rotates and translates the image. Uses transform in scikit-image
         '''
         
         trans = self.transformMatrix(image)
@@ -207,11 +209,11 @@ class Reg:
         g = image.image.data[1]
         b = image.image.data[2]
         
-        scalar = 65536.
+        scalar = 65535.
         
-        r = r/scalar               # warp needs float values between -1 and 1. This'll put them between 0 and 1
+        r = r/scalar                # warp needs float values between -1 and 1.
         r = tf.warp(r, trans)
-        r = r*scalar               # I only hope this won't lose precision
+        r = r*scalar                # I only hope this won't lose precision
         
         g = g/scalar
         g = tf.warp(g, trans)
@@ -219,10 +221,10 @@ class Reg:
         
         b = b/scalar
         b = tf.warp(b, trans)
-        b = b*scalar
+        b = b*scalar                #In the end values should be signed int16, so only multiply them
 
         image.newdata(r, g, b)        
-        
+    
         
     def transformMatrix(self, image):
         '''

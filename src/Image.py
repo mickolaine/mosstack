@@ -42,9 +42,11 @@ class Image(object):
             
             # Get the shape of image and the EXIF orientation. These are required to check the rotation of photos.
             # Mainly for dark, bias and flat, but might be handy with lights as well.
+
+            self.orientation = int(check_output(["exiftool", "-Orientation", "-n", "-T", rawpath]).strip())
+            #self.rotate()
             self.x = self.image.shape[2]
             self.y = self.image.shape[1]
-            self.orientation = int(check_output(["exiftool", "-Orientation", "-n", "-T", rawpath]).strip())
             
             print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y) + ", Orientation from EXIF: " + str(self.orientation))
         
@@ -56,7 +58,39 @@ class Image(object):
         
         if image.is_image:
             return True
+    
+    def rotate(self):
+        '''
+        Rotates all images to EXIF-rotation 1. I hope this would make sure all images are aligned the same.
+        Good for lights but important for calibration images
+        '''
+        o = self.orientation
         
+        if   o == 2:
+            for i in range(3):
+                self.data[i] = numpy.fliplr(self.data[i])
+        elif o == 3:
+            for i in range(3):
+                self.data[i] = numpy.rot90(self.data[i],2)
+        elif o == 4:
+            for i in range(3):
+                self.data[i] = numpy.fliplr(self.data[i])
+                self.data[i] = numpy.rot90(self.data[i],2)
+        elif o == 5:
+            for i in range(3):
+                self.data[i] = numpy.fliplr(self.data[i])
+                self.data[i] = numpy.rot90(self.data[i],1)
+        elif o == 6:
+            for i in range(3):
+                self.data[i] = numpy.rot90(self.data[i],3)
+        elif o == 7:
+            for i in range(3):
+                self.data[i] = numpy.fliplr(self.data[i])
+                self.data[i] = numpy.rot90(self.data[i],3)
+        elif o == 8:
+            for i in range(3):
+                self.data[i] = numpy.rot90(self.data[i],1)
+
     def convert(self):
         '''
         Converts the raw into fits.
@@ -64,7 +98,9 @@ class Image(object):
         
         self.fitspath = conf.path + self.name + str(self.number) + ".fits"
         if exists(self.rawpath):
-            if call(["rawtran", "-o", self.fitspath, self.rawpath]):
+            if exists(self.fitspath):                   # Don't convert raws again
+                pass
+            elif call(["rawtran", "-o", self.fitspath, self.rawpath]):
                 print("Something went wrong... There might be helpful output from Rawtran above this line.")
                 print("File " + self.rawpath + " exists.")
                 if exists(self.fitspath):
@@ -94,12 +130,24 @@ class Image(object):
         '''
         Writes new data to Fits
         '''
-        regpath = conf.path + name + ".fits"
-        data = numpy.array([self.r, self.g, self.b], dtype=numpy.float32)
+        rpath = conf.path + name + "RED.fits"
+        gpath = conf.path + name + "GREEN.fits"
+        bpath = conf.path + name + "BLUE.fits"
+        path  = conf.path + name + ".fits"
+        
+        datar = numpy.array(self.r, dtype=numpy.uint16)
+        datag = numpy.array(self.g, dtype=numpy.uint16)
+        datab = numpy.array(self.b, dtype=numpy.uint16)
+        
+        data = numpy.array([self.r,self.g,self.b], dtype=numpy.uint16)
         
         hdu = fits.PrimaryHDU()          # To create a default header
         
-        fits.writeto(regpath, data, hdu.header)
+        fits.writeto(rpath, datar, hdu.header)
+        fits.writeto(gpath, datag, hdu.header)
+        fits.writeto(bpath, datab, hdu.header)
+        fits.writeto( path, data , hdu.header)
+        
 
         
     def save(self):
@@ -109,15 +157,20 @@ class Image(object):
         
         self.name     = "reg"
         regpath       = conf.path + "reg" + str(self.number) + ".fits"
-        data          = numpy.array([self.r, self.g, self.b], dtype=numpy.float32)
+        data          = numpy.array([self.r, self.g, self.b], dtype=numpy.uint16)
         
         fits.writeto(regpath, data, fits.getheader(self.fitspath))
         
+        del self.r
+        del self.g
+        del self.b
 
         self.fitspath = regpath
         self.hdu      = fits.open(self.fitspath)
         self.image    = self.hdu[0]
         self.data     = self.image.data
+        
+        
     
     
 class Batch:
@@ -134,7 +187,7 @@ class Batch:
         '''
         self.type   = type                # Define type of batch. Possibilities are light, flat, bias and dark 
         self.list   = []                  # Empty list for Images
-        self.reg    = Registering.Reg()   # This might be required. Maybe not
+        #self.reg    = Registering.Reg()   # This might be required. Maybe not
         self.refnum = None                # list index where the reference image can be found
         self.name   = name
                     

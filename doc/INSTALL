@@ -6,7 +6,8 @@ but since my programming experience and time to do this are heavily limited,
 I can't promise anything.
 
 
-PyAstroStack will need these to work
+PyAstroStack will need these to work... This list has become too long. I would
+like to see this with as few dependencies as possible.
 
 Rawtran - http://integral.physics.muni.cz/rawtran/
 This will convert raw photos into fits-files. The task could probably be done
@@ -16,6 +17,14 @@ install it manually.
 
 DCRaw - http://www.cybercom.net/~dcoffin/dcraw/
 Rawtran requires this. This can be found on any Linux distribution.
+
+SExtractor - http://www.astromatic.net/software/sextractor
+SExtractor extracts star coordinates from fits-images. This data will be used
+for aligning the photos.
+
+ExifTool - http://www.sno.phy.queensu.ca/~phil/exiftool/
+Extract information from original photos. This comes with almost any Linux and
+probably is already installed if you have installed any photo-related stuff.
 
 AstroPy - http://www.astropy.org/
 For now I'm only using PyFITS from this package, but since authors of PyFITS
@@ -28,3 +37,11 @@ installed with pip (http://www.pip-installer.org/en/latest/) by running
 NumPy - http://www.numpy.org/
 AstroPy requires this. Also used by straight import in order to fiddle with
 numpy.arrays. This should be in your distros package manager.
+
+Scikit-image - http://scikit-image.org/
+This provides easy and working functions for affine transform and acquiring
+transform matrix for it. Requires SciPy.
+
+SciPy - http://www.scipy.org/
+Scikit-image requires this. Full of useful tools so probably this will be
+needed for something else as well.

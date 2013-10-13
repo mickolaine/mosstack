@@ -11,9 +11,9 @@ This file contains everything required for stacking the photos.
 
 import Image
 
-class Median:
+class Mean:
     '''
-    Median stacking should be easiest to implement, so I'll start with that.
+    Mean stacking should be easiest to implement, so I'll start with that.
     
     Each pixel will be a median value of the entire stack. Default for stacking bias, flat and dark.
     '''
@@ -23,7 +23,7 @@ class Median:
     
     def stack(self, batch):
         '''
-        Stacks the batch using median value for every subpixel of every colour
+        Stacks the batch using mean value for every subpixel of every colour
         '''
         
         n = len(batch.list)                 # -1 because I don't handle the reference image yet
@@ -34,9 +34,9 @@ class Median:
         
         for i in batch.list:
             if i.number != 0:
-                r = r + i.r
-                g = g + i.g
-                b = b + i.b
+                r = r + i.data[0]
+                g = g + i.data[1]
+                b = b + i.data[2]
             
         r = r/n
         b = b/n
