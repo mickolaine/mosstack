@@ -9,7 +9,7 @@ I can't promise anything.
 PyAstroStack will need these to work... This list has become too long. I would
 like to see this with as few dependencies as possible.
 
-Rawtran - http://integral.physics.muni.cz/rawtran/
+Rawtran - http://integral.physics.muni.cz/rawtran/									<---- Trying to get rid of this
 This will convert raw photos into fits-files. The task could probably be done
 with just Dcraw, but I'll see about changing that behaviour later on. Rawtran
 does the stuff for now. I couldn't find this on any distro so you'll have to
@@ -22,11 +22,16 @@ SExtractor - http://www.astromatic.net/software/sextractor
 SExtractor extracts star coordinates from fits-images. This data will be used
 for aligning the photos.
 
+ImageMagick - http://www.imagemagick.org
+Needed for converting files and perhaps for rotating and aligning images. 
+Luckily this comes with most Linux distributions and probably is already
+installed.
+
 ExifTool - http://www.sno.phy.queensu.ca/~phil/exiftool/
 Extract information from original photos. This comes with almost any Linux and
 probably is already installed if you have installed any photo-related stuff.
 
-AstroPy - http://www.astropy.org/
+AstroPy - http://www.astropy.org/													<---- Probably not needed with tiff anymore
 For now I'm only using PyFITS from this package, but since authors of PyFITS
 recommend using AstroPy, that's what I'll do. I'll try to change behaviour of
 my programs so that it checks which one is installed, AstroPy or just PyFITS

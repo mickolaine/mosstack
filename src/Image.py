@@ -12,8 +12,8 @@ from os.path import splitext,basename,exists
 from subprocess import call,check_output
 import conf
 import Registering
-import numpy
-from PIL import Image
+import numpy as np
+from PIL import Image as Im
 
 class Image(object):
     '''
@@ -30,25 +30,30 @@ class Image(object):
             pass
         
         else:
-            self.rawpath  = rawpath
-            self.number   = number
-            self.tri      = []          # List for triangles
-            self.match    = []          # List for matching triangles with reference picture
-            self.name     = type        # For now I'll use type of the image as name for temp files
+            self.rawpath   = rawpath     # Path for raw image
+            self.name      = type        # For now I'll use type of the image as name for temp files
+            self.number    = number      # Number to identify the image           
+            self.imagename = conf.path + self.name + str(self.number)       # Path for converted image. No extension included
+            self.tri       = []          # List for triangles
+            self.match     = []          # List for matching triangles with reference picture
+            self.format    = "tiff"      # Support is only for one format (for now) but I use this variable while writing the new code for tiff
+            self.imagepath = self.imagename + self.format
             
-            self.convert(format = "fits")
+            self.convert(format = self.format)
             
-            self.hdu      = fits.open(self.fitspath, mode="update")
-            self.image    = self.hdu[0]
-            self.data     = self.image.data
-            
-            # Get the shape of image and the EXIF orientation. These are required to check the rotation of photos.
-            # Mainly for dark, bias and flat, but might be handy with lights as well.
-
-            #self.orientation = int(check_output(["exiftool", "-Orientation", "-n", "-T", rawpath]).strip())     # TODO: Probably not needed anymore
-            #self.rotate()
-            self.x = self.image.shape[2]
-            self.y = self.image.shape[1]
+            if self.format == "fits":
+                self.hdu      = fits.open(self.imagepath, mode="update")
+                self.image    = self.hdu[0]
+                self.data     = self.image.data
+                self.x        = self.image.shape[2]
+                self.y        = self.image.shape[1]
+                
+            elif self.format == "tiff":
+                self.image    = Im.open(self.imagepath)
+                call(["convert", self.imagepath, self.imagename + ".fits"])
+                self.data     = np.array(self.image)
+                self.x        = self.image.size[0]
+                self.y        = self.image.size[1]
             
             print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y)) # + ", Orientation from EXIF: " + str(self.orientation))
         
@@ -63,34 +68,58 @@ class Image(object):
     
     def convert(self, format = "fits"):
         '''
-        Converts the raw into fits.
+        Converts the raw into a format this program can use. Originally it was FITS but after running in problems with rawtran I chose TIFF.
+        Eventually there might be several formats...
         '''
         
         # Originally I used fits. Changing code to use tiff as default format. Python Imaging library Pillow
         # could be used to replace both AstroPy and scikit-image. Perhaps even SciPy.
         if format == "fits":
-            self.fitspath = conf.path + self.name + str(self.number) + ".fits"
+            self.imagepath = conf.path + self.name + str(self.number) + ".fits"
             if exists(self.rawpath):
-                if exists(self.fitspath):                   # Don't convert raws again
+                if exists(self.imagepath):                   # Don't convert raws again
                     pass
-                elif call(["rawtran -X '-t 0' -o " + self.fitspath + " " + self.rawpath], shell=True):
+                elif call(["rawtran -X '-t 0' -o " + self.imagepath + " " + self.rawpath], shell=True):
                     print("Something went wrong... There might be helpful output from Rawtran above this line.")
                     print("File " + self.rawpath + " exists.")
-                    if exists(self.fitspath):
-                        print("File " + self.fitspath + " exists.")
+                    if exists(self.imagepath):
+                        print("File " + self.imagepath + " exists.")
                         print("Here's information about it:")
                         #TODO: Check size and magic numbers with file utility
                     else:
-                        print("File " + self.fitspath + " does not. Unable to continue.")
+                        print("File " + self.imagepath + " does not. Unable to continue.")
                         exit() #TODO: Make it able to continue without this picture
             else:
                 print("Unable to find file in given path: " + self.rawpath + ". Find out what's wrong and try again.")
                 print("Can't continue. Exiting.")
                 exit()
                 
-        # Support for tiff not working yet. Do not try                
+        # TIFF               
         elif format == "tiff":
-            pass
+            self.imagepath = conf.path + self.name + str(self.number) + ".tiff"
+            if exists(self.rawpath):
+                if exists(self.imagepath):                   # Don't convert raws again
+                    pass
+                elif call(["dcraw -T -4 -t 0 -D " + self.rawpath], shell=True):
+                    print("Something went wrong... There might be helpful output from DCRaw above this line.")
+                    print("File " + self.rawpath + " exists.")
+                    if exists(self.imagepath):
+                        print("File " + self.imagepath + " exists.")
+                        print("Here's information about it:")
+                        #TODO: Check size and magic numbers with file utility
+                    else:
+                        print("File " + self.imagepath + " does not. Unable to continue.")
+                        exit() #TODO: Make it able to continue without this picture
+                else:
+                    origtiff = splitext(self.rawpath)[0] + ".tiff"
+                    newtiff  = conf.path + self.name + str(self.number) + ".tiff"
+                    print("Moving file " + origtiff + " to " + newtiff)
+                    call(["mv", origtiff, newtiff])
+                
+            else:
+                print("Unable to find file in given path: " + self.rawpath + ". Find out what's wrong and try again.")
+                print("Can't continue. Exiting.")
+                exit()
 
 
     def newdata(self, data):
@@ -98,7 +127,7 @@ class Image(object):
         Saves new data
         '''
         
-        self.data = numpy.array(data, dtype=numpy.int16)
+        self.data = np.array(data, dtype=np.int16)
 
         
         
@@ -112,11 +141,11 @@ class Image(object):
         bpath = conf.path + name + "BLUE.fits"
         path  = conf.path + name + ".fits"
         
-        datar = numpy.array(self.data[0], dtype=numpy.int16)
-        datag = numpy.array(self.data[1], dtype=numpy.int16)
-        datab = numpy.array(self.data[2], dtype=numpy.int16)
+        datar = np.array(self.data[0], dtype=np.int16)
+        datag = np.array(self.data[1], dtype=np.int16)
+        datab = np.array(self.data[2], dtype=np.int16)
         
-        data = numpy.array(self.data, dtype=numpy.int16)
+        data = np.array(self.data, dtype=np.int16)
         
         hdu = fits.PrimaryHDU()          # To create a default header
         
@@ -125,32 +154,39 @@ class Image(object):
         fits.writeto(bpath, datab, hdu.header)
         fits.writeto( path, data , hdu.header)
         
-        self.fitspath = path
-        self.hdu      = fits.open(self.fitspath, mode = "update")
+        self.imagepath = path
+        self.hdu      = fits.open(self.imagepath, mode = "update")
         self.image    = self.hdu[0]
         self.data     = self.image.data
-                
-    def save(self):
+    
+    def save(self, name = "reg"):
         '''
         Saves newdata into fits and loads that as self.hdu, self.image, self.data
         '''
         
-        self.name     = "reg"
-        regpath       = conf.path + "reg" + str(self.number) + ".fits"
-        #data          = numpy.array([self.r, self.g, self.b], dtype=numpy.uint16)
+        self.name     = name
+        regpath       = conf.path + self.name + str(self.number) + ".fits"
+        #data          = np.array([self.r, self.g, self.b], dtype=np.uint16)
         
         
-        fits.writeto(regpath, self.data, fits.getheader(self.fitspath))
+        fits.writeto(regpath, self.data, fits.getheader(self.imagepath))
         
         #del self.r          # Release memory
         #del self.g
         #del self.b
 
-        self.fitspath = regpath
-        self.hdu      = fits.open(self.fitspath)
-        self.image    = self.hdu[0]
-        self.data     = self.image.data
+        self.imagepath = regpath
+        self.hdu       = fits.open(self.imagepath)
+        self.image     = self.hdu[0]
+        self.data      = self.image.data
         
+    def write(self):
+        '''
+        Replaces self.save and self.writenew and probably some more. Works for TIFF files
+        '''
+        
+        self.image = Im.fromarray(self.data)
+        self.image.save(self.imagepath, format="tiff")
         
     
     

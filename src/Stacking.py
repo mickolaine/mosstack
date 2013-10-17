@@ -53,9 +53,13 @@ class Mean:
         '''
         
         for i in batch.list:
-            for d in range(3):
-                i.data[d] = i.data[d] - calib.data[d]
-                i.hdu.flush()
+            if len(i.data) == 3:
+                for d in range(3):
+                    i.data[d] = i.data[d] - calib.data[d]
+            else:
+                i.data = i.data - calib.data
+            i.write()
+            #i.hdu.flush()
     
     def normalize(self, calib):
         '''
