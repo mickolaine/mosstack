@@ -26,7 +26,45 @@ class Reg:
 
     
     def __init__(self):
+        
         pass
+    
+    def register(self, batch):
+        '''
+        Calls everything required for total registration process.
+        '''
+        self.findstars(batch)
+        
+        for i in batch.list:
+            self.step1(i)                      # Step1 has to be finished before the rest
+            
+        ref = 0
+        batch.setRef(ref)
+      
+        for i in batch.list:
+            if i.number == batch.refnum:       # No need to match image with itself
+                continue
+
+            self.match(batch.refimg(), i)
+            self.reduce(i)
+            self.vote(i)
+            self.transform(i)
+            i.save()                           # Saves registered image on disc so it won't be clogging the memory
+    
+
+    def findstars(self, batch):
+        '''
+        Finds the stars and creates all the triangles from them
+        '''
+        S = Sextractor(batch.list[0])
+        sensitivity = S.findSensitivity()
+        del S
+        
+        for i in batch.list:
+            S = Sextractor(i)
+            S.setSensitivity(sensitivity[0], sensitivity[1])
+            i.coordinates = S.getCoordinates()
+            S.makeTriangles()
 
     def step1(self, image):
         '''
@@ -209,9 +247,17 @@ class Reg:
         g = image.image.data[1]
         b = image.image.data[2]
         
-        scalar = 65535.
+        maximum = numpy.amax(image.image.data)
+        scalar = 65536.
+        
+        if maximum > scalar:
+            scalar = maximum
         
         r = r/scalar                # warp needs float values between -1 and 1.
+        print(str(numpy.amax(r)))
+        print(str(numpy.amin(r)))
+        
+        
         r = tf.warp(r, trans)
         r = r*scalar                # I only hope this won't lose precision
         
@@ -223,7 +269,7 @@ class Reg:
         b = tf.warp(b, trans)
         b = b*scalar                #In the end values should be signed int16, so only multiply them
 
-        image.newdata(r, g, b)        
+        image.newdata([r, g, b])        
     
         
     def transformMatrix(self, image):

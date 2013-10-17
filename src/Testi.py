@@ -18,40 +18,54 @@ import Image
 import Stacking
 import conf
 
-"""
-    
-    def median(self):
-        '''
-        Calculate median of a stack. Does Sum_i P_i /n for each colour, and each x,y, where P is pixel and n is number of images. 
-        '''
-        n = float(len(self.list))
-        i = 0
-        
-        for image in self.list:
-            self.new += image[0].data
-            print(i)
-            i += 1
-        
-        self.new = self.new / n
-        print(self.new)
-"""           
-
 
 if __name__ == '__main__':
     
     R = Registering.Reg()
     S = Stacking.Mean()
     
-    bias  = Image.Batch(type = "bias")
+    print("Processing bias/offset images...")
+    bias  = Image.Batch(type = "bias", name = "masterbias")
+    for i in conf.biaslist:
+        bias.add(conf.biasprefix + i)
+    S.stack(bias)
+    print("Processing bias/offset images done.")
     
-    dark  = Image.Batch(type = "dark")
     
-    flat  = Image.Batch(type = "bias")
+    print("Processing dark images...")   
+    dark  = Image.Batch(type = "dark", name = "masterdark")
+    for i in conf.darklist:
+        dark.add(conf.darkprefix + i)
+    S.subtract(dark, bias.master)
+    S.stack(dark)
+    print("Processing dark images done.")
+    
+    print("Processing flat images...")
+    flat  = Image.Batch(type = "flat", name = "masterflat")
+    for i in conf.flatlist:
+        flat.add(conf.flatprefix + i)
+    S.subtract(flat, dark.master)
+#    S.subtract(flat, bias.master)
+    S.stack(flat)
+    S.normalize(flat.master)
+    print("Processing flat images done.")
+    
+    
     
     light = Image.Batch(type = "light", name = "Andromeda")
     for i in conf.rawlist:
         light.add(conf.rawprefix + i)
     
+    S.subtract(light, dark.master)
+    S.subtract(light, bias.master)
+    #S.divide(light, flat.master)
+    
+    R.register(light)
+
+    
+    S.stack(light)
+    
+    """
     temp = Registering.Sextractor(light.list[0])
     sensitivity = temp.findSensitivity()
     del temp
@@ -77,9 +91,8 @@ if __name__ == '__main__':
         R.vote(i)
         R.transform(i)
         i.save()                        # Saves registered image on disc so it won't be clogging the memory
-    
-    
-    S.stack(light)
+    """
+
     
         
         

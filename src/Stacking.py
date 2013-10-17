@@ -10,6 +10,7 @@ This file contains everything required for stacking the photos.
 '''
 
 import Image
+import numpy as np
 
 class Mean:
     '''
@@ -26,22 +27,56 @@ class Mean:
         Stacks the batch using mean value for every subpixel of every colour
         '''
         
-        n = len(batch.list)                 # -1 because I don't handle the reference image yet
         
-        r = 0.
-        b = 0.
-        g = 0.
+        n = len(batch.list)
+
         
         for i in batch.list:
-            if i.number != 0:
-                r = r + i.data[0]
-                g = g + i.data[1]
-                b = b + i.data[2]
+            print(i.data[0])
+            if i.number == 0:               #do this so ref gets first
+                r = i.data[0]/n
+                g = i.data[1]/n
+                b = i.data[2]/n
+            else:
+                r = r + i.data[0]/n
+                g = g + i.data[1]/n
+                b = b + i.data[2]/n
+            print(i.data[0])
             
-        r = r/n
-        b = b/n
-        g = g/n
+        newdata = [r, g, b]
         
-        new = Image.Image()
-        new.newdata(r, g, b)
-        new.writeNew(batch.name)
+        batch.savemaster(newdata)
+        
+    def subtract(self, batch, calib):
+        '''
+        Calculates batch = batch - calib. Required for calibrating lights and flats
+        '''
+        
+        for i in batch.list:
+            for d in range(3):
+                i.data[d] = i.data[d] - calib.data[d]
+                i.hdu.flush()
+    
+    def normalize(self, calib):
+        '''
+        Normalizes calib for divide operation. Assumes 65535 is the largest value. Check this. It might be half of that depending how the transformation was done.
+        '''
+        for d in range(3):
+            calib.data[d] = calib.data[d] / 65535.
+        calib.hdu.flush()
+        
+    
+    def divide(self, batch, calib):
+        '''
+        Calculates batch = batch / calib. Required for dividing light with normalized flat
+        Result may have bigger values than 65535 and that creates problems with current affine transform. Normalizing to max 65535.
+        '''
+        for i in batch.list:
+            for d in range(3):
+                i.data[d] = i.data[d] / calib.data[d]
+                maximum = np.amax(i.data[d])
+                if maximum > 65535:
+                    i.data[d] = i.data[d] /maximum * 65535
+                i.hdu.flush()
+                
+        
