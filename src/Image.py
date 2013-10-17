@@ -188,7 +188,11 @@ class Image(object):
         self.image = Im.fromarray(self.data)
         self.image.save(self.imagepath, format="tiff")
         
-    
+    def setname(self, name):
+        '''
+        Sets name for the empty image. Is this really necessary?
+        '''
+        self.imagepath = conf.path + name + ".tiff"
     
 class Batch:
     '''
@@ -238,7 +242,8 @@ class Batch:
         '''
 
         self.master.newdata(data)
-        self.master.writenew(self.name)
+        self.master.setname(self.name)
+        self.master.write()
         
         del self.list            # Master image or result has been saved. No need for the list anymore. Releasing memory
 

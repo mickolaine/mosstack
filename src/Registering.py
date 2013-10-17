@@ -18,6 +18,7 @@ from operator import itemgetter
 from scipy.ndimage.interpolation import affine_transform
 from skimage import data
 from skimage import transform as tf
+from os.path import splitext
 
 class Reg:
     '''
@@ -48,7 +49,7 @@ class Reg:
             self.match(batch.refimg(), i)
             self.reduce(i)
             self.vote(i)
-            self.transform(i)
+            self.transform_magick(i)
             i.save()                           # Saves registered image on disc so it won't be clogging the memory
     
 
@@ -235,6 +236,26 @@ class Reg:
         for p in image.pairs:
             print(p)
             
+    
+    def transform_magick(self, image):
+        '''
+        Transforms image according to image.pairs, but insted of skimage, this function uses
+        ImageMagick's "convert -distort Affine" from command line.
+        #TODO: Check if this could be done with python-bindings of imagemagick
+        '''
+        points = "'"
+        n = 0
+        for i in image.pairs:
+            if n > 11:          # max number of control points is 12
+                break
+            points = points + "{},{},{},{} ".format(i[0][0],i[0][1],i[1][0],i[1][1])
+            n += 1
+        points = points + "'"
+        cmd = "convert " +  image.imagepath + " -distort Affine " + points + " " + image.imagepath
+        call([cmd], shell=True)
+        
+           
+        
         
     def transform(self, image):
         '''
@@ -430,7 +451,8 @@ class Sextractor:
         Executing SExtractor
         The attribute cwd is required because sextractor is looking for several files from current working directory
         '''
-        commandlist = [conf.sex, self.image.imagepath + self.image.format, "-c", self.confname]
+        
+        commandlist = [conf.sex, splitext(self.image.imagepath)[0] + ".fits", "-c", self.confname]
         
         call(commandlist, cwd=conf.path)
         

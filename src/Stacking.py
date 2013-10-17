@@ -32,7 +32,13 @@ class Mean:
 
         
         for i in batch.list:
-            print(i.data[0])
+            
+            if i.number == 0:
+                newdata = i.data/n
+            else:
+                newdata = newdata + i.data/n
+            
+            """
             if i.number == 0:               #do this so ref gets first
                 r = i.data[0]/n
                 g = i.data[1]/n
@@ -44,7 +50,7 @@ class Mean:
             print(i.data[0])
             
         newdata = [r, g, b]
-        
+        """
         batch.savemaster(newdata)
         
     def subtract(self, batch, calib):

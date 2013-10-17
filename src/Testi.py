@@ -47,7 +47,7 @@ if __name__ == '__main__':
     S.subtract(flat, dark.master)
 #    S.subtract(flat, bias.master)
     S.stack(flat)
-    S.normalize(flat.master)
+    #S.normalize(flat.master)
     print("Processing flat images done.")
     
     
