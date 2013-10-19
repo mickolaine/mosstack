@@ -27,7 +27,7 @@ class Image(object):
         '''
         
         if rawpath == None:         # If no path given, create an empty image object
-            pass
+            self.number = None
         
         else:
             self.rawpath   = rawpath     # Path for raw image
@@ -50,7 +50,8 @@ class Image(object):
                 
             elif self.format == "tiff":
                 self.image    = Im.open(self.imagepath)
-                call(["convert", self.imagepath, self.imagename + ".fits"])
+                #call(["convert", self.imagepath, self.imagename + ".fits"])
+                call(["rawtran -X '-t 0' -o " + self.imagename + ".fits " + self.rawpath], shell=True)
                 self.data     = np.array(self.image)
                 self.x        = self.image.size[0]
                 self.y        = self.image.size[1]
@@ -166,7 +167,7 @@ class Image(object):
         
         self.name     = name
         regpath       = conf.path + self.name + str(self.number) + ".fits"
-        #data          = np.array([self.r, self.g, self.b], dtype=np.uint16)
+        #data          = np.array([self.r, self.g, self.b], dtype=np.int16)
         
         
         fits.writeto(regpath, self.data, fits.getheader(self.imagepath))
@@ -184,15 +185,31 @@ class Image(object):
         '''
         Replaces self.save and self.writenew and probably some more. Works for TIFF files
         '''
-        
-        self.image = Im.fromarray(self.data)
+        #print(self.data)
+        self.image = Im.fromarray(np.int16(self.data))
         self.image.save(self.imagepath, format="tiff")
+        
+    def reload(self, name):
+        '''
+        Loads self.image from name
+        '''
+        self.imagepath = conf.path + name + str(self.number) + ".tiff"
+        print("Opening file in " + self.imagepath)
+        self.image     = Im.open(self.imagepath)
+        self.data      = np.array(self.image)
+        #print(self.data)
+        self.x         = self.image.size[0]
+        self.y         = self.image.size[1]
+        
         
     def setname(self, name):
         '''
         Sets name for the empty image. Is this really necessary?
         '''
-        self.imagepath = conf.path + name + ".tiff"
+        if self.number is None:
+            self.imagepath = conf.path + name + ".tiff"
+        else:
+            self.imagepath = conf.path + name + str(self.number) + ".tiff"
     
 class Batch:
     '''

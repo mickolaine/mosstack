@@ -49,8 +49,11 @@ class Reg:
             self.match(batch.refimg(), i)
             self.reduce(i)
             self.vote(i)
-            self.transform_magick(i)
-            i.save()                           # Saves registered image on disc so it won't be clogging the memory
+            #self.transform_magick(i, newname = "reg")
+            self.transform(i)
+            i.setname("reg")
+            i.write()
+            i.reload("reg")                    # Saves registered image on disc so it won't be clogging the memory
     
 
     def findstars(self, batch):
@@ -233,11 +236,11 @@ class Reg:
         final = sorted(final, key=itemgetter(2), reverse=True)
         image.pairs = final
         print("After voting there are " + str(len(image.pairs)) + " pairs found")
-        for p in image.pairs:
-            print(p)
+        #for p in image.pairs:
+        #    print(p)
             
     
-    def transform_magick(self, image):
+    def transform_magick(self, image, newname = None):
         '''
         Transforms image according to image.pairs, but insted of skimage, this function uses
         ImageMagick's "convert -distort Affine" from command line.
@@ -248,10 +251,16 @@ class Reg:
         for i in image.pairs:
             if n > 11:          # max number of control points is 12
                 break
-            points = points + "{},{},{},{} ".format(i[0][0],i[0][1],i[1][0],i[1][1])
+            print(i)
+            print("{},{},{},{} ".format(i[0][0],i[0][1],i[1][0],i[1][1]))
+            points = points + "{},{},{},{} ".format(int(i[0][0]),int(i[0][1]),int(i[1][0]),int(i[1][1]))
             n += 1
         points = points + "'"
-        cmd = "convert " +  image.imagepath + " -distort Affine " + points + " " + image.imagepath
+        if newname is None:
+            newpath = image.imagepath
+        else:
+            newpath = conf.path + newname + str(image.number) + "." + image.format
+        cmd = "convert " +  image.imagepath + " -define quantum:format=unsigned -depth 16 -distort Perspective " + points + " " + newpath
         call([cmd], shell=True)
         
            
@@ -263,12 +272,26 @@ class Reg:
         '''
         
         trans = self.transformMatrix(image)
+        #print(image.data)
+        new = image.data.copy()
         
-        r = image.image.data[0]
-        g = image.image.data[1]
-        b = image.image.data[2]
+        maximum = numpy.amax(new)
+        scalar = 65536.
         
-        maximum = numpy.amax(image.image.data)
+        if maximum > scalar:
+            scalar = maximum
+        
+        new = new/scalar
+        new = tf.warp(new, trans)
+        new = new*scalar
+        
+        image.newdata(new)
+        """
+        r = image.data[0]
+        g = image.data[1]
+        b = image.data[2]
+        
+        maximum = numpy.amax(image.data)
         scalar = 65536.
         
         if maximum > scalar:
@@ -291,7 +314,7 @@ class Reg:
         b = b*scalar                #In the end values should be signed int16, so only multiply them
 
         image.newdata([r, g, b])        
-    
+        """
         
     def transformMatrix(self, image):
         '''
@@ -301,7 +324,9 @@ class Reg:
         src = []
         dst = []
         for i in image.pairs:
+            print(i[1])
             src.append(i[1])
+            print(i[0])
             dst.append(i[0])
         
         src = numpy.array(src)
