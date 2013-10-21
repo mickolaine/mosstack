@@ -42,11 +42,11 @@ class Image(object):
             self.convert(format = self.format)
             
             if self.format == "fits":
-                self.hdu      = fits.open(self.imagepath, mode="update")
+                self.hdu      = fits.open(self.imagepath)
                 self.image    = self.hdu[0]
                 self.data     = self.image.data
-                self.x        = self.image.shape[2]
-                self.y        = self.image.shape[1]
+                self.x        = self.image.shape[1]
+                self.y        = self.image.shape[0]
                 
             elif self.format == "tiff":
                 self.image    = Im.open(self.imagepath)
@@ -80,7 +80,7 @@ class Image(object):
             if exists(self.rawpath):
                 if exists(self.imagepath):                   # Don't convert raws again
                     pass
-                elif call(["rawtran -X '-t 0' -o " + self.imagepath + " " + self.rawpath], shell=True):
+                elif call(["rawtran -X '-t 0' -c u -o " + self.imagepath + " " + self.rawpath], shell=True):
                     print("Something went wrong... There might be helpful output from Rawtran above this line.")
                     print("File " + self.rawpath + " exists.")
                     if exists(self.imagepath):

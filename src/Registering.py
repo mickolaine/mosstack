@@ -324,9 +324,7 @@ class Reg:
         src = []
         dst = []
         for i in image.pairs:
-            print(i[1])
             src.append(i[1])
-            print(i[0])
             dst.append(i[0])
         
         src = numpy.array(src)
@@ -495,7 +493,7 @@ class Sextractor:
             if i.split()[0] == "#":
                 pass
             else:
-                self.coord.append((float(i.split()[4]), float(i.split()[5])))
+                self.coord.append((float(i.split()[4]), self.image.y - float(i.split()[5])))
         
         return self.coord 
     

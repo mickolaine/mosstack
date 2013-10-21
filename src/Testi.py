@@ -23,7 +23,7 @@ if __name__ == '__main__':
     
     R = Registering.Reg()
     S = Stacking.Mean()
-    """    # Skipping calibration images until alignment works again
+    """
     print("Processing bias/offset images...")
     bias  = Image.Batch(type = "bias", name = "masterbias")
     for i in conf.biaslist:
@@ -40,6 +40,7 @@ if __name__ == '__main__':
     S.stack(dark)
     print("Processing dark images done.")
     
+    
     print("Processing flat images...")
     flat  = Image.Batch(type = "flat", name = "masterflat")
     for i in conf.flatlist:
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     
     
     light = Image.Batch(type = "light", name = "Andromeda")
-    for i in conf.shortlist:
+    for i in conf.rawlist:
         light.add(conf.rawprefix + i)
     
     #S.subtract(light, dark.master)
