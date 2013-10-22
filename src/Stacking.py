@@ -51,6 +51,10 @@ class Mean:
             
         newdata = [r, g, b]
         """
+        if batch.type == "light":
+            max = np.amax(newdata)
+            newdata = newdata.clip(min=0) / max * 65535.
+            
         batch.savemaster(newdata)
         
     def subtract(self, batch, calib):
@@ -71,9 +75,8 @@ class Mean:
         '''
         Normalizes calib for divide operation. Assumes 65535 is the largest value. Check this. It might be half of that depending how the transformation was done.
         '''
-        for d in range(3):
-            calib.data[d] = calib.data[d] / 65535.
-        calib.hdu.flush()
+        calib.data = calib.data / 65535.
+        calib.write()
         
     
     def divide(self, batch, calib):
@@ -82,11 +85,12 @@ class Mean:
         Result may have bigger values than 65535 and that creates problems with current affine transform. Normalizing to max 65535.
         '''
         for i in batch.list:
-            for d in range(3):
-                i.data[d] = i.data[d] / calib.data[d]
-                maximum = np.amax(i.data[d])
-                if maximum > 65535:
-                    i.data[d] = i.data[d] /maximum * 65535
-                i.hdu.flush()
+            i.data = i.data / calib.data
+            i.data = np.nan_to_num(i.data)
+            maximum = np.amax(i.data)
+            
+            if maximum > 65535:
+                i.data = i.data / maximum * 65535
+            i.write()
                 
         

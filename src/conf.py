@@ -19,7 +19,8 @@ path     = "/media/data/Temp/astrostack/"             # Working path to use duri
 
 sex      = "sex"                                     # Name of SExtractor executable. sex is default
 
-rawprefix = "/media/Dee/Astrokuvat/2013-09-25/Andromeda/"
+rawprefix  = "/media/Dee/Astrokuvat/2013-09-25/Andromeda/"
+rawprefix2 = "/media/Dee/Astrokuvat/2013-10-21/Andromeda/"
 shortlist = ("Andromeda_2013-09-25_19.06.54.175028.cr2", "Andromeda_2013-09-25_19.15.11.803218.cr2", "Andromeda_2013-09-25_19.08.09.317766.cr2", "Andromeda_2013-09-25_19.15.40.536755.cr2")
              #"Andromeda_2013-09-25_19.15.40.536755.cr2", "Andromeda_2013-09-25_19.08.37.571008.cr2", "Andromeda_2013-09-25_19.16.08.441205.cr2",
              #"Andromeda_2013-09-25_19.09.05.428895.cr2", "Andromeda_2013-09-25_19.16.36.976464.cr2", "Andromeda_2013-09-25_19.09.33.511740.cr2")
@@ -33,6 +34,15 @@ rawlist = (
 "Andromeda_2013-09-25_19.13.18.917980.cr2", "Andromeda_2013-09-25_19.20.50.918664.cr2", "Andromeda_2013-09-25_19.13.47.252966.cr2", "Andromeda_2013-09-25_19.21.18.982024.cr2",
 "Andromeda_2013-09-25_19.14.15.240230.cr2", "Andromeda_2013-09-25_19.21.47.276579.cr2", "Andromeda_2013-09-25_19.14.43.169013.cr2"
             )
+rawlist2 = ("andromeda10.CR2",  "andromeda19.CR2",  "andromeda28.CR2",  "andromeda37.CR2",  "andromeda46.CR2",
+"andromeda11.CR2",  "andromeda20.CR2",  "andromeda29.CR2",  "andromeda38.CR2",  "andromeda47.CR2",
+"andromeda12.CR2",  "andromeda21.CR2",  "andromeda30.CR2",  "andromeda39.CR2",  "andromeda48.CR2",
+"andromeda13.CR2",  "andromeda22.CR2",  "andromeda31.CR2",  "andromeda40.CR2",  "andromeda49.CR2",
+"andromeda14.CR2",  "andromeda23.CR2",  "andromeda32.CR2",  "andromeda41.CR2",  "andromeda5.CR2",
+"andromeda15.CR2",  "andromeda24.CR2",  "andromeda33.CR2",  "andromeda42.CR2",  "andromeda50.CR2",
+"andromeda16.CR2",  "andromeda25.CR2",  "andromeda34.CR2",  "andromeda43.CR2",  "andromeda8.CR2",
+"andromeda17.CR2",  "andromeda26.CR2",  "andromeda35.CR2",  "andromeda44.CR2",
+"andromeda18.CR2",  "andromeda27.CR2",  "andromeda36.CR2",  "andromeda45.CR2")
 
 biasprefix = "/media/Dee/Astrokuvat/2013-09-25/Bias/"
 biaslist   = (

@@ -48,11 +48,12 @@ class Image(object):
                 self.x        = self.image.shape[1]
                 self.y        = self.image.shape[0]
                 
-            elif self.format == "tiff":
+            elif (self.format == "tiff"):
                 self.image    = Im.open(self.imagepath)
                 #call(["convert", self.imagepath, self.imagename + ".fits"])
-                call(["rawtran -X '-t 0' -o " + self.imagename + ".fits " + self.rawpath], shell=True)
-                self.data     = np.array(self.image)
+                if type == "light":
+                    call(["rawtran -X '-t 0' -o " + self.imagename + ".fits " + self.rawpath], shell=True)
+                self.data     = np.array(self.image, np.float32)
                 self.x        = self.image.size[0]
                 self.y        = self.image.size[1]
             
@@ -128,7 +129,7 @@ class Image(object):
         Saves new data
         '''
         
-        self.data = np.array(data, dtype=np.int16)
+        self.data = np.int16(np.array(data))
 
         
         
@@ -186,7 +187,7 @@ class Image(object):
         Replaces self.save and self.writenew and probably some more. Works for TIFF files
         '''
         #print(self.data)
-        self.image = Im.fromarray(np.int16(self.data))
+        self.image = Im.fromarray(np.int16(self.data).clip(0))
         self.image.save(self.imagepath, format="tiff")
         
     def reload(self, name):
@@ -196,7 +197,7 @@ class Image(object):
         self.imagepath = conf.path + name + str(self.number) + ".tiff"
         print("Opening file in " + self.imagepath)
         self.image     = Im.open(self.imagepath)
-        self.data      = np.array(self.image)
+        self.data      = np.array(self.image, np.float32)
         #print(self.data)
         self.x         = self.image.size[0]
         self.y         = self.image.size[1]

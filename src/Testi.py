@@ -23,7 +23,7 @@ if __name__ == '__main__':
     
     R = Registering.Reg()
     S = Stacking.Mean()
-    """
+    
     print("Processing bias/offset images...")
     bias  = Image.Batch(type = "bias", name = "masterbias")
     for i in conf.biaslist:
@@ -46,20 +46,20 @@ if __name__ == '__main__':
     for i in conf.flatlist:
         flat.add(conf.flatprefix + i)
     S.subtract(flat, dark.master)
-#    S.subtract(flat, bias.master)
+    S.subtract(flat, bias.master)
     S.stack(flat)
-    #S.normalize(flat.master)
+    S.normalize(flat.master)
     print("Processing flat images done.")
-    """
+    
     
     
     light = Image.Batch(type = "light", name = "Andromeda")
     for i in conf.rawlist:
         light.add(conf.rawprefix + i)
-    
-    #S.subtract(light, dark.master)
-    #S.subtract(light, bias.master)
-    #S.divide(light, flat.master)
+        
+    S.subtract(light, bias.master)
+    S.subtract(light, dark.master)
+    S.divide(light, flat.master)
     
     R.register(light)
 

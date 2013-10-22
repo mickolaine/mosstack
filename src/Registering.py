@@ -49,11 +49,11 @@ class Reg:
             self.match(batch.refimg(), i)
             self.reduce(i)
             self.vote(i)
-            #self.transform_magick(i, newname = "reg")
-            self.transform(i)
-            i.setname("reg")
-            i.write()
-            i.reload("reg")                    # Saves registered image on disc so it won't be clogging the memory
+            self.transform_magick(i, newname = "reg")
+            #self.transform(i)
+            #i.setname("reg")
+            #i.write()
+            i.reload("reg")                    # Loads image from name "reg" and forgets the previous one
     
 
     def findstars(self, batch):
@@ -251,8 +251,8 @@ class Reg:
         for i in image.pairs:
             if n > 11:          # max number of control points is 12
                 break
-            print(i)
-            print("{},{},{},{} ".format(i[0][0],i[0][1],i[1][0],i[1][1]))
+            #print(i)
+            #print("{},{},{},{} ".format(i[0][0],i[0][1],i[1][0],i[1][1]))
             points = points + "{},{},{},{} ".format(int(i[0][0]),int(i[0][1]),int(i[1][0]),int(i[1][1]))
             n += 1
         points = points + "'"
@@ -260,7 +260,8 @@ class Reg:
             newpath = image.imagepath
         else:
             newpath = conf.path + newname + str(image.number) + "." + image.format
-        cmd = "convert " +  image.imagepath + " -define quantum:format=unsigned -depth 16 -distort Perspective " + points + " " + newpath
+        #cmd = "convert " +  image.imagepath + " -define quantum:format=unsigned -depth 16 -distort Perspective " + points + " " + newpath
+        cmd = "convert " +  image.imagepath + " -depth 16 -distort Perspective " + points + " " + newpath
         call([cmd], shell=True)
         
            
