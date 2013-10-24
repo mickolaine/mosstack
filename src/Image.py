@@ -131,9 +131,21 @@ class Image(object):
         
         self.data = np.int16(np.array(data))
 
+    def savergb(self, data):
+        '''
+        Saves new data
+        '''
         
+        self.rgbdata = np.int16(np.array(data))   
         
+        self.rgbpath      = conf.path + "rgb" + str(self.number) + ".tiff"
         
+        self.imagepath = self.rgbpath
+        
+        self.image   = Im.fromarray(np.int16(self.data))
+        self.image.save(self.rgbpath, format="tiff")
+        
+    """   
     def writenew(self, name):
         '''
         Writes new data to Fits
@@ -181,6 +193,7 @@ class Image(object):
         self.hdu       = fits.open(self.imagepath)
         self.image     = self.hdu[0]
         self.data      = self.image.data
+    """
         
     def write(self):
         '''

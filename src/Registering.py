@@ -16,8 +16,8 @@ import conf
 from math import sqrt, log, fabs, acos
 from operator import itemgetter
 from scipy.ndimage.interpolation import affine_transform
-from skimage import data
-from skimage import transform as tf
+#from skimage import data                                   #COMMENTING OUT, WILL BE REMOVED
+#from skimage import transform as tf
 from os.path import splitext
 
 class Reg:
@@ -266,7 +266,7 @@ class Reg:
         
            
         
-        
+    """    COMMENTING OUT. WILL BE REMOVED
     def transform(self, image):
         '''
         Rotates and translates the image. Uses transform in scikit-image
@@ -287,7 +287,7 @@ class Reg:
         new = new*scalar
         
         image.newdata(new)
-        """
+        ""
         r = image.data[0]
         g = image.data[1]
         b = image.data[2]
@@ -315,7 +315,7 @@ class Reg:
         b = b*scalar                #In the end values should be signed int16, so only multiply them
 
         image.newdata([r, g, b])        
-        """
+        "
         
     def transformMatrix(self, image):
         '''
@@ -334,7 +334,7 @@ class Reg:
         tform = tf.estimate_transform(ttype="affine", src=src, dst=dst)
         
         return tform
-                  
+    """              
 
 
 class Sextractor:

@@ -51,9 +51,13 @@ class Mean:
             
         newdata = [r, g, b]
         """
+        
+        # What happens next might be terribly wrong. Images are being handled as float32 but after this function
+        # master will be converted to int16. I'm trying to scale used range into int16's range. Maybe it needs more than
+        # this...
         if batch.type == "light":
             max = np.amax(newdata)
-            newdata = newdata.clip(min=0) / max * 65535.
+            newdata = newdata.clip(min=0) / max * 65535. #really? maximum in int16 is half of this. test!
             
         batch.savemaster(newdata)
         
