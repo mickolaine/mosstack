@@ -476,7 +476,7 @@ class Sextractor:
         The attribute cwd is required because sextractor is looking for several files from current working directory
         '''
         
-        commandlist = [conf.sex, splitext(self.image.imagepath)[0] + ".fits", "-c", self.confname]
+        commandlist = [conf.sex, splitext(self.image.fitspath)[0] + ".fits", "-c", self.confname]
         
         call(commandlist, cwd=conf.path)
         

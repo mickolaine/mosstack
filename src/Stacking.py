@@ -55,9 +55,9 @@ class Mean:
         # What happens next might be terribly wrong. Images are being handled as float32 but after this function
         # master will be converted to int16. I'm trying to scale used range into int16's range. Maybe it needs more than
         # this...
-        if batch.type == "light":
-            max = np.amax(newdata)
-            newdata = newdata.clip(min=0) / max * 65535. #really? maximum in int16 is half of this. test!
+        #if batch.type == "light":
+        #    max = np.amax(newdata)
+        #    newdata = newdata.clip(min=0) / max * 32760. #really? maximum in int16 is half of this. test!
             
         batch.savemaster(newdata)
         
@@ -67,11 +67,7 @@ class Mean:
         '''
         
         for i in batch.list:
-            if len(i.data) == 3:
-                for d in range(3):
-                    i.data[d] = i.data[d] - calib.data[d]
-            else:
-                i.data = i.data - calib.data
+            i.data = i.data - calib.data
             i.write()
             #i.hdu.flush()
     
@@ -80,7 +76,7 @@ class Mean:
         Normalizes calib for divide operation. Assumes 65535 is the largest value. Check this. It might be half of that depending how the transformation was done.
         '''
         calib.data = calib.data / 65535.
-        calib.write()
+        #calib.write()
         
     
     def divide(self, batch, calib):
@@ -93,8 +89,8 @@ class Mean:
             i.data = np.nan_to_num(i.data)
             maximum = np.amax(i.data)
             
-            if maximum > 65535:
-                i.data = i.data / maximum * 65535
+            #if maximum > 65535:
+            #    i.data = i.data / maximum * 65535
             i.write()
                 
         

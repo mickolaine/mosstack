@@ -38,6 +38,7 @@ class Image(object):
             self.match     = []          # List for matching triangles with reference picture
             self.format    = "tiff"      # Support is only for one format (for now) but I use this variable while writing the new code for tiff
             self.imagepath = self.imagename + self.format
+            self.fitspath  = self.imagename + ".fits"
             
             self.convert(format = self.format)
             
@@ -52,7 +53,7 @@ class Image(object):
                 self.image    = Im.open(self.imagepath)
                 #call(["convert", self.imagepath, self.imagename + ".fits"])
                 if type == "light":
-                    call(["rawtran -X '-t 0' -o " + self.imagename + ".fits " + self.rawpath], shell=True)
+                    call(["rawtran -X '-t 0' -o " + self.fitspath + " " + self.rawpath], shell=True)
                 self.data     = np.array(self.image, np.float32)
                 self.x        = self.image.size[0]
                 self.y        = self.image.size[1]

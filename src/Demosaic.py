@@ -22,8 +22,11 @@ class demosaic:
     '''
     
     def __init__(self):
+
         self.ctx = cl.create_some_context()
+
         self.queue = cl.CommandQueue(self.ctx)
+
     
     def bilinear_cl(self, image):
         '''
@@ -47,41 +50,39 @@ class demosaic:
         """
         
         codegreen = codecommon + """
-          for (int i = 0; i < len; i++)                                         // conditions explained
-          {       
-             if (i < x || i%x == x-1 || i%x == 1 || i > len - x)  // upper border, right border, left border, lower border
+                                                                          // conditions explained      
+             if (gid < x || gid%x == x-1 || gid%x == 1 || gid > len - x)  // upper border, right border, left border, lower border
              {
                 c[gid] = a[gid];
              }
-             else if ((i%2 == 0 && (i/x)%2 == 0) || (i%2 == 1 && (i/x)%2 == 1))   // even on even line, odd on odd line. Non-green pixels 
+             else if ((gid%2 == 0 && (gid/x)%2 == 0) || (gid%2 == 1 && (gid/x)%2 == 1))   // even on even line, odd on odd line. Non-green pixels 
              {
                 c[gid] = (a[gid-1] + a[gid-x] + a[gid+x] + a[gid+1])/4;
              }
-             else                                                             // Green pixels
+             else                                                         // Green pixels
              {
                 c[gid] = a[gid];
              }
-          }
-        } 
+        }
+
         
         """
         
         codered = codecommon + """
-         for (int i = 0; i < len; i++)
-         {
-             if (i < x || i%x == x-1 || i%x == 1 || i > len - x)  // upper border, right border, left border, lower border
+
+             if (gid < x || gid%x == x-1 || gid%x == 1 || gid > len - x)  // upper border, right border, left border, lower border
              {
                  c[gid] = a[gid];
              }
-             else if (i%2 == 0 && (i/x)%2 == 0)
+             else if (gid%2 == 0 && (gid/x)%2 == 0)
              {
                 c[gid] = (a[gid-x] + a[gid +x]) /2;
              }
-             else if (i%2 == 1 && (i/x)%2 == 1)
+             else if (gid%2 == 1 && (gid/x)%2 == 1)
              {
                 c[gid] = (a[gid-1] + a[gid+1]) /2;
              }
-             else if ((i%2 == 0) && (i/x)%2 == 1)
+             else if ((gid%2 == 0) && (gid/x)%2 == 1)
              {
                 c[gid] = a[gid];
              }
@@ -89,34 +90,30 @@ class demosaic:
              {
                 c[gid] = (a[gid-1-x] + a[gid+1-x] + a[gid-1+x] + a[gid+1+x])/4;
              }
-          }
         }
         """
         
         codeblue = codecommon + """
-          for (int i = 0; i < len; i++)
-          {
-             if (i < x || i%x == x-1 || i%x == 1 || i > len - x)  // upper border, right border, left border, lower border
+             if (gid < x || gid%x == x-1 || gid%x == 1 || gid > len - x)  // upper border, right border, left border, lower border
              {
                 c[gid] = a[gid];
              }
-             else if (i%2 == 0 && (i/x)%2 == 0)
+             else if (gid%2 == 0 && (gid/x)%2 == 0)
              {
                 c[gid] = (a[gid-1] + a[gid+1]) /2;
              }
-             else if (i%2 == 1 && (i/x)%2 == 1)
+             else if (gid%2 == 1 && (gid/x)%2 == 1)
              {
-                c[gid] = (a[gid-len] + a[gid +len]) /2;
+                c[gid] = (a[gid-x] + a[gid +x]) /2;
              }
-             else if ((i%2 == 0) && (i/x)%2 == 1)
+             else if ((gid%2 == 0) && (gid/x)%2 == 1)
              {
-                c[gid] = (a[gid-1-len] + a[gid+1-len] + a[gid-1+len] + a[gid+1+len])/4;
+                c[gid] = (a[gid-1-x] + a[gid+1-x] + a[gid-1+x] + a[gid+1+x])/4;
              }
              else
              {
                 c[gid] = a[gid];
              }
-          }
         }
         """
         

@@ -25,7 +25,8 @@ if __name__ == '__main__':
     R = Registering.Reg()
     S = Stacking.Mean()
     D = Demosaic.demosaic()
-    """
+
+
     print("Processing bias/offset images...")
     bias  = Image.Batch(type = "bias", name = "masterbias")
     for i in conf.biaslist:
@@ -52,16 +53,16 @@ if __name__ == '__main__':
     S.stack(flat)
     S.normalize(flat.master)
     print("Processing flat images done.")
-    """
+
     
     
     light = Image.Batch(type = "light", name = "Andromeda")
-    for i in conf.shortlist:
+    for i in conf.rawlist:
         light.add(conf.rawprefix + i)
         
-    #S.subtract(light, bias.master)
-    #S.subtract(light, dark.master)
-    #S.divide(light, flat.master)
+    S.subtract(light, bias.master)
+    S.subtract(light, dark.master)
+    S.divide(light, flat.master)
     
     for i in light.list:            # TODO: Change this so that D takes batches
         D.bilinear_cl(i)
