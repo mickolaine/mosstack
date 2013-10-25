@@ -56,7 +56,7 @@ if __name__ == '__main__':
     
     
     light = Image.Batch(type = "light", name = "Andromeda")
-    for i in conf.rawlist:
+    for i in conf.shortlist:
         light.add(conf.rawprefix + i)
         
     #S.subtract(light, bias.master)
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     #S.divide(light, flat.master)
     
     for i in light.list:            # TODO: Change this so that D takes batches
-        D.bilinear(i)
+        D.bilinear_cl(i)
     
     R.register(light)
 
