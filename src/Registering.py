@@ -53,7 +53,7 @@ class Reg:
             #self.transform(i)
             #i.setname("reg")
             #i.write()
-            i.reload("reg")                    # Loads image from name "reg" and forgets the previous one
+            #i.reload("reg")                    # Loads image from name "reg" and forgets the previous one
     
 
     def findstars(self, batch):
@@ -259,10 +259,16 @@ class Reg:
         if newname is None:
             newpath = image.imagepath
         else:
-            newpath = conf.path + newname + str(image.number) + "." + image.format
+            rednewpath   = conf.path + newname + str(image.number) + "red.tiff"
+            greennewpath = conf.path + newname + str(image.number) + "green.tiff"
+            bluenewpath  = conf.path + newname + str(image.number) + "blue.tiff"
         #cmd = "convert " +  image.imagepath + " -define quantum:format=unsigned -depth 16 -distort Perspective " + points + " " + newpath
-        cmd = "convert " +  image.imagepath + " -depth 16 -distort Perspective " + points + " " + newpath
-        call([cmd], shell=True)
+        cmdr = "convert " +  image.redpath +   " -depth 16 -distort Perspective " + points + " " + rednewpath
+        cmdg = "convert " +  image.greenpath + " -depth 16 -distort Perspective " + points + " " + greennewpath
+        cmdb = "convert " +  image.bluepath +  " -depth 16 -distort Perspective " + points + " " + bluenewpath
+        call([cmdr], shell=True)
+        call([cmdg], shell=True)
+        call([cmdb], shell=True)
         
            
         

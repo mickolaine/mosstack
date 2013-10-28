@@ -130,21 +130,64 @@ class Image(object):
         Saves new data
         '''
         
-        self.data = np.int16(np.array(data))
+        self.data = np.float32(np.array(data))
 
     def savergb(self, data):
         '''
         Saves new data
         '''
         
-        self.rgbdata = np.int16(np.array(data))   
+        self.rgbdata = np.array(data)  
         
-        self.rgbpath      = conf.path + "rgb" + str(self.number) + ".tiff"
+        #self.rgbpath = conf.path + "rgb" + str(self.number) + ".tiff"
         
-        self.imagepath = self.rgbpath
+        #self.imagepath = self.rgbpath
         
-        self.image   = Im.fromarray(np.int16(self.data))
-        self.image.save(self.rgbpath, format="tiff")
+        self.redpath = conf.path + "red" + str(self.number) + ".tiff"
+        self.bluepath = conf.path + "blue" + str(self.number) + ".tiff"
+        self.greenpath = conf.path + "green" + str(self.number) + ".tiff"
+        
+        self.imager   = Im.fromarray(np.int16(self.rgbdata[0]))
+        self.imager.save(self.redpath, format="tiff")
+        del self.imager
+        
+        self.imageg   = Im.fromarray(np.int16(self.rgbdata[1]))
+        self.imageg.save(self.bluepath, format="tiff")
+        del self.imageg
+        
+        self.imageb   = Im.fromarray(np.int16(self.rgbdata[1]))
+        self.imageb.save(self.greenpath, format="tiff")
+        del self.imageb        
+        
+        #call(["convert", redpath, greenpath, bluepath, "-colorspace", "RGB", "-channel", "RGB", "-combine", self.rgbpath])
+        #call(["rm", redpath, greenpath, bluepath])
+        
+        del self.image
+        #self.data     = [np.array(self.imager), np.array(self.imageg), np.array(self.imageb)] #This probably should be loaded when needed
+    
+    def savefinal(self, data, name):
+        '''
+        Saves new data
+        '''
+        
+        self.rgbdata = np.array(data)
+        
+        #self.rgbpath = conf.path + "rgb" + str(self.number) + ".tiff"
+        
+        #self.imagepath = self.rgbpath
+        
+        redpath = conf.path + name + "_red.tiff"
+        bluepath = conf.path + name + "blue.tiff"
+        greenpath = conf.path + name + "green.tiff"
+        
+        imager   = Im.fromarray(np.int16(data[0]))
+        imager.save(redpath, format="tiff")
+        
+        imageg   = Im.fromarray(np.int16(data[1]))
+        imageg.save(bluepath, format="tiff")
+        
+        imageb   = Im.fromarray(np.int16(data[1]))
+        imageb.save(greenpath, format="tiff")
         
     """   
     def writenew(self, name):
@@ -201,20 +244,29 @@ class Image(object):
         Replaces self.save and self.writenew and probably some more. Works for TIFF files
         '''
         #print(self.data)
-        self.image = Im.fromarray(np.int16(self.data).clip(0))
+        self.image = Im.fromarray(np.float32(self.data))
         self.image.save(self.imagepath, format="tiff")
         
-    def reload(self, name):
+    def reload(self, name, ref = 0):
         '''
         Loads self.image from name
         '''
-        self.imagepath = conf.path + name + str(self.number) + ".tiff"
+        if ref == 1:
+            self.redpath   = conf.path + "red" + str(self.number) + ".tiff"
+            self.greenpath = conf.path + "green" + str(self.number) + ".tiff"
+            self.bluepath  = conf.path + "blue" + str(self.number) + ".tiff"
+        else:
+            self.redpath   = conf.path + name + str(self.number) + "red.tiff"
+            self.greenpath = conf.path + name + str(self.number) + "green.tiff"
+            self.bluepath  = conf.path + name + str(self.number) + "blue.tiff"
         print("Opening file in " + self.imagepath)
-        self.image     = Im.open(self.imagepath)
-        self.data      = np.array(self.image, np.float32)
+        self.imager     = Im.open(self.redpath)
+        self.imageg     = Im.open(self.greenpath)
+        self.imageb     = Im.open(self.bluepath)
+        self.data      = [np.array(self.imager),np.array(self.imageg),np.array(self.imageb)]
         #print(self.data)
-        self.x         = self.image.size[0]
-        self.y         = self.image.size[1]
+        self.x         = self.imager.size[0]
+        self.y         = self.imager.size[1]
         
         
     def setname(self, name):
@@ -225,6 +277,16 @@ class Image(object):
             self.imagepath = conf.path + name + ".tiff"
         else:
             self.imagepath = conf.path + name + str(self.number) + ".tiff"
+            
+    def release(self):
+        '''
+        
+        '''
+        del self.imager
+        del self.imageg
+        del self.imageb
+        del self.data
+        
     
 class Batch:
     '''
@@ -272,10 +334,14 @@ class Batch:
         '''
         Saves the result image. Might be a good idea to release memory while here...
         '''
-
+        
         self.master.newdata(data)
         self.master.setname(self.name)
         self.master.write()
         
         del self.list            # Master image or result has been saved. No need for the list anymore. Releasing memory
+        
+    def savefinal(self, data):
+        
+        self.master.savefinal(data, self.name)
 

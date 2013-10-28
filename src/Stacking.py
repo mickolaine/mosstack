@@ -30,36 +30,50 @@ class Mean:
         
         n = len(batch.list)
 
+        if batch.type == "light":
+            for i in batch.list:
+                if i.number == 0:               #do this so ref gets first
+                    i.reload("light", ref = 1)
+                    r = i.data[0]/n
+                    g = i.data[1]/n
+                    b = i.data[2]/n
+                else:
+                    i.reload("reg")
+                    r = r + i.data[0]/n
+                    g = g + i.data[1]/n
+                    b = b + i.data[2]/n
+                print(i.data[0])
+                i.release()
+            newdata = [r, g, b]
         
-        for i in batch.list:
+        else:
+            for i in batch.list:
+                
+                if i.number == 0:               #do this so ref gets first
+                    print("Reference image")
+                    print(i.data)
+                    r = i.data/n
+                    print("Divided")
+                    print(r)
+                else:
+                    print("adding")
+                    r = r + i.data/n
+                    print("got")
+                    print(r)
+                del i.data
+                del i.image
+                
+            newdata = r
             
-            if i.number == 0:
-                newdata = i.data/n
-            else:
-                newdata = newdata + i.data/n
-            
-            """
-            if i.number == 0:               #do this so ref gets first
-                r = i.data[0]/n
-                g = i.data[1]/n
-                b = i.data[2]/n
-            else:
-                r = r + i.data[0]/n
-                g = g + i.data[1]/n
-                b = b + i.data[2]/n
-            print(i.data[0])
-            
-        newdata = [r, g, b]
-        """
-        
         # What happens next might be terribly wrong. Images are being handled as float32 but after this function
         # master will be converted to int16. I'm trying to scale used range into int16's range. Maybe it needs more than
         # this...
-        #if batch.type == "light":
+        if batch.type == "light":
+            batch.savefinal(newdata)
         #    max = np.amax(newdata)
         #    newdata = newdata.clip(min=0) / max * 32760. #really? maximum in int16 is half of this. test!
-            
-        batch.savemaster(newdata)
+        else:
+            batch.savemaster(newdata)
         
     def subtract(self, batch, calib):
         '''
@@ -67,15 +81,28 @@ class Mean:
         '''
         
         for i in batch.list:
+            print("dark")
+            print(i.data)
+            print("subtracted by")
+            print(calib.data)
             i.data = i.data - calib.data
+            print("recieve")
+            print(i.data)
+            i.data.clip(0)
             i.write()
             #i.hdu.flush()
+    
+    def clip(self, batch):
+        '''
+        '''
+        batch.master.data = batch.master.data.clip(0)
+        batch.master.write()
     
     def normalize(self, calib):
         '''
         Normalizes calib for divide operation. Assumes 65535 is the largest value. Check this. It might be half of that depending how the transformation was done.
         '''
-        calib.data = calib.data / 65535.
+        calib.data = calib.data / np.amax(calib.data)
         #calib.write()
         
     
