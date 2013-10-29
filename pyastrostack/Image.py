@@ -115,7 +115,7 @@ class Image(object):
                         exit() #TODO: Make it able to continue without this picture
                 else:
                     origtiff = splitext(self.rawpath)[0] + ".tiff"
-                    newtiff  = conf.path + self.name + str(self.number) + ".tiff"
+                    newtiff  = conf.path + self.name + str(self.number) + ".tiff"       #TODO: Change this to shutil
                     print("Moving file " + origtiff + " to " + newtiff)
                     call(["mv", origtiff, newtiff])
                 

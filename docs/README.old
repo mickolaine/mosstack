@@ -1,3 +1,6 @@
+Old README.txt from time before I looked into distributing a Python package:
+-------------------------------------------------------------------------------
+
 This file will eventually explain the whole process of stacking astronomical
 images with pyAstroStack. For now I only copy & paste important information I
 need to remember.
