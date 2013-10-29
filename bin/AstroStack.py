@@ -1,19 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Created on 28.10.2013
 
-@author: micko
+@author: Mikko Laine
 
 Main program for pyAstroStack.
 
 This command line user interface is used to create a project file to store information
 about source files and temporary files in working directory. This same UI is then used
 to run different stacking operations according to the project file.
-'''
+"""
 
-import sys, getopt
+import sys
+import getopt
+
 
 def main(argv):
     

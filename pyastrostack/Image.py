@@ -1,42 +1,44 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Created on 2.10.2013
 
 @author: Mikko Laine
-'''
+"""
 
 from astropy.io import fits
-from os.path import splitext,basename,exists
-from subprocess import call,check_output
+from os.path import splitext, basename, exists
+from subprocess import call, check_output
 import conf
 import Registering
 import numpy as np
 from PIL import Image as Im
 
+
 class Image(object):
-    '''
+    """
     classdocs
-    '''
+    """
 
     def __init__(self, rawpath = None, number = None, type = "light"):
-        '''
-        Constructor requires a filename of a raw image. I have a Canon EOS 1100D so Canon CR2 is what I originally write this for.
-        #TODO: Support for other raws
-        '''
+        """
+        Constructor requires a filename of a raw image. I have a Canon EOS 1100D so Canon CR2 is what I originally
+        write this for.
+        # TODO: Support for other raws
+        """
         
-        if rawpath == None:         # If no path given, create an empty image object
+        if rawpath is None:         # If no path given, create an empty image object
             self.number = None
         
         else:
             self.rawpath   = rawpath     # Path for raw image
             self.name      = type        # For now I'll use type of the image as name for temp files
             self.number    = number      # Number to identify the image           
-            self.imagename = conf.path + self.name + str(self.number)       # Path for converted image. No extension included
+            self.imagename = conf.path + self.name + str(self.number)       # Path for converted image. No extension
             self.tri       = []          # List for triangles
             self.match     = []          # List for matching triangles with reference picture
-            self.format    = "tiff"      # Support is only for one format (for now) but I use this variable while writing the new code for tiff
+            self.format    = "tiff"      # Define format for the files
             self.imagepath = self.imagename + self.format
             self.fitspath  = self.imagename + ".fits"
             
@@ -49,7 +51,7 @@ class Image(object):
                 self.x        = self.image.shape[1]
                 self.y        = self.image.shape[0]
                 
-            elif (self.format == "tiff"):
+            elif self.format == "tiff":
                 self.image    = Im.open(self.imagepath)
                 #call(["convert", self.imagepath, self.imagename + ".fits"])
                 if type == "light":
@@ -58,22 +60,22 @@ class Image(object):
                 self.x        = self.image.size[0]
                 self.y        = self.image.size[1]
             
-            print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y)) # + ", Orientation from EXIF: " + str(self.orientation))
+            print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y))
         
         
     def isOK(self, image):
-        '''
-        Test whether astropy recognizes the image. Not used yet. Probably should
-        '''
+        """
+        Test whether AstroPy recognizes the image. Not used yet. Probably should
+        """
         
         if image.is_image:
             return True
     
     def convert(self, format = "fits"):
-        '''
-        Converts the raw into a format this program can use. Originally it was FITS but after running in problems with rawtran I chose TIFF.
-        Eventually there might be several formats...
-        '''
+        """
+        Converts the raw into a format this program can use. Originally it was FITS but after running in problems with
+        rawtran I chose TIFF. Eventually there might be several formats...
+        """
         
         # Originally I used fits. Changing code to use tiff as default format. Python Imaging library Pillow
         # could be used to replace both AstroPy and scikit-image. Perhaps even SciPy.
@@ -88,10 +90,10 @@ class Image(object):
                     if exists(self.imagepath):
                         print("File " + self.imagepath + " exists.")
                         print("Here's information about it:")
-                        #TODO: Check size and magic numbers with file utility
+                        # TODO: Check size and magic numbers with file utility
                     else:
                         print("File " + self.imagepath + " does not. Unable to continue.")
-                        exit() #TODO: Make it able to continue without this picture
+                        exit()  # TODO: Make it able to continue without this picture
             else:
                 print("Unable to find file in given path: " + self.rawpath + ". Find out what's wrong and try again.")
                 print("Can't continue. Exiting.")
@@ -109,13 +111,13 @@ class Image(object):
                     if exists(self.imagepath):
                         print("File " + self.imagepath + " exists.")
                         print("Here's information about it:")
-                        #TODO: Check size and magic numbers with file utility
+                        # TODO: Check size and magic numbers with file utility
                     else:
                         print("File " + self.imagepath + " does not. Unable to continue.")
-                        exit() #TODO: Make it able to continue without this picture
+                        exit()  # TODO: Make it able to continue without this picture
                 else:
                     origtiff = splitext(self.rawpath)[0] + ".tiff"
-                    newtiff  = conf.path + self.name + str(self.number) + ".tiff"       #TODO: Change this to shutil
+                    newtiff  = conf.path + self.name + str(self.number) + ".tiff"       # TODO: Change this to shutil
                     print("Moving file " + origtiff + " to " + newtiff)
                     call(["mv", origtiff, newtiff])
                 
@@ -126,16 +128,16 @@ class Image(object):
 
 
     def newdata(self, data):
-        '''
+        """
         Saves new data
-        '''
+        """
         
         self.data = np.float32(np.array(data))
 
     def savergb(self, data):
-        '''
+        """
         Saves new data
-        '''
+        """
         
         self.rgbdata = np.array(data)  
         
@@ -159,16 +161,18 @@ class Image(object):
         self.imageb.save(self.greenpath, format="tiff")
         del self.imageb        
         
-        #call(["convert", redpath, greenpath, bluepath, "-colorspace", "RGB", "-channel", "RGB", "-combine", self.rgbpath])
+        #call(["convert", redpath, greenpath, bluepath, "-colorspace", "RGB", \
+        # "-channel", "RGB", "-combine", self.rgbpath])
         #call(["rm", redpath, greenpath, bluepath])
         
         del self.image
-        #self.data     = [np.array(self.imager), np.array(self.imageg), np.array(self.imageb)] #This probably should be loaded when needed
+        #self.data     = [np.array(self.imager), np.array(self.imageg), np.array(self.imageb)]
+        #This probably should be loaded when needed
     
     def savefinal(self, data, name):
-        '''
+        """
         Saves new data
-        '''
+        """
         
         self.rgbdata = np.array(data)
         
@@ -240,17 +244,17 @@ class Image(object):
     """
         
     def write(self):
-        '''
+        """
         Replaces self.save and self.writenew and probably some more. Works for TIFF files
-        '''
+        """
         #print(self.data)
         self.image = Im.fromarray(np.float32(self.data))
         self.image.save(self.imagepath, format="tiff")
         
     def reload(self, name, ref = 0):
-        '''
+        """
         Loads self.image from name
-        '''
+        """
         if ref == 1:
             self.redpath   = conf.path + "red" + str(self.number) + ".tiff"
             self.greenpath = conf.path + "green" + str(self.number) + ".tiff"
@@ -270,18 +274,20 @@ class Image(object):
         
         
     def setname(self, name):
-        '''
-        Sets name for the empty image. Is this really necessary?
-        '''
+        """
+        Set name for the empty image.
+
+        Is this really necessary?
+        """
         if self.number is None:
             self.imagepath = conf.path + name + ".tiff"
         else:
             self.imagepath = conf.path + name + str(self.number) + ".tiff"
             
     def release(self):
-        '''
-        
-        '''
+        """
+        Release not needed images from memory
+        """
         del self.imager
         del self.imageg
         del self.imageb
@@ -289,17 +295,17 @@ class Image(object):
         
     
 class Batch:
-    '''
+    """
     Batch holds a list of photos loaded with astropy's fits.open
     It also checks compatibility for each photo loaded
     #TODO: For now math is also here, but I'll probably move it elsewhere later
-    '''
+    """
 
     def __init__(self, type = None, name = None):
-        '''
+        """
         Constructor loads all necessary objects and sets some default values
         list will have Image.Image type objects which will hold all the information of one image.
-        '''
+        """
         self.type   = type                # Define type of batch. Possibilities are light, flat, bias and dark 
         self.list   = []                  # Empty list for Images
         self.refnum = None                # list index where the reference image can be found
@@ -308,9 +314,9 @@ class Batch:
         self.master = Image()       # New empty image to save the result in
                     
     def add(self, rawpath):
-        '''
+        """
         Add a photo to the batch. Maybe run some checks while at it.
-        '''
+        """
         
         number = len(self.list)         # Define index number for images
         i = Image(rawpath, number, type = self.type)   
@@ -318,22 +324,22 @@ class Batch:
         self.list.append(i)
         
     def setRef(self, ref):
-        '''
+        """
         Set image in list[ref] as the reference image. Required only for lights
-        '''
+        """
         self.refnum = ref
     
     
     def refimg(self):
-        '''
+        """
         Returns the reference image
-        '''
+        """
         return self.list[self.refnum]
 
     def savemaster(self, data):
-        '''
+        """
         Saves the result image. Might be a good idea to release memory while here...
-        '''
+        """
         
         self.master.newdata(data)
         self.master.setname(self.name)

@@ -1,23 +1,19 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Created on 25.9.2013
 
 @author: micko
 
 This is a main program intended for testing the classes and functions. My intention is to write a GUI
 when the core functionality works well enough.
-'''
+"""
+
 
 from astropy.io import fits
 import numpy
-from subprocess import check_output
-import Registering
-import Image
-import Stacking
-import Demosaic
-import conf
+from pyastrostack import Registering, Image, Stacking, Demosaic, conf
 import gc
 
 

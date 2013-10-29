@@ -1,11 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-'''
+"""
 Created on 23.10.2013
 
 @author: Mikko Laine
-'''
+"""
 
 import numpy as np
 import pyopencl as cl
@@ -15,23 +15,30 @@ import pyopencl as cl
 
 
 class demosaic:
-    '''
+    """
     Demosaicing class. I'll start with regular bilinear interpolation but more will come if necessary
     
     
-    '''
+    """
     
     def __init__(self):
-
+        """Prepare everything for running the demosaic-algorithms."""
         self.ctx = cl.create_some_context()
 
         self.queue = cl.CommandQueue(self.ctx)
 
     
     def bilinear_cl(self, image):
-        '''
-        Bilinear interpolation using pyOpenCL
-        '''
+        """ Bilinear interpolation using pyOpenCL.
+
+        Arguments:
+        image - a pyAstroStack.Image
+
+        Returns:
+        Nothing
+
+        Interpolated image will be given to image via image.savergb()
+        """
         mf = cl.mem_flags
         
         cfa = np.ravel(np.float32(image.data), order='K')
@@ -51,16 +58,16 @@ class demosaic:
         
         codegreen = codecommon + """
                                                                           // conditions explained      
-             if (gid < x || gid%x == 0 || gid%x == 1 || gid > len - x)    // upper border, right border, left border, lower border
+             if (gid < x || gid%x == 0 || gid%x == 1 || gid > len - x)    // upper border, right, left and lower border
              {
                 c[gid] = a[gid];
              }
-             else if ((gid%2 == 0 && (gid/x)%2 == 0) ||
-                      (gid%2 == 1 && (gid/x)%2 == 1))                     // even on even line, odd on odd line. Non-green pixels 
+             else if ((gid%2 == 0 && (gid/x)%2 == 0) ||                   // Non-green pixels
+                      (gid%2 == 1 && (gid/x)%2 == 1))                     // even on even line, odd on odd line.
              {
                 c[gid] = (a[gid-1] + a[gid-x] + a[gid+x] + a[gid+1])/4;
              }
-             else                                                         // Green pixels
+             else                                                         // Green pixels. Should be all the rest
              {
                 c[gid] = a[gid];
              }
@@ -71,7 +78,7 @@ class demosaic:
         
         codered = codecommon + """
 
-             if (gid < x || gid%x == 0 || gid%x == 1 || gid > len - x)  // upper border, right border, left border, lower border
+             if (gid < x || gid%x == 0 || gid%x == 1 || gid > len - x)  // upper border, right, left and lower border
              {
                  c[gid] = a[gid];
              }
@@ -99,7 +106,7 @@ class demosaic:
         """
         
         codeblue = codecommon + """
-             if (gid < x || gid%x == 0 || gid%x == 1 || gid > len - x)  // upper border, right border, left border, lower border
+             if (gid < x || gid%x == 0 || gid%x == 1 || gid > len - x)  // upper border, right, left and lower border
              {
                 c[gid] = a[gid];
              }
@@ -135,27 +142,35 @@ class demosaic:
         g = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, g, dest_buf)
         
-        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)       # Reset dest_buf just in case. Maybe not necessary
+        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)     # Reset dest_buf just in case. Maybe not necessary
         prg_red.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_buf)
         r = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, r, dest_buf)
         
-        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)       # Reset dest_buf just in case. Maybe not necessary
+        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)     # Reset dest_buf just in case. Maybe not necessary
         prg_blue.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_buf)
         b = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, b, dest_buf)
         print(r)
-        r = np.reshape(r,(image.y,-1),order='K')
-        g = np.reshape(g,(image.y,-1),order='K')
-        b = np.reshape(b,(image.y,-1),order='K')
+        r = np.reshape(r, (image.y, -1), order='K')
+        g = np.reshape(g, (image.y, -1), order='K')
+        b = np.reshape(b, (image.y, -1), order='K')
         print("After reshape: " + str(g.shape))
         print(r)
-        image.savergb(np.array([r,g,b]))
+        image.savergb(np.array([r, g, b]))
     
-    def bilinear_testi(self, image):
-        '''
-        Bilinear interpolation using pyOpenCL
-        '''
+    def opencl_test(self, image):
+        """
+        Identity function to test opencl.
+
+        Arguments:
+        image - a pyAstroStack.Image
+
+        Returns:
+        Nothing
+
+        Saves the grayscale image data times three with image.savergb(). No interpolation done.
+        """
         mf = cl.mem_flags
         
         print("Before raveling: " + str(image.data.shape))
@@ -268,9 +283,16 @@ class demosaic:
         
         
     def LRP_cl(self, image):
-        '''
-        Bilinear interpolation using pyOpenCL
-        '''
+        """ LaRoche-Prescott interpolation using pyOpenCL. NOT IMPLEMENTED YET!
+
+        Arguments:
+        image - a pyAstroStack.Image
+
+        Returns:
+        Nothing
+
+        Interpolated image will be given to image via image.savergb()
+        """
         mf = cl.mem_flags
         
         cfa = np.ravel(image.data)
@@ -288,14 +310,15 @@ class demosaic:
           int gid = get_global_id(0);
           
         """
-        
+        # Green is implemented
         codegreen = codecommon + """
                                                                           // conditions explained      
-             if (gid < x || gid%x == x-1 || gid%x == 1 || gid > len - x)  // upper border, right border, left border, lower border
+             if (gid < x || gid%x == x-1 || gid%x == 1 || gid > len - x)  // upper border, right, left, lower border
              {
                 c[gid] = a[gid];
              }
-             else if ((gid%2 == 0 && (gid/x)%2 == 0) || (gid%2 == 1 && (gid/x)%2 == 1))   // even on even line, odd on odd line. Non-green pixels 
+             else if ((gid%2 == 0 && (gid/x)%2 == 0) ||                   // Non-green pixels
+                      (gid%2 == 1 && (gid/x)%2 == 1))                     // even on even line, odd on odd line.
              {
                 alpha = fabs((a[gid-2]+a[gid+2])/2 - a[gid]);
                 beta  = fabs((a[gid-2*x]+a[gid+2*x])/2 - a[gid]);
@@ -317,10 +340,10 @@ class demosaic:
 
         
         """
-        
+        # Red is not implemented
         codered = codecommon + """
 
-             if (gid < x || gid%x == x-1 || gid%x == 1 || gid > len - x)  // upper border, right border, left border, lower border
+             if (gid < x || gid%x == x-1 || gid%x == 1 || gid > len - x)  // upper border, right, left, lower border
              {
                  c[gid] = a[gid];
              }
@@ -342,9 +365,9 @@ class demosaic:
              }
         }
         """
-        
+        # Blue is not implemented
         codeblue = codecommon + """
-             if (gid < x || gid%x == x-1 || gid%x == 1 || gid > len - x)  // upper border, right border, left border, lower border
+             if (gid < x || gid%x == x-1 || gid%x == 1 || gid > len - x)  // upper border, right, left, lower border
              {
                 c[gid] = a[gid];
              }
@@ -376,12 +399,12 @@ class demosaic:
         g = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, g, dest_buf)
         
-        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)       # Reset dest_buf just in case. Maybe not necessary
+        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)    # Reset dest_buf just in case. Maybe not necessary
         prg_red.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_buf)
         r = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, r, dest_buf)
         
-        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)       # Reset dest_buf just in case. Maybe not necessary
+        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)    # Reset dest_buf just in case. Maybe not necessary
         prg_blue.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_buf)
         b = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, b, dest_buf)
