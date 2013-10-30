@@ -14,5 +14,6 @@ setup(
     install_requires=[
         "Pillow >= 2.2.1",
         "NumPy >= 1.6.0",
+        "pyopencl >= 2013",
     ],
 )
