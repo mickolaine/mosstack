@@ -11,8 +11,6 @@ when the core functionality works well enough.
 """
 
 
-from astropy.io import fits
-import numpy
 from pyastrostack import Registering, Image, Stacking, Demosaic, conf
 import gc
 

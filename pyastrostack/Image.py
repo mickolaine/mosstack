@@ -10,8 +10,7 @@ Created on 2.10.2013
 from astropy.io import fits
 from os.path import splitext, basename, exists
 from subprocess import call, check_output
-import conf
-import Registering
+from pyastrostack import conf, Registering
 import numpy as np
 from PIL import Image as Im
 

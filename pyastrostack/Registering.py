@@ -12,12 +12,9 @@ This file contains everything required for registering the photos.
 import numpy
 from subprocess import call
 from subprocess import check_output
-import conf
+from pyastrostack import conf
 from math import sqrt, log, fabs
 from operator import itemgetter
-from scipy.ndimage.interpolation import affine_transform
-#from skimage import data                                   #COMMENTING OUT, WILL BE REMOVED
-#from skimage import transform as tf
 from os.path import splitext
 
 class Reg:
@@ -276,78 +273,8 @@ class Reg:
         call([cmdr], shell=True)
         call([cmdg], shell=True)
         call([cmdb], shell=True)
-        
-           
-        
-    """    COMMENTING OUT. WILL BE REMOVED
-    def transform(self, image):
-        '''
-        Rotates and translates the image. Uses transform in scikit-image
-        '''
-        
-        trans = self.transformMatrix(image)
-        #print(image.data)
-        new = image.data.copy()
-        
-        maximum = numpy.amax(new)
-        scalar = 65536.
-        
-        if maximum > scalar:
-            scalar = maximum
-        
-        new = new/scalar
-        new = tf.warp(new, trans)
-        new = new*scalar
-        
-        image.newdata(new)
-        ""
-        r = image.data[0]
-        g = image.data[1]
-        b = image.data[2]
-        
-        maximum = numpy.amax(image.data)
-        scalar = 65536.
-        
-        if maximum > scalar:
-            scalar = maximum
-        
-        r = r/scalar                # warp needs float values between -1 and 1.
-        print(str(numpy.amax(r)))
-        print(str(numpy.amin(r)))
-        
-        
-        r = tf.warp(r, trans)
-        r = r*scalar                # I only hope this won't lose precision
-        
-        g = g/scalar
-        g = tf.warp(g, trans)
-        g = g*scalar
-        
-        b = b/scalar
-        b = tf.warp(b, trans)
-        b = b*scalar                #In the end values should be signed int16, so only multiply them
 
-        image.newdata([r, g, b])        
-        "
-        
-    def transformMatrix(self, image):
-        '''
-        Estimate transforming matrix using image.pairs
-        '''
-        
-        src = []
-        dst = []
-        for i in image.pairs:
-            src.append(i[1])
-            dst.append(i[0])
-        
-        src = numpy.array(src)
-        dst = numpy.array(dst)
-        
-        tform = tf.estimate_transform(ttype="affine", src=src, dst=dst)
-        
-        return tform
-    """              
+
 
 
 class Sextractor:
@@ -438,7 +365,9 @@ class Sextractor:
 
     def setSensitivity(self, area, sigma):
         """
-        Set star detection sensitivity. I have no idea what kind of numbers here should be. And of course it alters
+        Set star detection sensitivity.
+
+        I have no idea what kind of numbers here should be. And of course it alters
         from image to image. This should hence be set while running the program and maybe tested as well.
         """
         
@@ -448,7 +377,7 @@ class Sextractor:
         
     def createConf(self):
         """
-        Creates configuration file for SExtractor.
+        Create configuration file for SExtractor.
         """
         self.confname = conf.path + self.image.name + str(self.image.number) + ".sex"
         f = open(self.confname, "w")
@@ -458,7 +387,8 @@ class Sextractor:
     def findSensitivity(self):
         """
         Run SExtractor on different DETECT_MINAREA and THRESH, in order to find suitable number of stars.
-        I'll choose 25 as minimum and 50 as maximum. There are about n^3 triangles for n vertices, so n should
+
+        I'll choose 25 as minimum and 30 as maximum. There are about n^3 triangles for n vertices, so n should
         be kept small.
         """
         print("Looking for suitable DETECT_MINAREA...")
@@ -484,18 +414,15 @@ class Sextractor:
         
         
     def execSEx(self):
-        """
-        Executing SExtractor
-        The attribute cwd is required because sextractor is looking for several files from current working directory
-        """
-        
+        """ Execute SExtractor with created conf """
+        # TODO: try-except here about conf-file and other requirements
         commandlist = [conf.sex, splitext(self.image.fitspath)[0] + ".fits", "-c", self.confname]
         
-        call(commandlist, cwd=conf.path)
+        call(commandlist, cwd=conf.path)  # cwd changes working directory
         
     def getCoordinates(self):
         """
-        Calls everything necessary and returns a set of XY-coordinates in a list
+        Call everything necessary and return a set of XY-coordinates in a list
         """
         
         self.createConf()
@@ -513,7 +440,7 @@ class Sextractor:
     
     def makeTriangles(self):
         """
-        Makes all possible triangles from coordinates in self.coord
+        Make all possible triangles from coordinates in self.coord and save it to self.image.tri
         """
         
         self.image.tri = []
