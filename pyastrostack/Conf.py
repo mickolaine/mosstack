@@ -36,7 +36,7 @@ class ConfigAbstractor:
         """
         self.conf.read(file)
 
-    def save(self, key, value, section="default"):
+    def save(self, key, value, section="Default"):
         """
         Save key and value under section in config file
         """
@@ -52,7 +52,8 @@ class ConfigAbstractor:
         with open(file, 'w') as configfile:
             self.conf.write(configfile)
 
-class setup:
+
+class Setup:
     """
     Class to control program settings
     """
@@ -72,20 +73,27 @@ class setup:
         if not os.path.exists(os.path.split(self.file)[0]):
             os.makedirs(os.path.split(self.file)[0])
 
-
         # If file does not exists, load some default values and write it
         if not os.path.exists(self.file):
+
             print("Seems like this is the first time you run pyAstroStack. Creating the setup file.")
             input("Press enter to continue.")
+
             try:
                 print("Looking for SExtractor binaries...")
                 self.conf.save("SExtractor", self.findSEx(), "Programs")
                 print("Found " + self.conf.conf["Programs"]["SExtractor"])
             except IOError as e:
                 print(e.args[0])
+
             print("Be aware that the temporary files can take a lot of space (from 1 GB to 20 GB)")
-            path = input("Path for temporary files: ")
-            self.conf.save("Path", path)
+            temppath = input("Path for temporary files: ")
+
+            # Make sure path ends in /
+            if temppath[len(temppath)-1] != "/":
+                temppath += "/"
+
+            self.conf.save("Path", temppath)
             self.conf.write(self.file)
 
         self.conf.read(self.file)
@@ -110,8 +118,7 @@ class setup:
         return sexpath.decode().strip()
 
 
-
-class project:
+class Project:
     """
     Class to control project information
 
@@ -140,9 +147,10 @@ class project:
         if self.projectfile is None:
             # TODO: Change this error to a better one
             raise NameError("Project file not set, yet trying to access one. This shouldn't happen.")
-        self.conf.read(self.projectfile)
+        if os.path.exists(self.projectfile):
+            self.conf.read(self.projectfile)
 
-    def initproject(self):
+    def initproject(self, pname):
         """
         Initialize a project and project file
         """
@@ -151,7 +159,11 @@ class project:
             if input("Type y to rewrite: ") != "y":
                 print("Try again using a file not already in use.")
                 exit()
-
+            else:
+                print(self.projectfile)
+                os.unlink(self.projectfile)
+        self.conf.save("Project name", pname)
+        self.conf.write(self.projectfile)
 
     def adddir(self, directory, imagetype):
         """
@@ -161,10 +173,15 @@ class project:
         path = directory to add
         imagetype is in (light, dark, bias, flat)
         """
+        self.readproject()
         #directory = os.getcwd()
-        print("Looking for RAW-files in current directory...")
+        print("Looking for RAW-files in specified directory...")
 
-        temp = os.listdir()
+        # Make sure path ends in /
+        if directory[len(directory) - 1] != "/":
+            directory += "/"
+
+        temp = os.listdir(directory)
         filelist = []
         string = ""
         tempstr = ""
@@ -188,21 +205,23 @@ class project:
 
         # Check how many images are already in the list.
         if imagetype in self.conf.conf:
-            n = max(self.conf.conf[imagetype]) + 1
+            print(max(self.conf.conf[imagetype]))
+            n = int(max(self.conf.conf[imagetype])) + 1
         else:
             n = 1
 
         for i in filelist:
-            self.conf.save(str(n), directory + "/" + i, imagetype)
+            print(directory + i)
+            self.conf.save(str(n), directory + i, imagetype)
             n += 1
 
         # Set reference only if not already set
         if "Reference" not in self.conf.conf:
             print("Setting first image in list as reference image.")
-            ref = 1
-            if input("Type y to change the reference image: ") == "y":
+            ref = "1"
+            if input("Type y to change the reference image (anything else to continue): ") == "y":
                 pass  # TODO: Implementation
-            self.conf.save("Reference", ref, imagetype)
+            self.conf.save(imagetype, ref, "Reference images")
 
         self.conf.write(self.projectfile)
 
@@ -211,6 +230,7 @@ class project:
         Adds a single file to project
 
         """
+        self.readproject()
         print("Adding file " + rawpath)
 
         # Check how many images are already in the list.
@@ -222,6 +242,8 @@ class project:
         self.conf.save(str(n), rawpath, imagetype)
         self.conf.write(self.projectfile)
 
+    def write(self):
+        self.conf.write(self.projectfile)
 
 
 path     = "/media/data/Temp/astrostack/"            # Working path to use during procedure

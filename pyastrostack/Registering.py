@@ -12,10 +12,11 @@ This file contains everything required for registering the photos.
 import numpy
 from subprocess import call
 from subprocess import check_output
-from pyastrostack import conf
+import Conf
 from math import sqrt, log, fabs
 from operator import itemgetter
 from os.path import splitext
+
 
 class Reg:
     """
@@ -31,13 +32,14 @@ class Reg:
         """
         Calls everything required for total registration process.
         """
+
         self.findstars(batch)
         
         for i in batch.list:
             self.step1(i)                      # Step1 has to be finished before the rest
             
         ref = 0
-        batch.setRef(ref)
+        batch.setref(ref)
       
         for i in batch.list:
             if i.number == batch.refnum:       # No need to match image with itself
@@ -46,26 +48,25 @@ class Reg:
             self.match(batch.refimg(), i)
             self.reduce(i)
             self.vote(i)
-            self.transform_magick(i, newname="reg")
-            #self.transform(i)
-            #i.setname("reg")
-            #i.write()
-            #i.reload("reg")                    # Loads image from name "reg" and forgets the previous one
-    
+            newname = self.transform_magick(i, newname="reg")
+
+            batch.project.conf.save(str(i.number), newname, "Registered frames")
+            batch.project.conf.save("Registering", "1", "State")
+            batch.project.write()
 
     def findstars(self, batch):
         """
         Finds the stars and creates all the triangles from them
         """
         S = Sextractor(batch.list[0])
-        sensitivity = S.findSensitivity()
+        sensitivity = S.findsensitivity()
         del S
         
         for i in batch.list:
             S = Sextractor(i)
-            S.setSensitivity(sensitivity[0], sensitivity[1])
-            i.coordinates = S.getCoordinates()
-            S.makeTriangles()
+            S.setsensitivity(sensitivity[0], sensitivity[1])
+            i.coordinates = S.getcoordinates()
+            S.maketriangles()
 
     def step1(self, image):
         """
@@ -102,7 +103,6 @@ class Reg:
             tri.append(tR)
             tri.append(tC)
         print("Step 1 complete for image " + str(image.number) + ".")
-                
 
     def match(self, i1, i2):
         """
@@ -113,8 +113,8 @@ class Reg:
         """
         
         print("Starting to match image " + str(i2.number) + " to reference image " + str(i1.number))
-        ep = 0.001
-        xi = 3*ep            
+        #ep = 0.001
+        #xi = 3 * ep
         
         for tri1 in i1.tri:
             temp = ()
@@ -176,14 +176,13 @@ class Reg:
                   sqrt((x1 - x3) ** 2 + (y1 - y3) ** 2) +
                   sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2))
             match.append(log(pA) - log(pB))         # Value log(M) as described in equation (10). this will be match[2]
-            
-                
-        doItAgain = True
+
+        do_it_again = True
         print("List has originally lenght of  " + str(len(image.match)))
         
         times = 0
         
-        while doItAgain:
+        while do_it_again:
             newlist = []
             mean = 0.
             variance = 0.
@@ -193,19 +192,18 @@ class Reg:
                 variance += (fabs(mean - match[2]) ** 2) / len(image.match)
             sigma = sqrt(variance)
             
-            doItAgain = False
+            do_it_again = False
             for match in image.match:
                 # print(match[2])                            #Debugging
                 if fabs(match[2] - mean) < sigma * 2:
                     newlist.append(match)
                 else:
-                    doItAgain = True                        # If you end up here, while has to be run again
+                    do_it_again = True                        # If you end up here, while has to be run again
             image.match = newlist                           # Save new list and do again if necessary
             del newlist
             times += 1
         print("After reduction the length is " + str(len(image.match)))            
-    
-    
+
     def vote(self, image):
         """
         Count probabilities for vertex matches. Choose the most popular one, disregard the rest.
@@ -241,11 +239,10 @@ class Reg:
         print("After voting there are " + str(len(image.pairs)) + " pairs found")
         #for p in image.pairs:
         #    print(p)
-            
-    
+
     def transform_magick(self, image, newname=None):
         """
-        Transforms image according to image.pairs, but insted of skimage, this function uses
+        Transforms image according to image.pairs, but instead of skimage, this function uses
         ImageMagick's "convert -distort Affine" from command line.
         #TODO: Check if this could be done with python-bindings of imagemagick
         """
@@ -259,22 +256,32 @@ class Reg:
             points = points + "{},{},{},{} ".format(int(i[0][0]), int(i[0][1]), int(i[1][0]), int(i[1][1]))
             n += 1
         points += "'"
-        if newname is None:
-            newpath = image.imagepath
+
+        if image.format == "fits":
+            # TODO: Change image.name below to project name
+            newpath = Conf.path + image.name + "_" + newname + str(image.number) + ".fits"
+            command = "convert " + image.imagepath + " -depth 16 -distort Perspective " + points + " " + newpath
+            call([command], shell=True)
+            return newpath
+
+        elif image.format == "tiff":
+            if newname is None:
+                newpath = image.imagepath
+            else:
+                rednewpath   = Conf.path + newname + str(image.number) + "red." + image.format
+                greennewpath = Conf.path + newname + str(image.number) + "green." + image.format
+                bluenewpath  = Conf.path + newname + str(image.number) + "blue." + image.format
+            #cmd = "convert " +  image.imagepath + " -define quantum:format=unsigned -depth 16 -distort Perspective " +
+            #points + " " + newpath
+            cmdr = "convert " +  image.redpath +   " -depth 16 -distort Affine " + points + " " + rednewpath
+            cmdg = "convert " +  image.greenpath + " -depth 16 -distort Affine " + points + " " + greennewpath
+            cmdb = "convert " +  image.bluepath +  " -depth 16 -distort Affine " + points + " " + bluenewpath
+            call([cmdr], shell=True)
+            call([cmdg], shell=True)
+            call([cmdb], shell=True)
+            return rednewpath, greennewpath, bluenewpath
         else:
-            rednewpath   = conf.path + newname + str(image.number) + "red.tiff"
-            greennewpath = conf.path + newname + str(image.number) + "green.tiff"
-            bluenewpath  = conf.path + newname + str(image.number) + "blue.tiff"
-        #cmd = "convert " +  image.imagepath + " -define quantum:format=unsigned -depth 16 -distort Perspective " +
-        #points + " " + newpath
-        cmdr = "convert " +  image.redpath +   " -depth 16 -distort Perspective " + points + " " + rednewpath
-        cmdg = "convert " +  image.greenpath + " -depth 16 -distort Perspective " + points + " " + greennewpath
-        cmdb = "convert " +  image.bluepath +  " -depth 16 -distort Perspective " + points + " " + bluenewpath
-        call([cmdr], shell=True)
-        call([cmdg], shell=True)
-        call([cmdb], shell=True)
-
-
+            raise Exception("Invalid format")
 
 
 class Sextractor:
@@ -292,7 +299,7 @@ class Sextractor:
         
         self.image = image
         
-        self.catname = conf.path + self.image.name + str(self.image.number) + ".cat"
+        self.catname = Conf.path + self.image.name + str(self.image.number) + ".cat"
         
         self.config = {
             #-------------------------------- Catalog ------------------------------------
@@ -343,7 +350,7 @@ class Sextractor:
 
             "BACKPHOTO_TYPE":    "GLOBAL",         # can be GLOBAL or LOCAL
 
-            #------------------------------ Check Image ----------------------------------
+            #------------------------------ Check Photo ----------------------------------
 
             "CHECKIMAGE_TYPE":   "NONE",           # can be NONE, BACKGROUND, BACKGROUND_RMS,
                                                    # MINIBACKGROUND, MINIBACK_RMS, -BACKGROUND,
@@ -363,7 +370,7 @@ class Sextractor:
             "XML_NAME":          "sex.xml"         # Filename for XML output
         }
 
-    def setSensitivity(self, area, sigma):
+    def setsensitivity(self, area, sigma):
         """
         Set star detection sensitivity.
 
@@ -375,16 +382,16 @@ class Sextractor:
         self.config["DETECT_THRESH"]   = str(sigma)
         self.config["ANALYSIS_THRESH"] = str(sigma)    # This doesn't seem to affect to the number of stars detected
         
-    def createConf(self):
+    def createconf(self):
         """
         Create configuration file for SExtractor.
         """
-        self.confname = conf.path + self.image.name + str(self.image.number) + ".sex"
+        self.confname = Conf.path + self.image.name + str(self.image.number) + ".sex"
         f = open(self.confname, "w")
         for i in self.config:
             f.write(i + " " + self.config[i] + "\n")   
 
-    def findSensitivity(self):
+    def findsensitivity(self):
         """
         Run SExtractor on different DETECT_MINAREA and THRESH, in order to find suitable number of stars.
 
@@ -397,8 +404,8 @@ class Sextractor:
         max = 30
         
         while x > max or x < min:
-            self.createConf()
-            self.execSEx()
+            self.createconf()
+            self.execsex()
             x = float(check_output(["tail", "-1", self.catname]).split()[0])
             if x < min:
                 self.config["DETECT_MINAREA"] = str(float(self.config["DETECT_MINAREA"])*.9)
@@ -411,22 +418,21 @@ class Sextractor:
                 
         print("Found " + self.config["DETECT_MINAREA"] + " & " + self.config["DETECT_THRESH"])
         return (self.config["DETECT_MINAREA"], self.config["DETECT_THRESH"])
-        
-        
-    def execSEx(self):
+
+    def execsex(self):
         """ Execute SExtractor with created conf """
         # TODO: try-except here about conf-file and other requirements
-        commandlist = [conf.sex, splitext(self.image.fitspath)[0] + ".fits", "-c", self.confname]
+        commandlist = [Conf.sex, splitext(self.image.fitspath)[0] + ".fits", "-c", self.confname]
         
-        call(commandlist, cwd=conf.path)  # cwd changes working directory
+        call(commandlist, cwd=Conf.path)  # cwd changes working directory
         
-    def getCoordinates(self):
+    def getcoordinates(self):
         """
         Call everything necessary and return a set of XY-coordinates in a list
         """
         
-        self.createConf()
-        self.execSEx()
+        self.createconf()
+        self.execsex()
  
         self.coord = []
         f = open(self.catname, "r")
@@ -434,11 +440,12 @@ class Sextractor:
             if i.split()[0] == "#":
                 pass
             else:
+                #self.coord.append((float(i.split()[4]), float(i.split()[5])))
                 self.coord.append((float(i.split()[4]), self.image.y - float(i.split()[5])))
         
         return self.coord 
     
-    def makeTriangles(self):
+    def maketriangles(self):
         """
         Make all possible triangles from coordinates in self.coord and save it to self.image.tri
         """

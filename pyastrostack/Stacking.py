@@ -9,7 +9,7 @@ Created on 11.10.2013
 This file contains everything required for stacking the photos.
 """
 
-from pyastrostack import Image
+import Photo
 import numpy as np
 
 
@@ -22,56 +22,63 @@ class Mean:
     
     def __init__(self):
         pass
-    
-    def stack(self, batch):
+
+    @staticmethod
+    def stack(batch):
         """
         Stack the batch using mean value for every subpixel of every colour
         """
-        
-        
-        n = len(batch.list)
 
-        if batch.type == "light":
-            for i in batch.list:
-                if i.number == 0:               # do this so ref gets first
-                    i.reload("light", ref=1)
-                    r = i.data[0]/n
-                    g = i.data[1]/n
-                    b = i.data[2]/n
-                else:
-                    i.reload("reg")
-                    r += i.data[0]/n
-                    g += i.data[1]/n
-                    b += i.data[2]/n
-                print(i.data[0])
-                i.release()
-            newdata = [r, g, b]
-        
-        else:
-            for i in batch.list:
-                
-                if i.number == 0:               # do this so ref gets first
-                    print("Reference image")
-                    print(i.data)
-                    r = i.data/n
-                    print("Divided")
-                    print(r)
-                else:
-                    print("adding")
-                    r += i.data/n
-                    print("got")
-                    print(r)
-                del i.data
-                del i.image
-                
-            newdata = r
+        n = len(batch.list)
+        newdata = np.zeros_like(batch.list[0].data)
+        for i in batch.list:
+            print(i.imagepath)
+            print(np.amax(i.data))
+            print(np.amax(newdata))
+            newdata += (i.data / n)
+            i.release()
+
+        #if batch.itype == "light":
+        #    for i in batch.list:
+        #        if i.number == 0:               # do this so ref gets first
+        #            i.reload("light", ref=1)
+        #            r = i.data[0] / n
+        #            g = i.data[1] / n
+        #            b = i.data[2] / n
+        #        else:
+        #            i.reload("reg")
+        #            r += i.data[0] / n
+        #            g += i.data[1] / n
+        #            b += i.data[2] / n
+        #        i.release()
+        #    newdata = [r, g, b]
+        #
+        #else:
+        #    for i in batch.list:
+        #
+        #        if i.number == 0:               # do this so ref gets first
+        #            #print("Reference image")
+        #            #print(i.data)
+        #            r = i.data / n
+        #            #print("Divided")
+        #            #print(r)
+        #        else:
+        #            #print("adding")
+        #            r += i.data / n
+        #            #print("got")
+        #            #print(r)
+        #        del i.data
+        #        del i.image
+        #
+        #    newdata = r
             
-        if batch.type == "light":
+        if batch.itype == "light":
             batch.savefinal(newdata)
         else:
             batch.savemaster(newdata)
-        
-    def subtract(self, batch, calib):
+
+    @staticmethod
+    def subtract(batch, calib):
         """
         Calculates batch = batch - calib. Required for calibrating lights and flats
         """
@@ -81,23 +88,25 @@ class Mean:
             i.data.clip(0)
             i.write()
             #i.hdu.flush()
-    
-    def clip(self, batch):
+
+    @staticmethod
+    def clip(batch):
         """
         Clip negative values replacing them by 0
         """
         batch.master.data = batch.master.data.clip(0)
         batch.master.write()
-    
-    def normalize(self, calib):
+
+    @staticmethod
+    def normalize(calib):
         """
         Normalizes calib by maximum value for divide operation.
         """
         calib.data = calib.data / np.amax(calib.data)
         #calib.write()
-        
-    
-    def divide(self, batch, calib):
+
+    @staticmethod
+    def divide(batch, calib):
         """
         Calculates batch = batch / calib.
 
@@ -107,5 +116,3 @@ class Mean:
             i.data = i.data / calib.data
             i.data = np.nan_to_num(i.data)
             i.write()
-                
-        

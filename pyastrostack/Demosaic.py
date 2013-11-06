@@ -32,7 +32,7 @@ class demosaic:
         """ Bilinear interpolation using pyOpenCL.
 
         Arguments:
-        image - a pyAstroStack.Image
+        image - a pyAstroStack.Photo
 
         Returns:
         Nothing
@@ -164,7 +164,7 @@ class demosaic:
         Identity function to test opencl.
 
         Arguments:
-        image - a pyAstroStack.Image
+        image - a pyAstroStack.Photo
 
         Returns:
         Nothing
@@ -286,7 +286,7 @@ class demosaic:
         """ LaRoche-Prescott interpolation using pyOpenCL. NOT IMPLEMENTED YET!
 
         Arguments:
-        image - a pyAstroStack.Image
+        image - a pyAstroStack.Photo
 
         Returns:
         Nothing

@@ -11,7 +11,7 @@ when the core functionality works well enough.
 """
 
 
-from pyastrostack import Registering, Image, Stacking, Demosaic, conf
+from pyastrostack import Registering, Photo, Stacking, Demosaic, Conf
 import gc
 
 
@@ -23,17 +23,17 @@ if __name__ == '__main__':
 
     
     print("Processing bias/offset images...")
-    bias  = Image.Batch(type = "bias", name = "masterbias")
-    for i in conf.biaslist:
-        bias.add(conf.biasprefix + i)
+    bias  = Photo.Batch(type = "bias", name = "masterbias")
+    for i in Conf.biaslist:
+        bias.add(Conf.biasprefix + i)
     S.stack(bias)
     print("Processing bias/offset images done.")
     gc.collect()
     
     print("Processing dark images...")   
-    dark  = Image.Batch(type = "dark", name = "masterdark")
-    for i in conf.darklist:
-        dark.add(conf.darkprefix + i)
+    dark  = Photo.Batch(type = "dark", name = "masterdark")
+    for i in Conf.darklist:
+        dark.add(Conf.darkprefix + i)
     S.subtract(dark, bias.master)
     S.stack(dark)
     print("Processing dark images done.")
@@ -41,9 +41,9 @@ if __name__ == '__main__':
     
     
     print("Processing flat images...")
-    flat  = Image.Batch(type = "flat", name = "masterflat")
-    for i in conf.flatlist:
-        flat.add(conf.flatprefix + i)
+    flat  = Photo.Batch(type = "flat", name = "masterflat")
+    for i in Conf.flatlist:
+        flat.add(Conf.flatprefix + i)
     #S.subtract(flat, dark.master)
     S.subtract(flat, bias.master)
     S.stack(flat)
@@ -52,9 +52,9 @@ if __name__ == '__main__':
     gc.collect()
     
     
-    light = Image.Batch(type = "light", name = "Andromeda")
-    for i in conf.rawlist:
-        light.add(conf.rawprefix + i)
+    light = Photo.Batch(type = "light", name = "Andromeda")
+    for i in Conf.rawlist:
+        light.add(Conf.rawprefix + i)
     gc.collect()
     #S.subtract(light, bias.master)
     
