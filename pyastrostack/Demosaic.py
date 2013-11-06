@@ -17,8 +17,7 @@ import pyopencl as cl
 class demosaic:
     """
     Demosaicing class. I'll start with regular bilinear interpolation but more will come if necessary
-    
-    
+
     """
     
     def __init__(self):
