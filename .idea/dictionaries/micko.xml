@@ -15,12 +15,15 @@
       <w>createconf</w>
       <w>dcraw</w>
       <w>demosaic</w>
+      <w>demosaicing</w>
       <w>dest</w>
+      <w>dslr</w>
       <w>execsex</w>
       <w>findsensitivity</w>
       <w>fitspath</w>
       <w>getcoordinates</w>
       <w>greennewpath</w>
+      <w>greenpath</w>
       <w>iformat</w>
       <w>imageb</w>
       <w>imageg</w>
@@ -61,7 +64,9 @@
       <w>setref</w>
       <w>setsensitivity</w>
       <w>sextractor</w>
+      <w>srcpath</w>
       <w>subpixel</w>
+      <w>wdir</w>
     </words>
   </dictionary>
 </component>

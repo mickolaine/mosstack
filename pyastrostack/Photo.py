@@ -9,6 +9,7 @@ Created on 2.10.2013
 
 from astropy.io import fits
 from os.path import splitext, exists, split
+from shutil import copyfile
 from subprocess import call
 import Conf
 import numpy as np
@@ -24,72 +25,76 @@ class Photo(object):
     # format for intermediate files. TODO: Make this unnecessary
     format  = "fits"
 
-    def __init__(self, rawpath=None, rgbpath=None, number=None, name=None, itype="light", project=None):
+    def __init__(self, section=None, number=None, project=None, data=None):
         """
         Constructor requires a filename of a raw image. I have a Canon EOS 1100D so Canon CR2 is what I originally
         write this for.
         # TODO: Support for other raws
 
         Arguments:
-        rawpath = path where original raw image can be found
-        rgbpath = path where rgb-files can be found. Only basename without suffix
-        number  = number to identify the image, perhaps not required anymore since this is also in Conf
-        name    = Name for image for any kind of output
-        itype   = type for the image: light, bias, dark, flat
+        section = Section in configuration. Essentially type of files.
+        number  = Number to identify the image. Same as found in project file
+        project = Conf.Project type object
+        data    = Create Photo from numpy.array
         """
 
         # Common variables for any case
+        self.project   = project
         self.tri       = np.array([])         # List of triangles
         self.match     = np.array([])         # List of matching triangles with reference picture
-        self.name      = name                 # Name of image
+        self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
         self.number    = number               # Number to identify the image
-        self.itype     = itype
+        self.wdir      = self.project.get("Setup", "Path")  # Working directory
 
-        # Read image channels from different files
-        if rgbpath:
-            self.red       = fits.open(self.rgbpath + "_red.fits", memmap=True)
-            self.green     = fits.open(self.rgbpath + "_green.fits", memmap=True)
-            self.blue      = fits.open(self.rgbpath + "_blue.fits", memmap=True)
+        # Create image from data
+        if data is not None:
+            self.data = data
+            return
+
+        # Create empty image
+        if (section is None) & (number is None) & (data is None):
+            return
+
+        self.srcpath   = self.project.get(section, number)  # Path for source file
+        self.imagename = self.wdir + self.name
+        self.imagepath = self.imagename + ".fits"
+
+        if section in ("dark", "bias", "flat"):
+            self.itype = section
+        else:
+            self.itype = "light"
+
+        self.rawformat = splitext(self.srcpath)[1][1:]
+
+        # For source files that are already FITS
+        if self.rawformat == "fits":
+            # If image source image resides outside wdir, copy it there
+            if split(self.srcpath)[0] + "/" != self.wdir:
+                copyfile(self.srcpath, self.imagepath)
+            else:
+                self.imagepath = self.srcpath
+
+        # For everything else, try converting
+        else:
+            self.convert()
+
+        # Check if demosaicing done and assume rgb-pictures
+        if self.project.get("State", "Demosaic") == "1":
+            self.red       = fits.open(self.srcpath + "_r.fits", memmap=True)
+            self.green     = fits.open(self.srcpath + "_g.fits", memmap=True)
+            self.blue      = fits.open(self.srcpath + "_b.fits", memmap=True)
             self.imager    = self.red[0]
             self.imageg    = self.green[0]
             self.imageb    = self.blue[0]
-            self.data      = np.array([self.imager.data, self.imageg.data, self.imageb.data])
-            self.x         = self.image.shape[1]
-            self.y         = self.image.shape[0]
+            self.data      = None
 
-        # Read image from raw file (DSLR raw or FITS)
-        elif rawpath:
-
-            self.rawformat = splitext(rawpath)[1][1:]
-
-            self.rawpath   = rawpath     # Path for raw image
-
-            self.imagename = Conf.path + self.name + "_" + self.itype + str(self.number)  # Path for image. No extension
-            self.imagepath = self.imagename + "." + self.format
-            self.fitspath  = self.imagename + ".fits"
-
-            # If raw file is fits, just copy it to working directory (if not already there) and open
-            if self.rawformat == "fits":
-                print(self.rawpath)
-                if split(self.rawpath)[0] + "/" != Conf.path:
-                    call(["cp", self.rawpath, self.imagepath])
-                else:
-                    self.imagepath = self.rawpath
-
-            else:
-                self.convert(iformat="fits")    # TODO: Remove iformat argument as soon as done with
-                                                # removing tiff as intermediate file
-
-            self.hdu       = fits.open(self.imagepath)
+        else:
+            self.hdu       = fits.open(self.imagepath, memmap=True)
             self.image     = self.hdu[0]
             self.data      = None
-            self.x         = self.image.shape[1]
-            self.y         = self.image.shape[0]
 
-        # If no path given, create an empty image object
-        else:
-            self.number = None
-            return
+        self.x         = self.image.shape[1]
+        self.y         = self.image.shape[0]
 
         print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y))
 
@@ -97,7 +102,10 @@ class Photo(object):
         """
         Load data into memory
         """
-        self.data = self.image.data
+        if self.project.get("State", "Demosaic") == "1":
+            self.data      = np.array([self.imager.data, self.imageg.data, self.imageb.data])
+        else:
+            self.data = self.image.data
 
     def release_data(self):
         """
@@ -106,234 +114,154 @@ class Photo(object):
         self.data = None
         gc.collect()
 
-    def convert(self, iformat="fits"):
+    def convert(self):
         """
         Convert the raw into FITS
-
-        TODO: Remove iformat argument when sure it won't be needed
         """
 
-        if iformat == "fits":
-            #self.imagepath = Conf.path + self.name + str(self.number) + ".fits"
-            if exists(self.rawpath):
-                if exists(self.imagepath):                   # Don't convert raws again
-                    pass
-                elif call(["rawtran -X '-t 0' -c u -o " + self.imagepath + " " + self.rawpath], shell=True):
-                    print("Something went wrong... There might be helpful output from Rawtran above this line.")
-                    print("File " + self.rawpath + " exists.")
-                    if exists(self.imagepath):
-                        print("File " + self.imagepath + " exists.")
-                        print("Here's information about it:")
-                        # TODO: Check size and magic numbers with file utility
-                    else:
-                        print("File " + self.imagepath + " does not. Unable to continue.")
-                        exit()  # TODO: Make it able to continue without this picture
-            else:
-                print("Unable to find file in given path: " + self.rawpath + ". Find out what's wrong and try again.")
-                print("Can't continue. Exiting.")
-                exit()
-                
-        # TIFF      TODO: Remove this when done with tiff
-        #elif iformat == "tiff":
-        #    self.imagepath = Conf.path + self.name + str(self.number) + ".tiff"
-        #    if exists(self.rawpath):
-        #        if exists(self.imagepath):                   # Don't convert raws again
-        #            pass
-        #        elif call(["dcraw -T -4 -t 0 -D " + self.rawpath], shell=True):
-        #            print("Something went wrong... There might be helpful output from DCRaw above this line.")
-        #            print("File " + self.rawpath + " exists.")
-        #            if exists(self.imagepath):
-        #                print("File " + self.imagepath + " exists.")
-        #                print("Here's information about it:")
-        #                # TODO: Check size and magic numbers with file utility
-        #            else:
-        #                print("File " + self.imagepath + " does not. Unable to continue.")
-        #                exit()  # TODO: Make it able to continue without this picture
-        #        else:
-        #            origtiff = splitext(self.rawpath)[0] + ".tiff"
-        #            newtiff  = Conf.path + self.name + str(self.number) + ".tiff"       # TODO: Change this to shutil
-        #            print("Moving file " + origtiff + " to " + newtiff)
-        #            call(["mv", origtiff, newtiff])
-        #
-        #    else:
-        #        print("Unable to find file in given path: " + self.rawpath + ". Find out what's wrong and try again.")
-        #        print("Can't continue. Exiting.")
-        #        exit()
-
-    def newdata(self, data):
-        """
-        Saves new data
-        """
-        
-        self.data = np.float32(np.array(data))
-
-    def savergb(self, data):
-        """
-        Saves new data
-        """
-        
-        self.rgbdata = np.array(data)  
-        
-        #self.rgbpath = conf.path + "rgb" + str(self.number) + ".tiff"
-        
-        #self.imagepath = self.rgbpath
-        
-        self.redpath = Conf.path + "red" + str(self.number) + ".tiff"
-        self.bluepath = Conf.path + "blue" + str(self.number) + ".tiff"
-        self.greenpath = Conf.path + "green" + str(self.number) + ".tiff"
-        
-        self.imager   = Im.fromarray(np.int16(self.rgbdata[0]))
-        self.imager.save(self.redpath, format="tiff")
-        del self.imager
-        
-        self.imageg   = Im.fromarray(np.int16(self.rgbdata[1]))
-        self.imageg.save(self.bluepath, format="tiff")
-        del self.imageg
-        
-        self.imageb   = Im.fromarray(np.int16(self.rgbdata[1]))
-        self.imageb.save(self.greenpath, format="tiff")
-        del self.imageb        
-        
-        #call(["convert", redpath, greenpath, bluepath, "-colorspace", "RGB", \
-        # "-channel", "RGB", "-combine", self.rgbpath])
-        #call(["rm", redpath, greenpath, bluepath])
-        
-        del self.image
-        #self.data     = [np.array(self.imager), np.array(self.imageg), np.array(self.imageb)]
-        #This probably should be loaded when needed
-    
-    def savefinal(self, data, name):
-        """
-        Saves new data
-        """
-        # Monochrome data
-        if data.ndim == 2:
-            newpath = Conf.path + name + "_final.tiff"
-            print(np.amax(data))
-            image   = Im.fromarray(np.int16(data))
-            image.save(newpath, format="tiff")
-
-        # RGB data
-        elif data.ndim == 3:
-
-            self.rgbdata = np.array(data)
-
-            redpath = Conf.path + name + "_red.tiff"
-            bluepath = Conf.path + name + "_blue.tiff"
-            greenpath = Conf.path + name + "_green.tiff"
-
-            imager   = Im.fromarray(np.int16(data[0]))
-            imager.save(redpath, format="tiff")
-
-            imageg   = Im.fromarray(np.int16(data[1]))
-            imageg.save(bluepath, format="tiff")
-
-            imageb   = Im.fromarray(np.int16(data[1]))
-            imageb.save(greenpath, format="tiff")
-        
-    """   
-    def writenew(self, name):
-        '''
-        Writes new data to Fits
-        '''
-        rpath = conf.path + name + "RED.fits"
-        gpath = conf.path + name + "GREEN.fits"
-        bpath = conf.path + name + "BLUE.fits"
-        path  = conf.path + name + ".fits"
-        
-        datar = np.array(self.data[0], dtype=np.int16)
-        datag = np.array(self.data[1], dtype=np.int16)
-        datab = np.array(self.data[2], dtype=np.int16)
-        
-        data = np.array(self.data, dtype=np.int16)
-        
-        hdu = fits.PrimaryHDU()          # To create a default header
-        
-        fits.writeto(rpath, datar, hdu.header)
-        fits.writeto(gpath, datag, hdu.header)
-        fits.writeto(bpath, datab, hdu.header)
-        fits.writeto( path, data , hdu.header)
-        
-        self.imagepath = path
-        self.hdu      = fits.open(self.imagepath, mode = "update")
-        self.image    = self.hdu[0]
-        self.data     = self.image.data
-    
-    def save(self, name = "reg"):
-        '''
-        Saves newdata into fits and loads that as self.hdu, self.image, self.data
-        '''
-        
-        self.name     = name
-        regpath       = conf.path + self.name + str(self.number) + ".fits"
-        #data          = np.array([self.r, self.g, self.b], dtype=np.int16)
-        
-        
-        fits.writeto(regpath, self.data, fits.getheader(self.imagepath))
-        
-        #del self.r          # Release memory
-        #del self.g
-        #del self.b
-
-        self.imagepath = regpath
-        self.hdu       = fits.open(self.imagepath)
-        self.image     = self.hdu[0]
-        self.data      = self.image.data
-    """
-        
-    def write(self):
-        """
-        Replaces self.save and self.writenew and probably some more. Works for TIFF files
-        """
-        if self.format == "tiff":
-            self.image = Im.fromarray(np.float32(self.data))
-            self.image.save(self.imagepath, format="tiff")
-        if self.format == "fits":
-            hdu = fits.PrimaryHDU()                 # To create a default header
-            if self.data.ndim == 3:
-                fits.writeto(self.redpath, self.data[0], hdu.header)
-                fits.writeto(self.greenpath, self.data[1], hdu.header)
-                fits.writeto(self.bluepath, self.data[2], hdu.header)
-            else:
-                fits.writeto(self.imagepath, self.data, hdu.header)
-        
-    def reload(self, name, ref=0):
-        """
-        Loads self.image from name
-        """
-        if ref == 1:
-            self.redpath   = Conf.path + "red" + str(self.number) + ".tiff"
-            self.greenpath = Conf.path + "green" + str(self.number) + ".tiff"
-            self.bluepath  = Conf.path + "blue" + str(self.number) + ".tiff"
+        #self.imagepath = Conf.path + self.name + str(self.number) + ".fits"
+        if exists(self.srcpath):
+            if exists(self.imagepath):                   # Don't convert raws again
+                pass
+            elif call(["rawtran -X '-t 0' -c u -o " + self.imagepath + " " + self.srcpath], shell=True):
+                print("Something went wrong... There might be helpful output from Rawtran above this line.")
+                print("File " + self.srcpath + " exists.")
+                if exists(self.imagepath):
+                    print("File " + self.imagepath + " exists.")
+                    print("Here's information about it:")
+                    # TODO: Check size and magic numbers with file utility
+                else:
+                    print("File " + self.imagepath + " does not. Unable to continue.")
+                    exit()  # TODO: Make it able to continue without this picture
         else:
-            self.redpath   = Conf.path + name + str(self.number) + "red.tiff"
-            self.greenpath = Conf.path + name + str(self.number) + "green.tiff"
-            self.bluepath  = Conf.path + name + str(self.number) + "blue.tiff"
-        print("Opening file in " + self.imagepath)
-        self.imager     = Im.open(self.redpath)
-        self.imageg     = Im.open(self.greenpath)
-        self.imageb     = Im.open(self.bluepath)
-        self.data      = [np.array(self.imager),np.array(self.imageg),np.array(self.imageb)]
-        #print(self.data)
-        self.x         = self.imager.size[0]
-        self.y         = self.imager.size[1]
+            print("Unable to find file in given path: " + self.srcpath + ". Find out what's wrong and try again.")
+            print("Can't continue. Exiting.")
+            exit()
 
-    def setname(self, name):
+    #def newdata(self, data):
+    #    """
+    #    Saves new data
+    #    """
+    #
+    #    self.data = np.float32(np.array(data))
+    #
+    #def savergb(self, data):
+    #    """
+    #    Saves new data
+    #    """
+    #
+    #    self.rgbdata = np.array(data)
+    #
+    #    #self.rgbpath = conf.path + "rgb" + str(self.number) + ".tiff"
+    #
+    #    #self.imagepath = self.rgbpath
+    #
+    #    self.redpath = Conf.path + "red" + str(self.number) + ".tiff"
+    #    self.bluepath = Conf.path + "blue" + str(self.number) + ".tiff"
+    #    self.greenpath = Conf.path + "green" + str(self.number) + ".tiff"
+    #
+    #    self.imager   = Im.fromarray(np.int16(self.rgbdata[0]))
+    #    self.imager.save(self.redpath, format="tiff")
+    #    del self.imager
+    #
+    #    self.imageg   = Im.fromarray(np.int16(self.rgbdata[1]))
+    #    self.imageg.save(self.bluepath, format="tiff")
+    #    del self.imageg
+    #
+    #    self.imageb   = Im.fromarray(np.int16(self.rgbdata[1]))
+    #    self.imageb.save(self.greenpath, format="tiff")
+    #    del self.imageb
+    #
+    #    #call(["convert", redpath, greenpath, bluepath, "-colorspace", "RGB", \
+    #    # "-channel", "RGB", "-combine", self.rgbpath])
+    #    #call(["rm", redpath, greenpath, bluepath])
+    #
+    #    del self.image
+    #    #self.data     = [np.array(self.imager), np.array(self.imageg), np.array(self.imageb)]
+    #    #This probably should be loaded when needed
+
+    def write(self, final=False):
         """
-        Set name for the empty image.
+        Write the image on disk
+
+        Arguments:
+        final       = Define writing of final image.
         """
-        if self.number is None:
-            self.imagename = Conf.path + self.name + "_" + name
-            self.imagepath = self.imagename + ".fits"
-            self.redpath   = self.imagename + "_red.fits"
-            self.greenpath = self.imagename + "_green.fits"
-            self.bluepath  = self.imagename + "_blue.fits"
+        if not final:
+            if self.format == "tiff":
+                self.image = Im.fromarray(np.float32(self.data))
+                self.image.save(self.imagepath, format="tiff")
+            if self.format == "fits":
+                hdu = fits.PrimaryHDU()                 # To create a default header
+                if self.data.ndim == 3:
+                    fits.writeto(self.redpath, self.data[0], hdu.header)
+                    fits.writeto(self.greenpath, self.data[1], hdu.header)
+                    fits.writeto(self.bluepath, self.data[2], hdu.header)
+                else:
+                    fits.writeto(self.imagepath, self.data, hdu.header)
         else:
-            self.imagename = Conf.path + self.name + "_" + name + str(self.number)
-            self.imagepath = self.imagename + ".fits"
-            self.redpath   = self.imagename + "_red.fits"
-            self.greenpath = self.imagename + "_green.fits"
-            self.bluepath  = self.imagename + "_blue.fits"
+            # Monochrome data
+            if self.data.ndim == 2:
+                newpath = Conf.path + name + "_final.tiff"
+                print(np.amax(data))
+                image   = Im.fromarray(np.int16(data))
+                image.save(newpath, format="tiff")
+
+            # RGB data
+            elif data.ndim == 3:
+
+                self.rgbdata = np.array(data)
+
+                redpath = Conf.path + name + "_red.tiff"
+                bluepath = Conf.path + name + "_blue.tiff"
+                greenpath = Conf.path + name + "_green.tiff"
+
+                imager   = Im.fromarray(np.int16(data[0]))
+                imager.save(redpath, format="tiff")
+
+                imageg   = Im.fromarray(np.int16(data[1]))
+                imageg.save(bluepath, format="tiff")
+
+                imageb   = Im.fromarray(np.int16(data[1]))
+                imageb.save(greenpath, format="tiff")
+        
+    #def reload(self, name, ref=0):
+    #    """
+    #    Loads self.image from name
+    #    """
+    #    if ref == 1:
+    #        self.redpath   = Conf.path + "red" + str(self.number) + ".tiff"
+    #        self.greenpath = Conf.path + "green" + str(self.number) + ".tiff"
+    #        self.bluepath  = Conf.path + "blue" + str(self.number) + ".tiff"
+    #    else:
+    #        self.redpath   = Conf.path + name + str(self.number) + "red.tiff"
+    #        self.greenpath = Conf.path + name + str(self.number) + "green.tiff"
+    #        self.bluepath  = Conf.path + name + str(self.number) + "blue.tiff"
+    #    print("Opening file in " + self.imagepath)
+    #    self.imager     = Im.open(self.redpath)
+    #    self.imageg     = Im.open(self.greenpath)
+    #    self.imageb     = Im.open(self.bluepath)
+    #    self.data      = [np.array(self.imager),np.array(self.imageg),np.array(self.imageb)]
+    #    #print(self.data)
+    #    self.x         = self.imager.size[0]
+    #    self.y         = self.imager.size[1]
+
+    #def setname(self, name):
+    #    """
+    #    Set name for the empty image.
+    #    """
+    #    if self.number is None:
+    #        self.imagename = Conf.path + self.name + "_" + name
+    #        self.imagepath = self.imagename + ".fits"
+    #        self.redpath   = self.imagename + "_red.fits"
+    #        self.greenpath = self.imagename + "_green.fits"
+    #        self.bluepath  = self.imagename + "_blue.fits"
+    #    else:
+    #        self.imagename = Conf.path + self.name + "_" + name + str(self.number)
+    #        self.imagepath = self.imagename + ".fits"
+    #        self.redpath   = self.imagename + "_red.fits"
+    #        self.greenpath = self.imagename + "_green.fits"
+    #        self.bluepath  = self.imagename + "_blue.fits"
             
     def release(self):
         """
@@ -475,6 +403,18 @@ class Batch:
         register: a Registering-type object
         """
 
-        self.setref(int(self.project.get("Reference images", "light")))
-
         register.register(self.list, self.project)
+
+    def stack(self, stacker):
+        """
+        Stack images using given stacker
+
+        Arguments:
+        stacker  = Stacker type object
+        """
+
+        newdata = stacker.stack(self.list, self.project)
+
+        if self.itype == "light":
+            Photo(project=self.project, data=newdata)
+            Photo.write(final=True)

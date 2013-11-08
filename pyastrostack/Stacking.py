@@ -13,6 +13,8 @@ import Photo
 import numpy as np
 
 
+# TODO: Create Stacker interface and make Mean it's implementation
+
 class Mean:
     """
     Mean stacking should be easiest to implement, so I'll start with that.
@@ -24,58 +26,21 @@ class Mean:
         pass
 
     @staticmethod
-    def stack(batch):
+    def stack(imagelist, project):
         """
-        Stack the batch using mean value for every subpixel of every colour
+        Stack the list of images using mean value for every subpixel of every colour
         """
 
-        n = len(batch.list)
-        newdata = np.zeros_like(batch.list[0].data)
-        for i in batch.list:
+        n = len(imagelist)
+        newdata = np.zeros_like(imagelist[0].data)
+        for i in imagelist:
             print(i.imagepath)
             print(np.amax(i.data))
             print(np.amax(newdata))
             newdata += (i.data / n)
             i.release()
-
-        #if batch.itype == "light":
-        #    for i in batch.list:
-        #        if i.number == 0:               # do this so ref gets first
-        #            i.reload("light", ref=1)
-        #            r = i.data[0] / n
-        #            g = i.data[1] / n
-        #            b = i.data[2] / n
-        #        else:
-        #            i.reload("reg")
-        #            r += i.data[0] / n
-        #            g += i.data[1] / n
-        #            b += i.data[2] / n
-        #        i.release()
-        #    newdata = [r, g, b]
-        #
-        #else:
-        #    for i in batch.list:
-        #
-        #        if i.number == 0:               # do this so ref gets first
-        #            #print("Reference image")
-        #            #print(i.data)
-        #            r = i.data / n
-        #            #print("Divided")
-        #            #print(r)
-        #        else:
-        #            #print("adding")
-        #            r += i.data / n
-        #            #print("got")
-        #            #print(r)
-        #        del i.data
-        #        del i.image
-        #
-        #    newdata = r
             
-        if batch.itype == "light":
-            batch.savefinal(newdata)
-        else:
-            batch.savemaster(newdata)
+        return newdata
 
     @staticmethod
     def subtract(batch, calib):

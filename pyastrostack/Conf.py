@@ -58,7 +58,6 @@ class Setup:
     Class to control program settings
     """
 
-
     def __init__(self, file="/.config/pyAstroStack/settings"):
         """
         Checks the settings-file from specified location.
@@ -81,7 +80,7 @@ class Setup:
 
             try:
                 print("Looking for SExtractor binaries...")
-                self.conf.save("SExtractor", self.findSEx(), "Programs")
+                self.conf.save("SExtractor", self.findsex(), "Programs")
                 print("Found " + self.conf.conf["Programs"]["SExtractor"])
             except IOError as e:
                 print(e.args[0])
@@ -98,8 +97,7 @@ class Setup:
 
         self.conf.read(self.file)
 
-
-    def findSEx(self):
+    def findsex(self):
         """
         SExtractor executable is sometimes sex and sometimes sextractor. This finds out.
         """
@@ -138,6 +136,7 @@ class Project:
 
         self.projectfile = pfile
         self.conf = ConfigAbstractor()
+        self.setup = Setup()
 
     def readproject(self):
         """
@@ -162,6 +161,7 @@ class Project:
                 print(self.projectfile)
                 os.unlink(self.projectfile)
         self.conf.save("Project name", pname)
+        self.set("Setup", "Path", self.setup.conf.conf["Default"]["Path"])
         self.conf.write(self.projectfile)
 
     def adddir(self, directory, imagetype):
