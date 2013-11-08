@@ -13,6 +13,7 @@ from subprocess import call
 import Conf
 import numpy as np
 from PIL import Image as Im
+import gc
 
 
 class Photo(object):
@@ -21,9 +22,9 @@ class Photo(object):
     """
 
     # format for intermediate files. TODO: Make this unnecessary
-    format = "fits"
+    format  = "fits"
 
-    def __init__(self, rawpath=None, number=None, name=None, itype="light"):
+    def __init__(self, rawpath=None, rgbpath=None, number=None, name=None, itype="light", project=None):
         """
         Constructor requires a filename of a raw image. I have a Canon EOS 1100D so Canon CR2 is what I originally
         write this for.
@@ -31,55 +32,79 @@ class Photo(object):
 
         Arguments:
         rawpath = path where original raw image can be found
+        rgbpath = path where rgb-files can be found. Only basename without suffix
         number  = number to identify the image, perhaps not required anymore since this is also in Conf
+        name    = Name for image for any kind of output
         itype   = type for the image: light, bias, dark, flat
         """
 
-        if rawpath is None:              # If no path given, create an empty image object
+        # Common variables for any case
+        self.tri       = np.array([])         # List of triangles
+        self.match     = np.array([])         # List of matching triangles with reference picture
+        self.name      = name                 # Name of image
+        self.number    = number               # Number to identify the image
+        self.itype     = itype
+
+        # Read image channels from different files
+        if rgbpath:
+            self.red       = fits.open(self.rgbpath + "_red.fits", memmap=True)
+            self.green     = fits.open(self.rgbpath + "_green.fits", memmap=True)
+            self.blue      = fits.open(self.rgbpath + "_blue.fits", memmap=True)
+            self.imager    = self.red[0]
+            self.imageg    = self.green[0]
+            self.imageb    = self.blue[0]
+            self.data      = np.array([self.imager.data, self.imageg.data, self.imageb.data])
+            self.x         = self.image.shape[1]
+            self.y         = self.image.shape[0]
+
+        # Read image from raw file (DSLR raw or FITS)
+        elif rawpath:
+
+            self.rawformat = splitext(rawpath)[1][1:]
+
+            self.rawpath   = rawpath     # Path for raw image
+
+            self.imagename = Conf.path + self.name + "_" + self.itype + str(self.number)  # Path for image. No extension
+            self.imagepath = self.imagename + "." + self.format
+            self.fitspath  = self.imagename + ".fits"
+
+            # If raw file is fits, just copy it to working directory (if not already there) and open
+            if self.rawformat == "fits":
+                print(self.rawpath)
+                if split(self.rawpath)[0] + "/" != Conf.path:
+                    call(["cp", self.rawpath, self.imagepath])
+                else:
+                    self.imagepath = self.rawpath
+
+            else:
+                self.convert(iformat="fits")    # TODO: Remove iformat argument as soon as done with
+                                                # removing tiff as intermediate file
+
+            self.hdu       = fits.open(self.imagepath)
+            self.image     = self.hdu[0]
+            self.data      = None
+            self.x         = self.image.shape[1]
+            self.y         = self.image.shape[0]
+
+        # If no path given, create an empty image object
+        else:
             self.number = None
             return
-        
-        self.rawformat = splitext(rawpath)[1][1:]
-
-        self.rawpath   = rawpath     # Path for raw image
-        self.name      = name        # For now I'll use type of the image as name for temp files
-        self.number    = number      # Number to identify the image
-        self.itype     = itype
-        self.imagename = Conf.path + self.name + "_" + self.itype + str(self.number)  # Path for image. No extension
-        self.tri       = []          # List of triangles
-        self.match     = []          # List of matching triangles with reference picture
-        self.imagepath = self.imagename + "." + self.format
-        self.fitspath  = self.imagename + ".fits"
-
-        # If raw file is fits, just copy it to working directory (if not already there) and open
-        if self.rawformat == "fits":
-            print(self.rawpath)
-            if split(self.rawpath)[0] + "/" != Conf.path:
-                call(["cp", self.rawpath, self.imagepath])
-            else:
-                self.imagepath = self.rawpath
-
-        else:
-            self.convert(iformat="fits")    # TODO: Remove iformat argument as soon as done with
-                                            # removing tiff as intermediate file
-
-        self.hdu       = fits.open(self.imagepath)
-        self.image     = self.hdu[0]
-        self.data      = self.image.data
-        self.x         = self.image.shape[1]
-        self.y         = self.image.shape[0]
-
-        # TODO: Remove this when ready with tiffs
-        #elif self.format == "tiff":
-        #    self.image    = Im.open(self.imagepath)
-        #    #call(["convert", self.imagepath, self.imagename + ".fits"])
-        #    if itype == "light":
-        #        call(["rawtran -X '-t 0' -o " + self.fitspath + " " + self.rawpath], shell=True)
-        #    self.data     = np.array(self.image, np.float32)
-        #    self.x        = self.image.size[0]
-        #    self.y        = self.image.size[1]
 
         print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y))
+
+    def load_data(self):
+        """
+        Load data into memory
+        """
+        self.data = self.image.data
+
+    def release_data(self):
+        """
+        Release data from memory
+        """
+        self.data = None
+        gc.collect()
 
     def convert(self, iformat="fits"):
         """
@@ -265,9 +290,14 @@ class Photo(object):
             self.image.save(self.imagepath, format="tiff")
         if self.format == "fits":
             hdu = fits.PrimaryHDU()                 # To create a default header
-            fits.writeto(self.imagepath, self.data, hdu.header)
+            if self.data.ndim == 3:
+                fits.writeto(self.redpath, self.data[0], hdu.header)
+                fits.writeto(self.greenpath, self.data[1], hdu.header)
+                fits.writeto(self.bluepath, self.data[2], hdu.header)
+            else:
+                fits.writeto(self.imagepath, self.data, hdu.header)
         
-    def reload(self, name, ref = 0):
+    def reload(self, name, ref=0):
         """
         Loads self.image from name
         """
@@ -293,46 +323,66 @@ class Photo(object):
         Set name for the empty image.
         """
         if self.number is None:
-            self.imagepath = Conf.path + name + "." + self.format
+            self.imagename = Conf.path + self.name + "_" + name
+            self.imagepath = self.imagename + ".fits"
+            self.redpath   = self.imagename + "_red.fits"
+            self.greenpath = self.imagename + "_green.fits"
+            self.bluepath  = self.imagename + "_blue.fits"
         else:
-            self.imagepath = Conf.path + name + str(self.number) + "." + self.format
+            self.imagename = Conf.path + self.name + "_" + name + str(self.number)
+            self.imagepath = self.imagename + ".fits"
+            self.redpath   = self.imagename + "_red.fits"
+            self.greenpath = self.imagename + "_green.fits"
+            self.bluepath  = self.imagename + "_blue.fits"
             
     def release(self):
         """
         Release not needed images from memory
         """
-        try:
-            del self.imager
-            del self.imageg
-            del self.imageb
-        except AttributeError:
-            del self.image
-        del self.data
+
+        self.imager = None
+        self.imageg = None
+        self.imageb = None
+        self.image = None
+        gc.collect()
+        self.data = None
         
     
 class Batch:
     """
     Batch holds a list of photos loaded with astropy's fits.open
     It also checks compatibility for each photo loaded
-    #TODO: For now math is also here, but I'll probably move it elsewhere later
     """
 
-    def __init__(self, itype=None, name=None, project=None):
+    def __init__(self, section=None, project=None):
         """
         Constructor loads all necessary objects and sets some default values
         list will have Photo.Photo type objects which will hold all the information of one image.
-        """
-        self.itype  = itype               # Define type of batch. Possibilities are light, flat, bias and dark
-        self.list   = []                  # Empty list for Images
-        self.refnum = None                # list index where the reference image can be found
-        self.name   = name                # Name for the resulting image
 
-        if project is not None:
-            self.project = project
-        self.master = Photo()             # New empty image to save the result in
-                    
-    def add(self, rawpath):
+        Arguments:
+        section = section of files in project file
+        project = Project object
         """
+
+        self.project = project
+        files        = self.project.get(section)
+        self.list    = {}                     # Empty list for Photos
+        for key, value in files:
+            photo = Photo(section=section, number=int(key), project=self.project)
+            self.list[key] = photo
+
+        if section in ("dark", "bias", "flat"):
+            self.itype = section              # Define type of batch. Possibilities are light, flat, bias and dark
+        else:
+            self.itype = "light"
+
+        self.refnum = int(project.get("Reference", key="self.itype"))  # Number of reference frame
+        self.name   = self.project.get("Default", key="project name")  # Name for the resulting image
+
+        self.master = Photo(project=project)  # New empty image to save the result in
+
+    def add(self, rawpath):
+        """   OBSOLETE      perhaps...
         Add a photo to the batch. Maybe run some checks while at it.
         """
         
@@ -340,9 +390,35 @@ class Batch:
         i = Photo(rawpath, number, itype=self.itype, name=self.name)
                 
         self.list.append(i)
-        
-    def setref(self, ref):
+
+    def addrgb(self, redpath, greenpath, bluepath):
+        """   OBSOLETE      perhaps...
+        Add rgb channels from different files
         """
+
+        number = len(self.list)         # Define index number for images
+        red   = Photo(redpath,   number, itype=self.itype, name=self.name)
+        green = Photo(greenpath, number, itype=self.itype, name=self.name)
+        blue  = Photo(bluepath,  number, itype=self.itype, name=self.name)
+
+        red.load_data()
+        green.load_data()
+        blue.load_data()
+
+        new = Photo()
+        new.newdata([red.data, green.data, blue.data])
+        new.imagename = Conf.path + self.name
+        new.imagepath = Conf.path + self.name + ".fits"
+        new.greenpath = greenpath
+        new.fitspath  = new.greenpath
+        new.x         = red.x
+        new.y         = red.y
+        new.tri       = []          # List of triangles
+        new.match     = []          # List of matching triangles with reference picture
+        self.list.append(new)
+
+    def setref(self, ref):
+        """   OBSOLETE      perhaps...
         Set image in list[ref] as the reference image. Required only for lights
         """
         self.refnum = ref
@@ -362,8 +438,8 @@ class Batch:
         self.master.setname(self.name)
         self.master.write()
 
-        self.project.conf.save(self.itype, self.master.imagepath, "Master frames")
-        
+        self.project.set(self.itype, self.master.imagepath, "Master frames")
+        self.project.write()
         del self.list            # Master image or result has been saved. No need for the list anymore. Releasing memory
         
     def savefinal(self, data):
@@ -382,4 +458,23 @@ class Batch:
         """
 
         for i in self.list:
-            demosaic.bilinear_cl(i)
+            i.load_data()
+            i.newdata(demosaic.bilinear_cl(i))
+            i.setname("rgb")
+            i.write()
+            i.release_data()
+            self.project.set(str(i.number), i.imagename, "RGB frames")
+        self.project.set("Demosaic", "1", "State")
+        self.project.write()
+
+    def register(self, register):
+        """
+        Register and transform images.
+
+        Arguments
+        register: a Registering-type object
+        """
+
+        self.setref(int(self.project.get("Reference images", "light")))
+
+        register.register(self.list, self.project)

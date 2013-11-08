@@ -128,7 +128,6 @@ class Project:
 
     extensions = (".CR2", ".cr2")   # TODO: Add here all supported extensions
 
-
     def __init__(self, pfile):
         """
         Initialize project
@@ -235,7 +234,7 @@ class Project:
 
         # Check how many images are already in the list.
         if imagetype in self.conf.conf:
-            n = max(self.conf.conf[imagetype]) + 1
+            n = int(max(self.conf.conf[imagetype])) + 1
         else:
             n = 1
 
@@ -244,6 +243,45 @@ class Project:
 
     def write(self):
         self.conf.write(self.projectfile)
+
+    def get(self, section, key=None):
+        """
+        Return project information under defined section
+
+        Arguments:
+        section = string to look for in configuration
+        key     = key to look for in section, not needed
+
+        Returns:
+        dict {key: value}
+        string value, if key defined
+        """
+
+        self.conf.read(self.projectfile)
+
+        if key:
+            return self.conf.conf[section][key]
+        else:
+            return dict(self.conf.conf._sections[section])
+
+    def set(self, section, key, value):
+        """
+        Set key: value under section in project settings
+
+        Arguments:
+        section
+        key
+        value
+
+        Returns:
+        Nothing
+        """
+
+        self.conf.read(self.projectfile)
+
+        self.conf.save(key, value, section)
+
+
 
 
 path     = "/media/data/Temp/astrostack/"            # Working path to use during procedure

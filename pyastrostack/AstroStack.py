@@ -121,8 +121,16 @@ def main(argv):
             batch = Photo.Batch(itype=itype, name=project.conf.conf["Default"]["project name"], project=project)
             # If you want to stack lights, they should be registered.
             # TODO: Test if they are
-            for value in project.conf.conf["Registered frames"]:
-                batch.add(project.conf.conf["Registered frames"][value])
+
+            # If images are demosaiced, they are in three files
+            if project.conf.conf["State"]["Demosaic"] == "1":
+                for value in project.conf.conf["Registered frames"]:
+                    batch.addrgb(project.conf.conf["Registered frames"][value] + "_red.fits",
+                                 project.conf.conf["Registered frames"][value] + "_green.fits",
+                                 project.conf.conf["Registered frames"][value] + "_blue.fits")
+            else:
+                for value in project.conf.conf["Registered frames"]:
+                    batch.add(project.conf.conf["Registered frames"][value])
         else:
             batch = Photo.Batch(itype=itype, name="master" + argv[2], project=project)
             for value in project.conf.conf[itype]:
@@ -149,11 +157,17 @@ def main(argv):
         # AstroStack register <project>
         batch = Photo.Batch(itype="light", name=project.conf.conf["Default"]["project name"], project=project)
 
-        for value in project.conf.conf["light"]:
-            batch.add(project.conf.conf["light"][value])
+        # If images are demosaiced, they are in three files
+        if project.conf.conf["State"]["Demosaic"] == "1":
+            for value in project.conf.conf["RGB frames"]:
+                batch.addrgb(project.conf.conf["RGB frames"][value] + "_red.fits",
+                             project.conf.conf["RGB frames"][value] + "_green.fits",
+                             project.conf.conf["RGB frames"][value] + "_blue.fits")
+        else:
+            for value in project.conf.conf["RGB frames"]:
+                batch.add(project.conf.conf["RGB frames"][value])
 
-        reg = Registering.Reg()
-        reg.register(batch)
+        batch.register(Registering.Reg())
 
 
 if __name__ == "__main__":

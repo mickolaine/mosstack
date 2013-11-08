@@ -1,22 +1,36 @@
 <component name="ProjectDictionaryState">
   <dictionary name="micko">
     <words>
+      <w>adddir</w>
+      <w>addrgb</w>
       <w>astro</w>
+      <w>bilinear</w>
       <w>bluenewpath</w>
       <w>calib</w>
+      <w>codeblue</w>
+      <w>codecommon</w>
+      <w>codegreen</w>
+      <w>codered</w>
       <w>commandlist</w>
       <w>createconf</w>
       <w>dcraw</w>
       <w>demosaic</w>
+      <w>dest</w>
       <w>execsex</w>
       <w>findsensitivity</w>
       <w>fitspath</w>
       <w>getcoordinates</w>
       <w>greennewpath</w>
       <w>iformat</w>
+      <w>imageb</w>
+      <w>imageg</w>
+      <w>imagelist</w>
       <w>imagemagick</w>
       <w>imagename</w>
       <w>imagepath</w>
+      <w>imager</w>
+      <w>imagetype</w>
+      <w>initproject</w>
       <w>itype</w>
       <w>magick's</w>
       <w>maketriangles</w>
@@ -27,15 +41,19 @@
       <w>newpath</w>
       <w>newtiff</w>
       <w>origtiff</w>
+      <w>pfile</w>
       <w>pname</w>
       <w>ppath</w>
+      <w>projectfile</w>
       <w>rawformat</w>
       <w>rawpath</w>
       <w>raws</w>
       <w>rawtran</w>
+      <w>readproject</w>
       <w>rednewpath</w>
       <w>refimg</w>
       <w>refnum</w>
+      <w>rgbpath</w>
       <w>savefinal</w>
       <w>savemaster</w>
       <w>savergb</w>

@@ -34,14 +34,16 @@ class demosaic:
         image - a pyAstroStack.Photo
 
         Returns:
-        Nothing
+        [red, green, blue] as numpy.array
 
         Interpolated image will be given to image via image.savergb()
         """
         mf = cl.mem_flags
-        
+
+        print("Processing image " + image.imagepath)
+
         cfa = np.ravel(np.float32(image.data), order='K')
-        print(len(cfa))
+        #print(len(cfa))
         cfa_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=cfa)
 
         dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)
@@ -136,7 +138,6 @@ class demosaic:
         prg_red   = cl.Program(self.ctx, codered  ).build()
         prg_blue  = cl.Program(self.ctx, codeblue ).build()
 
-        
         prg_green.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_buf)
         g = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, g, dest_buf)
@@ -150,13 +151,14 @@ class demosaic:
         prg_blue.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_buf)
         b = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, b, dest_buf)
-        print(r)
+        #print(r)
         r = np.reshape(r, (image.y, -1), order='K')
         g = np.reshape(g, (image.y, -1), order='K')
         b = np.reshape(b, (image.y, -1), order='K')
-        print("After reshape: " + str(g.shape))
-        print(r)
-        image.savergb(np.array([r, g, b]))
+        #print("After reshape: " + str(g.shape))
+        print("...Done")
+        return np.array([r, g, b])
+        #image.savergb(np.array([r, g, b]))
     
     def opencl_test(self, image):
         """

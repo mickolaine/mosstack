@@ -9,13 +9,14 @@ Created on 2.10.2013
 This file contains everything required for registering the photos.
 """
 
-import numpy
+from astropy.io import fits
 from subprocess import call
 from subprocess import check_output
 import Conf
 from math import sqrt, log, fabs
 from operator import itemgetter
 from os.path import splitext
+import shutil
 
 
 class Reg:
@@ -28,41 +29,40 @@ class Reg:
         
         pass
     
-    def register(self, batch):
+    def register(self, imagelist, project):
         """
         Calls everything required for total registration process.
         """
 
-        self.findstars(batch)
-        
-        for i in batch.list:
+        self.findstars(imagelist)
+
+        ref = int(project.conf.conf["Reference images"]["light"])
+
+        for i in imagelist:
             self.step1(i)                      # Step1 has to be finished before the rest
-            
-        ref = 0
-        batch.setref(ref)
-      
-        for i in batch.list:
-            if i.number == batch.refnum:       # No need to match image with itself
+
+        for i in imagelist:
+            if i.number == ref:  # Don't match image with itself
                 continue
 
-            self.match(batch.refimg(), i)
+            self.match(imagelist[ref], i)
             self.reduce(i)
             self.vote(i)
             newname = self.transform_magick(i, newname="reg")
 
-            batch.project.conf.save(str(i.number), newname, "Registered frames")
-            batch.project.conf.save("Registering", "1", "State")
-            batch.project.write()
+            project.conf.save(str(i.number), newname, "Registered frames")
+        project.conf.save("Registering", "1", "State")
+        project.write()
 
-    def findstars(self, batch):
+    def findstars(self, imagelist):
         """
         Finds the stars and creates all the triangles from them
         """
-        S = Sextractor(batch.list[0])
+        S = Sextractor(imagelist[0])
         sensitivity = S.findsensitivity()
         del S
         
-        for i in batch.list:
+        for i in imagelist:
             S = Sextractor(i)
             S.setsensitivity(sensitivity[0], sensitivity[1])
             i.coordinates = S.getcoordinates()
@@ -259,27 +259,38 @@ class Reg:
 
         if image.format == "fits":
             # TODO: Change image.name below to project name
-            newpath = Conf.path + image.name + "_" + newname + str(image.number) + ".fits"
-            command = "convert " + image.imagepath + " -depth 16 -distort Perspective " + points + " " + newpath
+            newpath = Conf.path + image.name + "_" + newname + str(image.number)
+            command = "convert " + image.imagepath + " -depth 16 -distort Affine " + points + " " + newpath + ".fits"
             call([command], shell=True)
+            shutil.move(newpath + "-0.fits", newpath + "_red.fits")
+            shutil.move(newpath + "-1.fits", newpath + "_green.fits")
+            shutil.move(newpath + "-2.fits", newpath + "_blue.fits")
+
+            #red   = fits.open(newpath + "-0.fits")[0]
+            #green = fits.open(newpath + "-1.fits")[0]
+            #blue  = fits.open(newpath + "-2.fits")[0]
+
+            #image.newdata([red.data, green.data, blue.data])
+            #image.setname("reg")
+            #image.write()
             return newpath
 
-        elif image.format == "tiff":
-            if newname is None:
-                newpath = image.imagepath
-            else:
-                rednewpath   = Conf.path + newname + str(image.number) + "red." + image.format
-                greennewpath = Conf.path + newname + str(image.number) + "green." + image.format
-                bluenewpath  = Conf.path + newname + str(image.number) + "blue." + image.format
-            #cmd = "convert " +  image.imagepath + " -define quantum:format=unsigned -depth 16 -distort Perspective " +
-            #points + " " + newpath
-            cmdr = "convert " +  image.redpath +   " -depth 16 -distort Affine " + points + " " + rednewpath
-            cmdg = "convert " +  image.greenpath + " -depth 16 -distort Affine " + points + " " + greennewpath
-            cmdb = "convert " +  image.bluepath +  " -depth 16 -distort Affine " + points + " " + bluenewpath
-            call([cmdr], shell=True)
-            call([cmdg], shell=True)
-            call([cmdb], shell=True)
-            return rednewpath, greennewpath, bluenewpath
+        #elif image.format == "tiff":
+        #    if newname is None:
+        #        newpath = image.imagepath
+        #    else:
+        #        rednewpath   = Conf.path + newname + str(image.number) + "red." + image.format
+        #        greennewpath = Conf.path + newname + str(image.number) + "green." + image.format
+        #        bluenewpath  = Conf.path + newname + str(image.number) + "blue." + image.format
+        #    #cmd = "convert " +  image.imagepath + " -define quantum:format=unsigned -depth 16 -distort Perspective " +
+        #    #points + " " + newpath
+        #    cmdr = "convert " +  image.redpath +   " -depth 16 -distort Affine " + points + " " + rednewpath
+        #    cmdg = "convert " +  image.greenpath + " -depth 16 -distort Affine " + points + " " + greennewpath
+        #    cmdb = "convert " +  image.bluepath +  " -depth 16 -distort Affine " + points + " " + bluenewpath
+        #    call([cmdr], shell=True)
+        #    call([cmdg], shell=True)
+        #    call([cmdb], shell=True)
+        #    return rednewpath, greennewpath, bluenewpath
         else:
             raise Exception("Invalid format")
 
@@ -299,7 +310,7 @@ class Sextractor:
         
         self.image = image
         
-        self.catname = Conf.path + self.image.name + str(self.image.number) + ".cat"
+        self.catname = self.image.imagename + ".cat"
         
         self.config = {
             #-------------------------------- Catalog ------------------------------------
@@ -386,7 +397,7 @@ class Sextractor:
         """
         Create configuration file for SExtractor.
         """
-        self.confname = Conf.path + self.image.name + str(self.image.number) + ".sex"
+        self.confname = self.image.imagename + str(self.image.number) + ".sex"
         f = open(self.confname, "w")
         for i in self.config:
             f.write(i + " " + self.config[i] + "\n")   
@@ -461,4 +472,4 @@ class Sextractor:
                         break
                     n=n+1
                     self.image.tri.append([i, j, k])
-        print("Total number of triangles in image " + self.image.name + str(self.image.number) + " is " + str(n) + ".")
+        print("Total number of triangles in image " + self.image.imagename + str(self.image.number) + " is " + str(n) + ".")
