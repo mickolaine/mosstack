@@ -24,7 +24,6 @@ class Reg:
     Class Reg holds the math. 
     """
 
-    
     def __init__(self):
         
         pass
@@ -36,7 +35,7 @@ class Reg:
 
         self.findstars(imagelist)
 
-        ref = int(project.conf.conf["Reference images"]["light"])
+        ref = project.get("Reference images", "light")
 
         for i in imagelist:
             self.step1(i)                      # Step1 has to be finished before the rest
@@ -50,9 +49,8 @@ class Reg:
             self.vote(i)
             newname = self.transform_magick(i, newname="reg")
 
-            project.conf.save(str(i.number), newname, "Registered frames")
-        project.conf.save("Registering", "1", "State")
-        project.write()
+            project.set("Registered frames", str(i.number), newname)
+
 
     def findstars(self, imagelist):
         """
@@ -244,8 +242,9 @@ class Reg:
         """
         Transforms image according to image.pairs, but instead of skimage, this function uses
         ImageMagick's "convert -distort Affine" from command line.
-        #TODO: Check if this could be done with python-bindings of imagemagick
         """
+
+        # Preparations
         points = "'"
         n = 0
         for i in image.pairs:
@@ -257,23 +256,22 @@ class Reg:
             n += 1
         points += "'"
 
-        if image.format == "fits":
-            # TODO: Change image.name below to project name
-            newpath = Conf.path + image.name + "_" + newname + str(image.number)
-            command = "convert " + image.imagepath + " -depth 16 -distort Affine " + points + " " + newpath + ".fits"
-            call([command], shell=True)
-            shutil.move(newpath + "-0.fits", newpath + "_red.fits")
-            shutil.move(newpath + "-1.fits", newpath + "_green.fits")
-            shutil.move(newpath + "-2.fits", newpath + "_blue.fits")
+        # Actual transforming
+        newpath = Conf.path + image.name + "_" + newname + str(image.number)
+        command = "convert " + image.imagepath + " -depth 16 -distort Affine " + points + " " + newpath + ".fits"
+        call([command], shell=True)
+        shutil.move(newpath + "-0.fits", newpath + "_red.fits")
+        shutil.move(newpath + "-1.fits", newpath + "_green.fits")
+        shutil.move(newpath + "-2.fits", newpath + "_blue.fits")
 
-            #red   = fits.open(newpath + "-0.fits")[0]
-            #green = fits.open(newpath + "-1.fits")[0]
-            #blue  = fits.open(newpath + "-2.fits")[0]
+        #red   = fits.open(newpath + "-0.fits")[0]
+        #green = fits.open(newpath + "-1.fits")[0]
+        #blue  = fits.open(newpath + "-2.fits")[0]
 
-            #image.newdata([red.data, green.data, blue.data])
-            #image.setname("reg")
-            #image.write()
-            return newpath
+        #image.newdata([red.data, green.data, blue.data])
+        #image.setname("reg")
+        #image.write()
+        return newpath
 
         #elif image.format == "tiff":
         #    if newname is None:

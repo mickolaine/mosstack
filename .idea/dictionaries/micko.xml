@@ -4,9 +4,12 @@
       <w>adddir</w>
       <w>addrgb</w>
       <w>astro</w>
+      <w>astropy's</w>
       <w>bilinear</w>
       <w>bluenewpath</w>
+      <w>bluepath</w>
       <w>calib</w>
+      <w>ccode</w>
       <w>codeblue</w>
       <w>codecommon</w>
       <w>codegreen</w>
@@ -21,6 +24,7 @@
       <w>execsex</w>
       <w>findsensitivity</w>
       <w>fitspath</w>
+      <w>fromarray</w>
       <w>getcoordinates</w>
       <w>greennewpath</w>
       <w>greenpath</w>
@@ -54,8 +58,10 @@
       <w>rawtran</w>
       <w>readproject</w>
       <w>rednewpath</w>
+      <w>redpath</w>
       <w>refimg</w>
       <w>refnum</w>
+      <w>rgbname</w>
       <w>rgbpath</w>
       <w>savefinal</w>
       <w>savemaster</w>

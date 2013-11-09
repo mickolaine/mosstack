@@ -8,13 +8,14 @@ Created on 2.10.2013
 """
 
 from astropy.io import fits
-from os.path import splitext, exists, split
+from os.path import splitext, exists, split, basename
 from shutil import copyfile
 from subprocess import call
 import Conf
 import numpy as np
 from PIL import Image as Im
 import gc
+import re.sub
 
 
 class Photo(object):
@@ -25,7 +26,14 @@ class Photo(object):
     # format for intermediate files. TODO: Make this unnecessary
     format  = "fits"
 
-    def __init__(self, section=None, number=None, project=None, data=None):
+    # dict to hold section to suffix mappings
+    suffix = {
+        "Registered frames": "reg",
+        "RGB frames": "rgb",
+        "Calibrated frames": "calib",
+    }
+
+    def __init__(self, section=None, number=None, project=None, rgb=None, data=None):
         """
         Constructor requires a filename of a raw image. I have a Canon EOS 1100D so Canon CR2 is what I originally
         write this for.
@@ -35,6 +43,7 @@ class Photo(object):
         section = Section in configuration. Essentially type of files.
         number  = Number to identify the image. Same as found in project file
         project = Conf.Project type object
+        rgb     = True/False if image is RGB
         data    = Create Photo from numpy.array
         """
 
@@ -45,6 +54,7 @@ class Photo(object):
         self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
         self.number    = number               # Number to identify the image
         self.wdir      = self.project.get("Setup", "Path")  # Working directory
+        self.imagename = self.wdir + self.name
 
         # Create image from data
         if data is not None:
@@ -56,7 +66,6 @@ class Photo(object):
             return
 
         self.srcpath   = self.project.get(section, number)  # Path for source file
-        self.imagename = self.wdir + self.name
         self.imagepath = self.imagename + ".fits"
 
         if section in ("dark", "bias", "flat"):
@@ -79,10 +88,10 @@ class Photo(object):
             self.convert()
 
         # Check if demosaicing done and assume rgb-pictures
-        if self.project.get("State", "Demosaic") == "1":
-            self.red       = fits.open(self.srcpath + "_r.fits", memmap=True)
-            self.green     = fits.open(self.srcpath + "_g.fits", memmap=True)
-            self.blue      = fits.open(self.srcpath + "_b.fits", memmap=True)
+        if rgb:
+            self.red       = fits.open(self.imagename + "_r.fits", memmap=True)
+            self.green     = fits.open(self.imagename + "_g.fits", memmap=True)
+            self.blue      = fits.open(self.imagename + "_b.fits", memmap=True)
             self.imager    = self.red[0]
             self.imageg    = self.green[0]
             self.imageb    = self.blue[0]
@@ -93,8 +102,8 @@ class Photo(object):
             self.image     = self.hdu[0]
             self.data      = None
 
-        self.x         = self.image.shape[1]
-        self.y         = self.image.shape[0]
+        self.x = self.image.shape[1]
+        self.y = self.image.shape[0]
 
         print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y))
 
@@ -103,7 +112,7 @@ class Photo(object):
         Load data into memory
         """
         if self.project.get("State", "Demosaic") == "1":
-            self.data      = np.array([self.imager.data, self.imageg.data, self.imageb.data])
+            self.data = np.array([self.imager.data, self.imageg.data, self.imageb.data])
         else:
             self.data = self.image.data
 
@@ -138,131 +147,57 @@ class Photo(object):
             print("Can't continue. Exiting.")
             exit()
 
-    #def newdata(self, data):
-    #    """
-    #    Saves new data
-    #    """
-    #
-    #    self.data = np.float32(np.array(data))
-    #
-    #def savergb(self, data):
-    #    """
-    #    Saves new data
-    #    """
-    #
-    #    self.rgbdata = np.array(data)
-    #
-    #    #self.rgbpath = conf.path + "rgb" + str(self.number) + ".tiff"
-    #
-    #    #self.imagepath = self.rgbpath
-    #
-    #    self.redpath = Conf.path + "red" + str(self.number) + ".tiff"
-    #    self.bluepath = Conf.path + "blue" + str(self.number) + ".tiff"
-    #    self.greenpath = Conf.path + "green" + str(self.number) + ".tiff"
-    #
-    #    self.imager   = Im.fromarray(np.int16(self.rgbdata[0]))
-    #    self.imager.save(self.redpath, format="tiff")
-    #    del self.imager
-    #
-    #    self.imageg   = Im.fromarray(np.int16(self.rgbdata[1]))
-    #    self.imageg.save(self.bluepath, format="tiff")
-    #    del self.imageg
-    #
-    #    self.imageb   = Im.fromarray(np.int16(self.rgbdata[1]))
-    #    self.imageb.save(self.greenpath, format="tiff")
-    #    del self.imageb
-    #
-    #    #call(["convert", redpath, greenpath, bluepath, "-colorspace", "RGB", \
-    #    # "-channel", "RGB", "-combine", self.rgbpath])
-    #    #call(["rm", redpath, greenpath, bluepath])
-    #
-    #    del self.image
-    #    #self.data     = [np.array(self.imager), np.array(self.imageg), np.array(self.imageb)]
-    #    #This probably should be loaded when needed
-
-    def write(self, final=False):
+    def write(self, section=None, number=None, final=False):
         """
         Write the image on disk
 
         Arguments:
-        final       = Define writing of final image.
+        suffix   = Suffix to add to file name: <Project name>_suffix.fits
+        final    = Define writing of final image. Temporary files are saved as FITS only
+                   but final also as TIFF
         """
-        if not final:
-            if self.format == "tiff":
-                self.image = Im.fromarray(np.float32(self.data))
-                self.image.save(self.imagepath, format="tiff")
-            if self.format == "fits":
-                hdu = fits.PrimaryHDU()                 # To create a default header
-                if self.data.ndim == 3:
-                    fits.writeto(self.redpath, self.data[0], hdu.header)
-                    fits.writeto(self.greenpath, self.data[1], hdu.header)
-                    fits.writeto(self.bluepath, self.data[2], hdu.header)
-                else:
-                    fits.writeto(self.imagepath, self.data, hdu.header)
+
+        hdu = fits.PrimaryHDU()                 # To create a default header
+        self.imagename = self.imagename + "_" + self.suffix[section]
+        self.imagepath = self.imagename + ".fits"
+        self.number    = number
+
+        # Monochrome data
+        if self.data.ndim == 2:
+            fits.writeto(self.imagepath + ".fits", self.data, hdu.header)
+
+            # Write TIFF is image is final light
+            if final & section not in ("dark", "bias", "flat"):
+                image = Im.fromarray(np.int16(self.data))
+                image.save(self.imagename + ".tiff", format="tiff")
+            elif section in ("dark", "bias", "flat"):
+                self.project.set("Master", section, self.imagepath)
+            else:
+                self.project.set(section, self.number, self.imagepath)
+
+        # RGB data
         else:
-            # Monochrome data
-            if self.data.ndim == 2:
-                newpath = Conf.path + name + "_final.tiff"
-                print(np.amax(data))
-                image   = Im.fromarray(np.int16(data))
-                image.save(newpath, format="tiff")
+            ccode = {1: "r", 2: "g", 3: "b"}
+            rgbname = []
+            rgbpath = []
 
-            # RGB data
-            elif data.ndim == 3:
+            for i in [0, 1, 2]:
+                rgbname[i] = self.imagename + "_" + ccode[i]
+                rgbpath[i] = rgbname[i] + ".fits"
+                fits.writeto(rgbpath[i], self.data[i], hdu.header)
 
-                self.rgbdata = np.array(data)
+            # Write TIFF is image is final
+            if final:
+                image = []
+                for i in [0, 1, 2]:
+                    rgbpath[i] = rgbname[i] + ".tiff"
+                    image[i] = Im.fromarray(np.int16(self.data[i]))
+                    image[i].save(rgbpath[i], format="tiff")
 
-                redpath = Conf.path + name + "_red.tiff"
-                bluepath = Conf.path + name + "_blue.tiff"
-                greenpath = Conf.path + name + "_green.tiff"
+            else:
+                for i in [0, 1, 2]:
+                    self.project.set(section, str(self.number) + ccode[i], self.rgbpath[i])
 
-                imager   = Im.fromarray(np.int16(data[0]))
-                imager.save(redpath, format="tiff")
-
-                imageg   = Im.fromarray(np.int16(data[1]))
-                imageg.save(bluepath, format="tiff")
-
-                imageb   = Im.fromarray(np.int16(data[1]))
-                imageb.save(greenpath, format="tiff")
-        
-    #def reload(self, name, ref=0):
-    #    """
-    #    Loads self.image from name
-    #    """
-    #    if ref == 1:
-    #        self.redpath   = Conf.path + "red" + str(self.number) + ".tiff"
-    #        self.greenpath = Conf.path + "green" + str(self.number) + ".tiff"
-    #        self.bluepath  = Conf.path + "blue" + str(self.number) + ".tiff"
-    #    else:
-    #        self.redpath   = Conf.path + name + str(self.number) + "red.tiff"
-    #        self.greenpath = Conf.path + name + str(self.number) + "green.tiff"
-    #        self.bluepath  = Conf.path + name + str(self.number) + "blue.tiff"
-    #    print("Opening file in " + self.imagepath)
-    #    self.imager     = Im.open(self.redpath)
-    #    self.imageg     = Im.open(self.greenpath)
-    #    self.imageb     = Im.open(self.bluepath)
-    #    self.data      = [np.array(self.imager),np.array(self.imageg),np.array(self.imageb)]
-    #    #print(self.data)
-    #    self.x         = self.imager.size[0]
-    #    self.y         = self.imager.size[1]
-
-    #def setname(self, name):
-    #    """
-    #    Set name for the empty image.
-    #    """
-    #    if self.number is None:
-    #        self.imagename = Conf.path + self.name + "_" + name
-    #        self.imagepath = self.imagename + ".fits"
-    #        self.redpath   = self.imagename + "_red.fits"
-    #        self.greenpath = self.imagename + "_green.fits"
-    #        self.bluepath  = self.imagename + "_blue.fits"
-    #    else:
-    #        self.imagename = Conf.path + self.name + "_" + name + str(self.number)
-    #        self.imagepath = self.imagename + ".fits"
-    #        self.redpath   = self.imagename + "_red.fits"
-    #        self.greenpath = self.imagename + "_green.fits"
-    #        self.bluepath  = self.imagename + "_blue.fits"
-            
     def release(self):
         """
         Release not needed images from memory
@@ -295,8 +230,15 @@ class Batch:
         self.project = project
         files        = self.project.get(section)
         self.list    = {}                     # Empty list for Photos
+
         for key, value in files:
-            photo = Photo(section=section, number=int(key), project=self.project)
+            # Only one channel
+            if key.isnumeric():
+                photo = Photo(section=section, number=key, project=self.project)
+            # Three channels
+            else:
+                photo = Photo(section=section, number=key, rgb=True, project=self.project)
+
             self.list[key] = photo
 
         if section in ("dark", "bias", "flat"):
@@ -309,77 +251,15 @@ class Batch:
 
         self.master = Photo(project=project)  # New empty image to save the result in
 
-    def add(self, rawpath):
-        """   OBSOLETE      perhaps...
-        Add a photo to the batch. Maybe run some checks while at it.
-        """
-        
-        number = len(self.list)         # Define index number for images
-        i = Photo(rawpath, number, itype=self.itype, name=self.name)
-                
-        self.list.append(i)
-
-    def addrgb(self, redpath, greenpath, bluepath):
-        """   OBSOLETE      perhaps...
-        Add rgb channels from different files
-        """
-
-        number = len(self.list)         # Define index number for images
-        red   = Photo(redpath,   number, itype=self.itype, name=self.name)
-        green = Photo(greenpath, number, itype=self.itype, name=self.name)
-        blue  = Photo(bluepath,  number, itype=self.itype, name=self.name)
-
-        red.load_data()
-        green.load_data()
-        blue.load_data()
-
-        new = Photo()
-        new.newdata([red.data, green.data, blue.data])
-        new.imagename = Conf.path + self.name
-        new.imagepath = Conf.path + self.name + ".fits"
-        new.greenpath = greenpath
-        new.fitspath  = new.greenpath
-        new.x         = red.x
-        new.y         = red.y
-        new.tri       = []          # List of triangles
-        new.match     = []          # List of matching triangles with reference picture
-        self.list.append(new)
-
-    def setref(self, ref):
-        """   OBSOLETE      perhaps...
-        Set image in list[ref] as the reference image. Required only for lights
-        """
-        self.refnum = ref
-
     def refimg(self):
         """
         Returns the reference image
         """
         return self.list[self.refnum]
 
-    def savemaster(self, data):
-        """
-        Saves the result image. Might be a good idea to release memory while here...
-        """
-        
-        self.master.newdata(data)
-        self.master.setname(self.name)
-        self.master.write()
-
-        self.project.set(self.itype, self.master.imagepath, "Master frames")
-        self.project.write()
-        del self.list            # Master image or result has been saved. No need for the list anymore. Releasing memory
-        
-    def savefinal(self, data):
-        
-        self.master.savefinal(data, self.name)
-
     def demosaic(self, demosaic):
         """
         Demosaic CFA-image into RGB.
-
-        This resides in Batch because this class will handle all the writing
-        in Conf
 
         Arguments
         demosaic: a Demosaic-type object
@@ -387,11 +267,9 @@ class Batch:
 
         for i in self.list:
             i.load_data()
-            i.newdata(demosaic.bilinear_cl(i))
-            i.setname("rgb")
-            i.write()
+            new = Photo(project=self.project, data=demosaic.bilinear_cl(i))
+            new.write(section="RGB images", number=i.number)
             i.release_data()
-            self.project.set(str(i.number), i.imagename, "RGB frames")
         self.project.set("Demosaic", "1", "State")
         self.project.write()
 
@@ -404,6 +282,8 @@ class Batch:
         """
 
         register.register(self.list, self.project)
+        self.project.set("State", "Registering", "1")
+        self.project.write()
 
     def stack(self, stacker):
         """
