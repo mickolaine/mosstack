@@ -32,13 +32,16 @@ class Mean:
         """
 
         n = len(imagelist)
-        newdata = np.zeros_like(imagelist[0].data)
+        imagelist["2"].load_data()
+        newdata = np.zeros_like(imagelist["2"].data)
+        print(imagelist["2"].data)
         for i in imagelist:
-            print(i.imagepath)
-            print(np.amax(i.data))
+            imagelist[i].load_data()
+            print(imagelist[i].imagepath)
+            print(np.amax(imagelist[i].data))
             print(np.amax(newdata))
-            newdata += (i.data / n)
-            i.release()
+            newdata += imagelist[i].data / n
+            imagelist[i].release()
             
         return newdata
 

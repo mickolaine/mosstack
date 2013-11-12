@@ -18,6 +18,7 @@
       <w>createconf</w>
       <w>dcraw</w>
       <w>demosaic</w>
+      <w>demosaiced</w>
       <w>demosaicing</w>
       <w>dest</w>
       <w>dslr</w>
@@ -29,6 +30,7 @@
       <w>greennewpath</w>
       <w>greenpath</w>
       <w>iformat</w>
+      <w>ilist</w>
       <w>imageb</w>
       <w>imageg</w>
       <w>imagelist</w>
@@ -70,6 +72,8 @@
       <w>setref</w>
       <w>setsensitivity</w>
       <w>sextractor</w>
+      <w>srclist</w>
+      <w>srcname</w>
       <w>srcpath</w>
       <w>subpixel</w>
       <w>wdir</w>

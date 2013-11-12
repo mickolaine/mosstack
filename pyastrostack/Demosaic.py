@@ -11,10 +11,7 @@ import numpy as np
 import pyopencl as cl
 
 
-
-
-
-class demosaic:
+class Demosaic:
     """
     Demosaicing class. I'll start with regular bilinear interpolation but more will come if necessary
 
@@ -26,7 +23,6 @@ class demosaic:
 
         self.queue = cl.CommandQueue(self.ctx)
 
-    
     def bilinear_cl(self, image):
         """ Bilinear interpolation using pyOpenCL.
 

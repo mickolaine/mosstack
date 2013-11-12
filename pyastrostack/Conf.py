@@ -115,6 +115,42 @@ class Setup:
         #    raise IOError("SExtractor not found.")
         return sexpath.decode().strip()
 
+    def get(self, section, key=None):
+        """
+        Return project information under defined section
+
+        Arguments:
+        section = string to look for in configuration
+        key     = key to look for in section, not needed
+
+        Returns:
+        dict {key: value}
+        string value, if key defined
+        """
+
+        self.conf.read(self.file)
+
+        if key:
+            return self.conf.conf[section][key]
+        else:
+            return dict(self.conf.conf._sections[section])
+
+    def set(self, section, key, value):
+        """
+        Set key: value under section in project settings
+
+        Arguments:
+        section
+        key
+        value
+
+        Returns:
+        Nothing
+        """
+
+        self.conf.read(self.file)
+        self.conf.save(key, value, section)
+        self.conf.write(self.file)
 
 class Project:
     """

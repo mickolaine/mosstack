@@ -79,9 +79,14 @@ def main(argv):
             print(longhelp)
         exit()
 
+    if argv[0] == "init":
+        project = Conf.Project(setup.get("Default", "Path") + argv[1] + ".project")
+        project.initproject(argv[1])
+        setup.set("Default", "Project", argv[1])
+
     try:
-        pname = argv[1]
-        ppath = setup.conf.conf["Default"]["Path"] + pname + ".project"
+        pname = setup.get("Default", "Project")
+        ppath = setup.get("Default", "Path") + pname + ".project"
         print(ppath)
         project = Conf.Project(ppath)
         project.readproject()
@@ -90,83 +95,60 @@ def main(argv):
         print("No project name specified")
         exit()
 
-    if argv[0] == "init":
-        project.initproject(argv[1])
+    if argv[0] == "set":
+        if argv[1]:
+            setup.set("Default", "Project", argv[1])
+        else:
+            print("No project name specified. Available projects are: Implement this")
+            print("Try AstroStack set <project name>, without extension.")
 
     if argv[0] == "adddir":
 
-        if argv[2]:
-            directory = argv[2]
+        if argv[1]:
+            directory = argv[1]
         else:
             directory = os.getcwd()
 
-        itype = imagetype()
-
+        itype = argv[2]
         project.adddir(directory, itype)
 
     if argv[0] == "addfile":
 
-        itype = imagetype()
-
-        project.addfile(argv[2], itype)
+        itype = argv[2]
+        project.addfile(argv[1], itype)
 
     if argv[0] == "stack":
-        # AstroStack stack <project> <itype> (<iname>)
-        if argv[2] in ("light", "dark", "bias", "flat"):
-            itype = argv[2]
+        # AstroStack stack <srcname>
+        srclist = ("light", "dark", "bias", "flat", "rgb", "calib", "reg")
+        if argv[1] in srclist:
+            srcname = argv[1]
         else:
-            print("Invalid argument: " + argv[2])
+            print("Invalid argument: " + argv[1])
+            print("<itype> has to be one of: " + str(srclist))
 
-        if itype == "light":
-            batch = Photo.Batch(itype=itype, name=project.conf.conf["Default"]["project name"], project=project)
-            # If you want to stack lights, they should be registered.
-            # TODO: Test if they are
-
-            # If images are demosaiced, they are in three files
-            if project.conf.conf["State"]["Demosaic"] == "1":
-                for value in project.conf.conf["Registered frames"]:
-                    batch.addrgb(project.conf.conf["Registered frames"][value] + "_red.fits",
-                                 project.conf.conf["Registered frames"][value] + "_green.fits",
-                                 project.conf.conf["Registered frames"][value] + "_blue.fits")
-            else:
-                for value in project.conf.conf["Registered frames"]:
-                    batch.add(project.conf.conf["Registered frames"][value])
-        else:
-            batch = Photo.Batch(itype=itype, name="master" + argv[2], project=project)
-            for value in project.conf.conf[itype]:
-                batch.add(project.conf.conf[itype][value])
-
-        stacker = Stacking.Mean()
-        try:
-            stacker.stack(batch)
-        #except:
-        #    print("Something went wrong in stacking.")
-        #    exit()
-        finally:
-            pass
+        section = {
+            "reg": "Registered images",
+            "rgb": "RGB images",
+            "calib": "Calibrated images"
+        }
+        batch = Photo.Batch(section=section[srcname], project=project)
+        batch.stack(Stacking.Mean())
 
     if argv[0] == "demosaic":
-        # AstroStack demosaic <project>
-        batch = Photo.Batch(itype="light", name=project.conf.conf["Default"]["project name"], project=project)
-        for value in project.conf.conf["light"]:
-            batch.add(project.conf.conf["light"][value])
-
-        batch.demosaic(Demosaic.demosaic())
+        # AstroStack demosaic <srcname>
+        batch = Photo.Batch(section=argv[1], project=project)
+        batch.demosaic(Demosaic.Demosaic())
 
     if argv[0] == "register":
-        # AstroStack register <project>
-        batch = Photo.Batch(itype="light", name=project.conf.conf["Default"]["project name"], project=project)
+        # AstroStack register <srcname>
 
-        # If images are demosaiced, they are in three files
-        if project.conf.conf["State"]["Demosaic"] == "1":
-            for value in project.conf.conf["RGB frames"]:
-                batch.addrgb(project.conf.conf["RGB frames"][value] + "_red.fits",
-                             project.conf.conf["RGB frames"][value] + "_green.fits",
-                             project.conf.conf["RGB frames"][value] + "_blue.fits")
-        else:
-            for value in project.conf.conf["RGB frames"]:
-                batch.add(project.conf.conf["RGB frames"][value])
+        section = {
+            "reg": "Registered images",
+            "rgb": "RGB images",
+            "calib": "Calibrated images"
+        }
 
+        batch = Photo.Batch(section=section[argv[1]], project=project)
         batch.register(Registering.Reg())
 
 

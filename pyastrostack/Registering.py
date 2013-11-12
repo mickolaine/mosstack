@@ -17,6 +17,8 @@ from math import sqrt, log, fabs
 from operator import itemgetter
 from os.path import splitext
 import shutil
+from re import sub
+import Photo
 
 
 class Reg:
@@ -38,32 +40,37 @@ class Reg:
         ref = project.get("Reference images", "light")
 
         for i in imagelist:
-            self.step1(i)                      # Step1 has to be finished before the rest
+            self.step1(imagelist[i])                      # Step1 has to be finished before the rest
 
         for i in imagelist:
-            if i.number == ref:  # Don't match image with itself
-                continue
+            # Don't match image with itself
+            if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
+                continue  # TODO: Copy the reference image. Now it's omitted
 
-            self.match(imagelist[ref], i)
-            self.reduce(i)
-            self.vote(i)
-            newname = self.transform_magick(i, newname="reg")
+            self.match(imagelist[ref], imagelist[i])
+            self.reduce(imagelist[i])
+            self.vote(imagelist[i])
+            newpath = self.transform_magick(imagelist[i], newname="reg")
 
-            project.set("Registered frames", str(i.number), newname)
+            if len(newpath) == 3:
+                for j in [0, 1, 2]:
+                    project.set("Registered images", imagelist[i].number + imagelist[i].ccode[j], newpath[j])
+            else:
+                project.set("Registered images", imagelist[i].number, newpath)
 
 
     def findstars(self, imagelist):
         """
         Finds the stars and creates all the triangles from them
         """
-        S = Sextractor(imagelist[0])
+        S = Sextractor(imagelist['1'])    # TODO: Ref image here
         sensitivity = S.findsensitivity()
         del S
         
         for i in imagelist:
-            S = Sextractor(i)
+            S = Sextractor(imagelist[i])
             S.setsensitivity(sensitivity[0], sensitivity[1])
-            i.coordinates = S.getcoordinates()
+            imagelist[i].coordinates = S.getcoordinates()
             S.maketriangles()
 
     def step1(self, image):
@@ -235,8 +242,6 @@ class Reg:
         final = sorted(final, key=itemgetter(2), reverse=True)
         image.pairs = final
         print("After voting there are " + str(len(image.pairs)) + " pairs found")
-        #for p in image.pairs:
-        #    print(p)
 
     def transform_magick(self, image, newname=None):
         """
@@ -250,47 +255,27 @@ class Reg:
         for i in image.pairs:
             if n > 11:          # max number of control points is 12
                 break
-            #print(i)
-            #print("{},{},{},{} ".format(i[0][0],i[0][1],i[1][0],i[1][1]))
             points = points + "{},{},{},{} ".format(int(i[0][0]), int(i[0][1]), int(i[1][0]), int(i[1][1]))
             n += 1
         points += "'"
 
         # Actual transforming
-        newpath = Conf.path + image.name + "_" + newname + str(image.number)
-        command = "convert " + image.imagepath + " -depth 16 -distort Affine " + points + " " + newpath + ".fits"
-        call([command], shell=True)
-        shutil.move(newpath + "-0.fits", newpath + "_red.fits")
-        shutil.move(newpath + "-1.fits", newpath + "_green.fits")
-        shutil.move(newpath + "-2.fits", newpath + "_blue.fits")
+        if image.rgb:
+            newpath = ["", "", ""]
+            for i in [0, 1, 2]:
+                newpath[i] = image.imagename + "_" + newname + "_" + image.ccode[i] + ".fits"
+                command = "convert " + image.imagepath[i] + " -depth 16 -distort Affine "\
+                          + points + " " + newpath[i]
 
-        #red   = fits.open(newpath + "-0.fits")[0]
-        #green = fits.open(newpath + "-1.fits")[0]
-        #blue  = fits.open(newpath + "-2.fits")[0]
+                call([command], shell=True)
 
-        #image.newdata([red.data, green.data, blue.data])
-        #image.setname("reg")
-        #image.write()
-        return newpath
-
-        #elif image.format == "tiff":
-        #    if newname is None:
-        #        newpath = image.imagepath
-        #    else:
-        #        rednewpath   = Conf.path + newname + str(image.number) + "red." + image.format
-        #        greennewpath = Conf.path + newname + str(image.number) + "green." + image.format
-        #        bluenewpath  = Conf.path + newname + str(image.number) + "blue." + image.format
-        #    #cmd = "convert " +  image.imagepath + " -define quantum:format=unsigned -depth 16 -distort Perspective " +
-        #    #points + " " + newpath
-        #    cmdr = "convert " +  image.redpath +   " -depth 16 -distort Affine " + points + " " + rednewpath
-        #    cmdg = "convert " +  image.greenpath + " -depth 16 -distort Affine " + points + " " + greennewpath
-        #    cmdb = "convert " +  image.bluepath +  " -depth 16 -distort Affine " + points + " " + bluenewpath
-        #    call([cmdr], shell=True)
-        #    call([cmdg], shell=True)
-        #    call([cmdb], shell=True)
-        #    return rednewpath, greennewpath, bluenewpath
         else:
-            raise Exception("Invalid format")
+            newpath = image.imagename + "_" + newname + ".fits"
+            command = "convert " + image.imagepath + " -depth 16 -distort Affine "\
+                      + points + " " + newpath
+            call([command], shell=True)
+
+        return newpath
 
 
 class Sextractor:
@@ -431,7 +416,7 @@ class Sextractor:
     def execsex(self):
         """ Execute SExtractor with created conf """
         # TODO: try-except here about conf-file and other requirements
-        commandlist = [Conf.sex, splitext(self.image.fitspath)[0] + ".fits", "-c", self.confname]
+        commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0] + ".fits", "-c", self.confname]
         
         call(commandlist, cwd=Conf.path)  # cwd changes working directory
         
