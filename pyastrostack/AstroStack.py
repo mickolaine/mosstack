@@ -17,9 +17,10 @@ import sys
 import Conf
 import os
 import Photo
-import Stacking
-import Registering
-import Demosaic
+from UserInterface import UserInterface
+from Stacker import Mean
+#from Registering import *
+#from Demosaic import *
 
 
 def imagetype():
@@ -57,6 +58,8 @@ def main(argv):
     AstroStack projectname operation arguments
     """
 
+    ui = UserInterface()
+
     setup = Conf.Setup()
 
     shorthelp = """
@@ -90,6 +93,7 @@ def main(argv):
         print(ppath)
         project = Conf.Project(ppath)
         project.readproject()
+        ui.setproject(project)
 
     except IndexError:
         print("No project name specified")
@@ -97,7 +101,10 @@ def main(argv):
 
     if argv[0] == "set":
         if argv[1]:
-            setup.set("Default", "Project", argv[1])
+            pname = argv[1]
+            setup.set("Default", "Project", pname)
+            ppath = setup.get("Default", "Path") + pname + ".project"
+            project = Conf.Project(ppath)
         else:
             print("No project name specified. Available projects are: Implement this")
             print("Try AstroStack set <project name>, without extension.")
@@ -121,36 +128,66 @@ def main(argv):
         # AstroStack stack <srcname>
         srclist = ("light", "dark", "bias", "flat", "rgb", "calib", "reg")
         if argv[1] in srclist:
-            srcname = argv[1]
+            section = argv[1]
         else:
             print("Invalid argument: " + argv[1])
             print("<itype> has to be one of: " + str(srclist))
 
-        section = {
-            "reg": "Registered images",
-            "rgb": "RGB images",
-            "calib": "Calibrated images"
-        }
-        batch = Photo.Batch(section=section[srcname], project=project)
-        batch.stack(Stacking.Mean())
+        ui.stack(section)
 
     if argv[0] == "demosaic":
         # AstroStack demosaic <srcname>
-        batch = Photo.Batch(section=argv[1], project=project)
-        batch.demosaic(Demosaic.Demosaic())
+
+        if argv[1]:
+            section = argv[1]
+        else:
+            print("Srcname not defined. Exiting...")
+            exit()
+
+        ui.demosaic(section)
 
     if argv[0] == "register":
         # AstroStack register <srcname>
 
-        section = {
-            "reg": "Registered images",
-            "rgb": "RGB images",
-            "calib": "Calibrated images"
-        }
+        if argv[1]:
+            section = argv[1]
+        else:
+            print("Srcname not defined. Exiting...")
+            exit()
 
-        batch = Photo.Batch(section=section[argv[1]], project=project)
-        batch.register(Registering.Reg())
+        ui.register(section)
 
+    if argv[0] == "subtract":
+        # AstroStack subtract <srcname> <calibname>
+
+        if argv[1]:
+            section = argv[1]
+            if argv[2]:
+                calib = argv[2]
+            else:
+                print("Calibname not defined. Exiting...")
+                exit()
+        else:
+            print("Srcname not defined. Exiting...")
+            exit()
+
+        ui.subtract(section, calib)
+
+    if argv[0] == "divide":
+        # AstroStack divide <srcname> <calibname>
+
+        if argv[1]:
+            section = argv[1]
+            if argv[2]:
+                calib = argv[2]
+            else:
+                print("Calibname not defined. Exiting...")
+                exit()
+        else:
+            print("Srcname not defined. Exiting...")
+            exit()
+
+        ui.divide(section, calib)
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -9,9 +9,15 @@ Created on 25.9.2013
 This is a main program intended for testing the classes and functions. My intention is to write a GUI
 when the core functionality works well enough.
 """
+<<<<<<< HEAD
+from Stacker import Stacking
+
+from pyastrostack import Registering, Photo, Demosaic, Conf
+=======
 
 
 from pyastrostack import Registering, Photo, Stacking, Demosaic, Conf
+>>>>>>> e954bf34f8341e26a4c3a314ead1975197a4f9f7
 import gc
 
 

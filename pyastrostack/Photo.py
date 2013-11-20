@@ -9,7 +9,7 @@ Created on 2.10.2013
 
 from astropy.io import fits
 from os.path import splitext, exists, split, basename
-from shutil import copyfile
+from shutil import copyfile, move
 from subprocess import call
 import Conf
 import numpy as np
@@ -36,6 +36,11 @@ class Photo(object):
         "Registered images": "reg",
         "RGB images": "rgb",
         "Calibrated images": "calib",
+        "Master frames": "master",
+        "bias": "bias",
+        "dark": "dark",
+        "flat": "flat",
+        "light": "light"
     }
     """
     Dictionary to hold section name to file suffix mappings. Files are named according to a scheme.
@@ -46,6 +51,20 @@ class Photo(object):
     <Project name>_<suffix>(_rgb).fits
     for example
     Andromeda_reg_r.fits, which is registered red channel of project Andromeda
+    """
+
+    section = {
+        "reg": "Registered images",
+        "rgb": "RGB images",
+        "calib": "Calibrated images",
+        "master": "Master frames",
+        "bias": "bias",
+        "dark": "dark",
+        "flat": "flat",
+        "light": "light"
+    }
+    """
+    Dictionary to hold file suffix to section name mappings. Same as dict suffix but backwards
     """
 
     ccode = {0: "r", 1: "g", 2: "b"}
@@ -75,16 +94,25 @@ class Photo(object):
         self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
         self.number    = number               # Number to identify the image
         self.wdir      = self.project.get("Setup", "Path")  # Working directory
-        self.imagename = self.wdir + self.name + "_" + str(self.number)
+
+        if section in ("dark", "bias", "flat"):
+            self.imagename = self.wdir + self.name + "_" + section + "_" + str(self.number)
+            #self.imagename = self.wdir + self.name + "_" + str(self.number)
+        else:
+            self.imagename = self.wdir + self.name + "_" + str(self.number)
 
         # Create image from data
         if data is not None:
             self.data = data
+            #self.imagepath =
+            #self.project.set("Master frames", number, self.imagepath)
             return
 
         # Create empty image
         if (section is None) & (number is None) & (data is None):
             return
+
+        self.imagepath = self.imagename + ".fits"
 
         if not rgb:
             self.srcpath   = self.project.get(section, number)  # Path for source file
@@ -100,8 +128,6 @@ class Photo(object):
             else:
                 self.convert()
 
-        self.imagepath = self.imagename + ".fits"
-
         if section in ("dark", "bias", "flat"):
             self.itype = section
         else:
@@ -112,7 +138,7 @@ class Photo(object):
             self.imagepath = ["", "", ""]
             self.hdu       = [0, 0, 0]
             self.image     = [0, 0, 0]
-            self.srcpath   = self.project.get(section, number + "r")[:-7]
+            self.srcpath   = self.project.get(self.section[section], number + "r")[:-7]
             for i in [0, 1, 2]:
                 self.imagepath[i] = self.srcpath + "_" + self.ccode[i] + ".fits"
                 self.hdu[i]       = fits.open(self.imagepath[i], memmap=True)
@@ -122,6 +148,7 @@ class Photo(object):
             self.data   = None
             self.x = self.image[0].shape[1]
             self.y = self.image[0].shape[0]
+            print(self.imagepath[0] + " - X: " + str(self.x) + ", Y: " + str(self.y))
 
         else:
             self.rgb   = False
@@ -131,8 +158,7 @@ class Photo(object):
 
             self.x = self.image.shape[1]
             self.y = self.image.shape[0]
-
-        print(self.name + str(self.number) + " - X: " + str(self.x) + ", Y: " + str(self.y))
+            print(self.imagepath + " - X: " + str(self.x) + ", Y: " + str(self.y))
 
     def load_data(self):
         """
@@ -157,18 +183,22 @@ class Photo(object):
 
         #self.imagepath = Conf.path + self.name + str(self.number) + ".fits"
         if exists(self.srcpath):
-            if exists(self.imagepath):                   # Don't convert raws again
-                pass
-            elif call(["rawtran -X '-t 0' -c u -o " + self.imagepath + " " + self.srcpath], shell=True):
-                print("Something went wrong... There might be helpful output from Rawtran above this line.")
-                print("File " + self.srcpath + " exists.")
-                if exists(self.imagepath):
-                    print("File " + self.imagepath + " exists.")
-                    print("Here's information about it:")
-                    # TODO: Check size and magic numbers with file utility
+            if not exists(self.imagepath):                   # Don't convert raws again
+                #elif call(["rawtran -X '-t 0' -c u -o " + self.imagepath + " " + self.srcpath], shell=True):
+                if call(["dcraw -v -T -4 -t 0 -D " + self.srcpath], shell=True):
+                    print("Something went wrong... There might be helpful output from Rawtran above this line.")
+                    print("File " + self.srcpath + " exists.")
+                    if exists(self.imagepath):
+                        print("File " + self.imagepath + " exists.")
+                        print("Here's information about it:")
+                        # TODO: Check size and magic numbers with file utility
+                    else:
+                        print("File " + self.imagepath + " does not. Unable to continue.")
+                        exit()  # TODO: Make it able to continue without this picture
                 else:
-                    print("File " + self.imagepath + " does not. Unable to continue.")
-                    exit()  # TODO: Make it able to continue without this picture
+                    move(self.srcpath[:-3] + "tiff", self.imagepath[:-4] + "tiff")
+                    call(["convert", self.imagepath[:-4] + "tiff", self.imagepath])
+
         else:
             print("Unable to find file in given path: " + self.srcpath + ". Find out what's wrong and try again.")
             print("Can't continue. Exiting.")
@@ -186,22 +216,26 @@ class Photo(object):
 
         hdu = fits.PrimaryHDU()                 # To create a default header
         if section:
-            self.number    = number
-            self.imagename = self.wdir + self.name + "_" + str(self.number) + "_" + self.suffix[section]
+            self.number = number
+            try:
+                suffix = self.suffix[section]
+            except KeyError:
+                suffix = section
+            self.imagename = self.wdir + self.name + "_" + str(self.number) + "_" + suffix
         else:
             self.imagename = self.wdir + self.name + "_final"
         self.imagepath = self.imagename + ".fits"
 
         # Monochrome data
         if self.data.ndim == 2:
-            fits.writeto(self.imagepath + ".fits", self.data, hdu.header)
+            fits.writeto(self.imagepath, np.int16(self.data), hdu.header, clobber=True)
 
             # Write TIFF is image is final light
-            if final & section not in ("dark", "bias", "flat"):
+            if final & (section != "Master frames"):
                 image = Im.fromarray(np.int16(self.data))
                 image.save(self.imagename + ".tiff", format="tiff")
-            elif section in ("dark", "bias", "flat"):
-                self.project.set("Master", section, self.imagepath)
+            elif section == "Master frames":
+                self.project.set(section, number, self.imagepath)
             else:
                 self.project.set(section, self.number, self.imagepath)
 
@@ -213,7 +247,8 @@ class Photo(object):
             for i in [0, 1, 2]:
                 rgbname[i] = self.imagename + "_" + self.ccode[i]
                 rgbpath[i] = rgbname[i] + ".fits"
-                fits.writeto(rgbpath[i], self.data[i], hdu.header)
+                print(self.data[i])
+                fits.writeto(rgbpath[i], np.int16(self.data[i]), hdu.header, clobber=True)
 
             # Write TIFF is image is final
             if final:
@@ -226,6 +261,7 @@ class Photo(object):
             else:
                 for i in [0, 1, 2]:
                     self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
+        self.project.write()
 
     def release(self):
         """
@@ -257,9 +293,8 @@ class Batch:
         """
 
         self.project = project
-        files        = self.project.get(section)
+        files        = self.project.get(Photo.section[section])
         self.list    = {}                     # Empty list for Photos
-
 
         filestemp = {}
         for key in files:
@@ -310,7 +345,7 @@ class Batch:
 
         for i in self.list:
             self.list[i].load_data()
-            new = Photo(project=self.project, data=demosaic.bilinear_cl(self.list[i]))
+            new = Photo(project=self.project, data=demosaic.demosaic(self.list[i]))
             new.write(section="RGB images", number=i)
             self.list[i].release_data()
         self.project.set("State", "Demosaic", "1")
@@ -333,7 +368,7 @@ class Batch:
         Stack images using given stacker
 
         Arguments:
-        stacker  = Stacker type object
+        stacker  = Stacking type object
         """
 
         newdata = stacker.stack(self.list, self.project)
@@ -341,3 +376,37 @@ class Batch:
         if self.itype == "light":
             new = Photo(project=self.project, data=newdata)
             new.write(final=True)
+        elif self.itype in ("bias", "dark", "flat"):
+            new = Photo(project=self.project, data=newdata)
+            new.write(section="Master frames", number=self.itype)
+
+    def subtract(self, calib, stacker):
+        """
+        Subtract calib from images in imagelist
+        """
+
+        calib = Photo(section="Master frames", number=calib, project=self.project)
+        calib.load_data()
+
+        for i in self.list:
+            self.list[i].load_data()
+            new = Photo(project=self.project, data=stacker.subtract(self.list[i], calib))
+            new.write(section=self.itype, number=i)
+            self.list[i].release_data()
+        calib.release_data()
+        self.project.write()
+
+    def divide(self, calib, stacker):
+        """
+        Divide images in imagelist with calib
+        """
+
+        calib = Photo(section="Master frames", number=calib, project=self.project)
+        calib.load_data()
+        for i in self.list:
+            self.list[i].load_data()
+            new = Photo(project=self.project, data=stacker.divide(self.list[i], calib))
+            new.write(section=self.itype, number=i)
+            self.list[i].release_data()
+        calib.release_data()
+        self.project.write()
