@@ -262,15 +262,16 @@ class Sextractor(Registering):
         if image.rgb:
             newpath = ["", "", ""]
             for i in [0, 1, 2]:
-                newpath[i] = image.imagename + "_" + newname + "_" + image.ccode[i] + ".fits"
-                command = "convert " + image.imagepath[i] + " -depth 16 -distort Affine "\
+                print(image.imagepath[i])
+                newpath[i] = image.imagename + "_" + newname + "_" + image.ccode[i] + ".tiff"
+                command = "convert " + image.imagepath[i] + " -distort Affine "\
                           + points + " " + newpath[i]
 
                 call([command], shell=True)
 
         else:
             newpath = image.imagename + "_" + newname + ".fits"
-            command = "convert " + image.imagepath + " -depth 16 -distort Affine "\
+            command = "convert " + image.imagepath + " -distort Affine "\
                       + points + " " + newpath
             call([command], shell=True)
 

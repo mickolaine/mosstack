@@ -156,9 +156,9 @@ class BilinearCl(Demosaic):
         b = np.empty_like(cfab)
         cl.enqueue_copy(self.queue, b, dest_bufb)
 
-        r = np.reshape(r, (image.y, -1), order='C')
-        g = np.reshape(g, (image.y, -1), order='C')
-        b = np.reshape(b, (image.y, -1), order='C')
+        r = np.int16(np.reshape(r, (image.y, -1), order='C'))
+        g = np.int16(np.reshape(g, (image.y, -1), order='C'))
+        b = np.int16(np.reshape(b, (image.y, -1), order='C'))
         #print("After reshape: " + str(g.shape))
         print("...Done")
         return np.array([r, g, b])

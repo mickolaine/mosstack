@@ -24,7 +24,7 @@ class Photo(object):
     """
 
     # TODO: Make this unnecessary
-    format  = "fits"
+    #format  = "fits"
     """
     Set format for intermediate files. Only FITS is possible as of 2013-10-08 but this might be
     in use somewhere else as well.
@@ -88,6 +88,7 @@ class Photo(object):
         """
 
         # Common variables for any case
+        self.format = ".tiff"
         self.project   = project
         self.tri       = []         # List of triangles
         self.match     = []         # List of matching triangles with reference picture
@@ -104,15 +105,13 @@ class Photo(object):
         # Create image from data
         if data is not None:
             self.data = data
-            #self.imagepath =
-            #self.project.set("Master frames", number, self.imagepath)
             return
 
         # Create empty image
         if (section is None) & (number is None) & (data is None):
             return
 
-        self.imagepath = self.imagename + ".fits"
+        self.imagepath = self.imagename + self.format
 
         if not rgb:
             self.srcpath   = self.project.get(section, number)  # Path for source file
@@ -124,6 +123,10 @@ class Photo(object):
                     copyfile(self.srcpath, self.imagepath)
                 else:
                     self.imagepath = self.srcpath
+            elif self.rawformat == "tiff":
+                self.imagepath = self.srcpath
+                self.image     = Im.open(self.imagepath)
+                self.data      = np.flipud(np.array(self.image))
             # For everything else, try converting
             else:
                 self.convert()
@@ -138,36 +141,62 @@ class Photo(object):
             self.imagepath = ["", "", ""]
             self.hdu       = [0, 0, 0]
             self.image     = [0, 0, 0]
+            self.data = []
             self.srcpath   = self.project.get(self.section[section], number + "r")[:-7]
-            for i in [0, 1, 2]:
-                self.imagepath[i] = self.srcpath + "_" + self.ccode[i] + ".fits"
-                self.hdu[i]       = fits.open(self.imagepath[i], memmap=True)
-                self.image[i]     = self.hdu[i][0]
-
+            if self.format == ".fits":
+                for i in [0, 1, 2]:
+                    self.imagepath[i] = self.srcpath + "_" + self.ccode[i] + ".fits"
+                    self.hdu[i]       = fits.open(self.imagepath[i], memmap=True)
+                    self.image[i]     = self.hdu[i][0]
+                self.x = self.image[0].shape[1]
+                self.y = self.image[0].shape[0]
+            elif self.format == ".tiff":
+                for i in [0, 1, 2]:
+                    self.imagepath[i] = self.srcpath + "_" + self.ccode[i] + ".tiff"
+                    self.image[i]     = Im.open(self.imagepath[i])
+                    self.data.append(np.flipud(np.array(self.image[i])))
+                self.x = len(self.data[0][0])
+                self.y = len(self.data[0])
             self.rgb    = True
             self.data   = None
-            self.x = self.image[0].shape[1]
-            self.y = self.image[0].shape[0]
+
             print(self.imagepath[0] + " - X: " + str(self.x) + ", Y: " + str(self.y))
 
         else:
             self.rgb   = False
-            self.hdu   = fits.open(self.imagepath, memmap=True)
-            self.image = self.hdu[0]
+            if self.format == ".fits":
+                self.hdu   = fits.open(self.imagepath, memmap=True)
+                self.image = self.hdu[0]
+                self.x = self.image.shape[1]
+                self.y = self.image.shape[0]
+            elif self.format == ".tiff":
+                self.image = Im.open(self.imagepath)
+                self.data  = np.array(self.image)
+                print(self.data)
+                self.data  = np.flipud(self.data)
+                print(self.data)
+                self.x = len(self.data[0])
+                self.y = len(self.data)
             self.data  = None
 
-            self.x = self.image.shape[1]
-            self.y = self.image.shape[0]
             print(self.imagepath + " - X: " + str(self.x) + ", Y: " + str(self.y))
 
     def load_data(self):
         """
         Load data into memory
         """
-        if self.rgb:
-            self.data = np.array([self.image[0].data, self.image[1].data, self.image[2].data])
+        if self.format == ".fits":
+            if self.rgb:
+                self.data = np.array([self.image[0].data, self.image[1].data, self.image[2].data])
+            else:
+                self.data = self.image.data
         else:
-            self.data = self.image.data
+            if self.rgb:
+                self.data = np.array([np.flipud(np.array(self.image[0])),
+                                      np.flipud(np.array(self.image[1])),
+                                      np.flipud(np.array(self.image[2]))])
+            else:
+                self.data = np.flipud(np.array(self.image))
 
     def release_data(self):
         """
@@ -231,13 +260,13 @@ class Photo(object):
             fits.writeto(self.imagepath, np.int16(self.data), hdu.header, clobber=True)
 
             # Write TIFF is image is final light
-            if final & (section != "Master frames"):
-                image = Im.fromarray(np.int16(self.data))
+            if final:
+                image = Im.fromarray(np.flipud(np.int16(self.data)))
                 image.save(self.imagename + ".tiff", format="tiff")
-            elif section == "Master frames":
-                self.project.set(section, number, self.imagepath)
-            else:
-                self.project.set(section, self.number, self.imagepath)
+            if section == "Master frames":
+                self.project.set(section, number, self.imagename + ".tiff")
+            elif section:
+                self.project.set(section, self.number, self.imagename + ".tiff")
 
         # RGB data
         else:
@@ -255,12 +284,11 @@ class Photo(object):
                 image = [0, 0, 0]
                 for i in [0, 1, 2]:
                     rgbpath[i] = rgbname[i] + ".tiff"
-                    image[i] = Im.fromarray(np.int16(self.data[i]))
+                    image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])))
                     image[i].save(rgbpath[i], format="tiff")
-
-            else:
+            if section:
                 for i in [0, 1, 2]:
-                    self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
+                    self.project.set(section, str(self.number) + self.ccode[i], rgbname[i] + ".tiff")
         self.project.write()
 
     def release(self):
@@ -346,7 +374,7 @@ class Batch:
         for i in self.list:
             self.list[i].load_data()
             new = Photo(project=self.project, data=demosaic.demosaic(self.list[i]))
-            new.write(section="RGB images", number=i)
+            new.write(section="RGB images", number=i, final=True)
             self.list[i].release_data()
         self.project.set("State", "Demosaic", "1")
         self.project.write()
@@ -378,7 +406,7 @@ class Batch:
             new.write(final=True)
         elif self.itype in ("bias", "dark", "flat"):
             new = Photo(project=self.project, data=newdata)
-            new.write(section="Master frames", number=self.itype)
+            new.write(section="Master frames", number=self.itype, final=True)
 
     def subtract(self, calib, stacker):
         """
@@ -391,7 +419,7 @@ class Batch:
         for i in self.list:
             self.list[i].load_data()
             new = Photo(project=self.project, data=stacker.subtract(self.list[i], calib))
-            new.write(section=self.itype, number=i)
+            new.write(section=self.itype, number=i, final=True)
             self.list[i].release_data()
         calib.release_data()
         self.project.write()
@@ -406,7 +434,7 @@ class Batch:
         for i in self.list:
             self.list[i].load_data()
             new = Photo(project=self.project, data=stacker.divide(self.list[i], calib))
-            new.write(section=self.itype, number=i)
+            new.write(section=self.itype, number=i, final=True)
             self.list[i].release_data()
         calib.release_data()
         self.project.write()
