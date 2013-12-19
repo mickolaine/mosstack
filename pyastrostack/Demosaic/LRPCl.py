@@ -2,7 +2,7 @@
 
 __author__ = 'micko'
 
-from Demosaic.Demosaic import Demosaic
+from .. Demosaic.Demosaic import Demosaic
 import numpy as np
 import pyopencl as cl
 

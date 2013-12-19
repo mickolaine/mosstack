@@ -1,12 +1,13 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name='pyAstroStack',
     version='0.0.9dev',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
-    packages=['pyastrostack'],
-    scripts=['bin/Testi.py','bin/AstroStack.py'],
+#    packages=['pyastrostack', 'pyastrostack.Demosaic', 'pyastrostack.Registering', 'pyastrostack.Stacker'],
+    packages=find_packages(),
+    scripts=['scripts/Testi.py','scripts/AstroStack.py'],
     url='https://bitbucket.org/mikko_laine/pyastrostack/',
     license='LICENSE.txt',
     description='Stacking software for astronomical images',

@@ -8,6 +8,9 @@
       <w>bilinear</w>
       <w>bluenewpath</w>
       <w>bluepath</w>
+      <w>bufb</w>
+      <w>bufg</w>
+      <w>bufr</w>
       <w>calib</w>
       <w>ccode</w>
       <w>codeblue</w>
@@ -23,6 +26,7 @@
       <w>dest</w>
       <w>dslr</w>
       <w>execsex</w>
+      <w>exiftool</w>
       <w>findsensitivity</w>
       <w>fitspath</w>
       <w>fromarray</w>
@@ -38,9 +42,12 @@
       <w>imagename</w>
       <w>imagepath</w>
       <w>imager</w>
+      <w>imaget</w>
       <w>imagetype</w>
       <w>initproject</w>
       <w>itype</w>
+      <w>longhelp</w>
+      <w>magick</w>
       <w>magick's</w>
       <w>maketriangles</w>
       <w>newdata</w>
@@ -54,6 +61,7 @@
       <w>pname</w>
       <w>ppath</w>
       <w>projectfile</w>
+      <w>projectname</w>
       <w>rawformat</w>
       <w>rawpath</w>
       <w>raws</w>
@@ -69,9 +77,11 @@
       <w>savemaster</w>
       <w>savergb</w>
       <w>setname</w>
+      <w>setproject</w>
       <w>setref</w>
       <w>setsensitivity</w>
       <w>sextractor</w>
+      <w>shorthelp</w>
       <w>srclist</w>
       <w>srcname</w>
       <w>srcpath</w>

@@ -50,9 +50,9 @@ class Stacking:
         calibrated data as an array
         """
         
-        newdata = image.data - calib.data
-        newdata.clip(0)
-        return newdata
+        newdata = np.float32(image.data) - np.float32(calib.data)
+        newdata = newdata.clip(0)
+        return np.uint16(newdata)
 
     @staticmethod
     def clip(batch):

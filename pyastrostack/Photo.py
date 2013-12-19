@@ -11,7 +11,7 @@ from astropy.io import fits
 from os.path import splitext, exists, split, basename
 from shutil import copyfile, move
 from subprocess import call
-import Conf
+from . import Conf
 import numpy as np
 from PIL import Image as Im
 import gc
@@ -21,15 +21,6 @@ from re import sub
 class Photo(object):
     """
     Class holds loading and saving photo files and converting photo to numpy.array
-    """
-
-    # TODO: Make this unnecessary
-    #format  = "fits"
-    """
-    Set format for intermediate files. Only FITS is possible as of 2013-10-08 but this might be
-    in use somewhere else as well.
-
-    Will be removed.
     """
 
     suffix = {
@@ -73,7 +64,7 @@ class Photo(object):
     arrays where index 0 is red, 1 is green and 2 is blue.
     """
 
-    def __init__(self, section=None, number=None, project=None, rgb=None, data=None):
+    def __init__(self, section=None, number=None, project=None, data=None, raw=False):
         """
         Constructor requires a filename of a raw image. I have a Canon EOS 1100D so Canon CR2 is what I originally
         write this for.
@@ -85,22 +76,36 @@ class Photo(object):
         project = Conf.Project type object
         rgb     = True/False if image is RGB
         data    = Create Photo from numpy.array
+        raw     = Boolean to indicate whether image is camera raw or something created by this program
         """
 
         # Common variables for any case
-        self.format = ".tiff"
+        self.format    = ".tiff"
         self.project   = project
+        self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
+        self.number    = number     # Number to identify the image
+        self.wdir      = self.project.get("Setup", "Path")  # Working directory
+
+        # Instance variables required later
+        self.srcpath   = None       # Path for source image
+        self.rgb       = None       # Is image rgb or monochrome (Boolean)
         self.tri       = []         # List of triangles
         self.match     = []         # List of matching triangles with reference picture
-        self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
-        self.number    = number               # Number to identify the image
-        self.wdir      = self.project.get("Setup", "Path")  # Working directory
+
+        self.x = None
+        self.y = None               # Dimensions for image
+
+        # The following objects are lists because colour channels are separate
+        self.hdu = []               # HDU-object for loading fits. Not required for tiff
+        self.image = []             # Image object. Required for Tiff and Fits
+        self.data = np.array([])    # Image data as an numpy.array
 
         if section in ("dark", "bias", "flat"):
             self.imagename = self.wdir + self.name + "_" + section + "_" + str(self.number)
-            #self.imagename = self.wdir + self.name + "_" + str(self.number)
         else:
             self.imagename = self.wdir + self.name + "_" + str(self.number)
+
+        self.imagepath = self.imagename + self.format
 
         # Create image from data
         if data is not None:
@@ -111,52 +116,59 @@ class Photo(object):
         if (section is None) & (number is None) & (data is None):
             return
 
-        self.imagepath = self.imagename + self.format
+        if raw:
+            self._load_raw(self.suffix[section], number)
+            return
+        if self.format == ".fits":
+            self._load_fits(self.suffix[section], number)
+        elif self.format == ".tiff":
+            self._load_tiff(self.suffix[section], number)
 
-        if not rgb:
-            self.srcpath   = self.project.get(section, number)  # Path for source file
-            self.rawformat = splitext(self.srcpath)[1][1:]
-            # For source files that are already FITS
-            if self.rawformat == "fits":
-                # If image source image resides outside wdir, copy it there
-                if split(self.srcpath)[0] + "/" != self.wdir:
-                    copyfile(self.srcpath, self.imagepath)
-                else:
-                    self.imagepath = self.srcpath
-            elif self.rawformat == "tiff":
-                self.imagepath = self.srcpath
-                self.image     = Im.open(self.imagepath)
-                self.data      = np.flipud(np.array(self.image))
-            # For everything else, try converting
+    def _load_raw(self, suffix, number):
+        """
+        Load a 'raw' image. This could be anything in the future but for now DSLR raws will be supported.
+        I have a Canon myself so that's what I'll use for testing. I try to write support for other formats
+        as well.
+
+        Arguments:
+        suffix - light, dark, flat, bias. I use the same name than in other _load_* methods
+        number - number of file
+        """
+
+        srcpath = self.project.get(suffix, number)  # Path for source file
+        rawformat = splitext(self.srcpath)[1][1:]
+
+        if rawformat == "fits":
+            # If image source image resides outside wdir, copy it there
+            if split(srcpath)[0] + "/" != self.wdir:
+                copyfile(srcpath, self.imagepath)
             else:
-                self.convert()
-
-        if section in ("dark", "bias", "flat"):
-            self.itype = section
+                self.imagepath = srcpath
         else:
-            self.itype = "light"
+            self.convert(srcpath)
 
-        # Check if demosaicing done and assume rgb-pictures
-        if rgb:
+    def _load_tiff(self, suffix, number):
+        """
+        Load a tiff file created by this program
+
+        Arguments:
+        suffix - file name suffix indicating progress of process. eg. calib, reg, rgb
+        number - number of file
+        """
+        color = self.project.get("colors", suffix)
+
+        if color == "rgb":
             self.imagepath = ["", "", ""]
-            self.hdu       = [0, 0, 0]
-            self.image     = [0, 0, 0]
-            self.data = []
-            self.srcpath   = self.project.get(self.section[section], number + "r")[:-7]
-            if self.format == ".fits":
-                for i in [0, 1, 2]:
-                    self.imagepath[i] = self.srcpath + "_" + self.ccode[i] + ".fits"
-                    self.hdu[i]       = fits.open(self.imagepath[i], memmap=True)
-                    self.image[i]     = self.hdu[i][0]
-                self.x = self.image[0].shape[1]
-                self.y = self.image[0].shape[0]
-            elif self.format == ".tiff":
-                for i in [0, 1, 2]:
-                    self.imagepath[i] = self.srcpath + "_" + self.ccode[i] + ".tiff"
-                    self.image[i]     = Im.open(self.imagepath[i])
-                    self.data.append(np.flipud(np.array(self.image[i])))
-                self.x = len(self.data[0][0])
-                self.y = len(self.data[0])
+            self.hdu       = []
+            self.image     = []
+            self.data      = np.array([])
+            self.srcpath   = self.project.get(suffix, number + "r")[:-7]
+            for i in [0, 1, 2]:
+                self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".tiff")
+                self.image.append(Im.open(self.imagepath[i]))
+                self.data.append(np.flipud(np.array(self.image[i])))
+            self.x = len(self.data[0][0])
+            self.y = len(self.data[0])
             self.rgb    = True
             self.data   = None
 
@@ -164,19 +176,51 @@ class Photo(object):
 
         else:
             self.rgb   = False
-            if self.format == ".fits":
-                self.hdu   = fits.open(self.imagepath, memmap=True)
-                self.image = self.hdu[0]
-                self.x = self.image.shape[1]
-                self.y = self.image.shape[0]
-            elif self.format == ".tiff":
-                self.image = Im.open(self.imagepath)
-                self.data  = np.array(self.image)
-                print(self.data)
-                self.data  = np.flipud(self.data)
-                print(self.data)
-                self.x = len(self.data[0])
-                self.y = len(self.data)
+            self.image = Im.open(self.imagepath)
+            self.data  = np.array(self.image)
+            self.data  = np.flipud(self.data)
+            self.x = len(self.data[0])
+            self.y = len(self.data)
+            self.data  = None
+
+            print(self.imagepath + " - X: " + str(self.x) + ", Y: " + str(self.y))
+
+    def _load_fits(self, suffix, number):
+        """
+        Load a fits file created by this program
+
+        Arguments:
+        suffix - file name suffix indicating progress of process. eg. calib, reg, rgb
+        number - number of file
+        """
+        color = self.project.get("colors", suffix)
+
+        if color == "rgb":
+            self.imagepath = []
+            self.hdu       = []
+            self.image     = []
+            self.data      = np.array([])
+            self.srcpath   = self.project.get(suffix, number + "r")[:-7]
+            for i in [0, 1, 2]:
+                self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".fits")
+                self.hdu.append(fits.open(self.imagepath[i], memmap=True))
+                self.image.append(self.hdu[i][0])
+            self.x = self.image[0].shape[1]
+            self.y = self.image[0].shape[0]
+
+            self.x = len(self.data[0][0])
+            self.y = len(self.data[0])
+            self.rgb    = True
+            self.data   = None
+
+            print(self.imagepath[0] + " - X: " + str(self.x) + ", Y: " + str(self.y))
+
+        else:
+            self.rgb   = False
+            self.hdu   = fits.open(self.imagepath, memmap=True)
+            self.image = self.hdu[0]
+            self.x = self.image.shape[1]
+            self.y = self.image.shape[0]
             self.data  = None
 
             print(self.imagepath + " - X: " + str(self.x) + ", Y: " + str(self.y))
@@ -205,18 +249,16 @@ class Photo(object):
         self.data = None
         gc.collect()
 
-    def convert(self):
+    def convert(self, srcpath):
         """
         Convert the raw into FITS
         """
 
-        #self.imagepath = Conf.path + self.name + str(self.number) + ".fits"
-        if exists(self.srcpath):
+        if exists(srcpath):
             if not exists(self.imagepath):                   # Don't convert raws again
-                #elif call(["rawtran -X '-t 0' -c u -o " + self.imagepath + " " + self.srcpath], shell=True):
-                if call(["dcraw -v -T -4 -t 0 -D " + self.srcpath], shell=True):
+                if call(["dcraw -v -T -4 -t 0 -D " + srcpath], shell=True):
                     print("Something went wrong... There might be helpful output from Rawtran above this line.")
-                    print("File " + self.srcpath + " exists.")
+                    print("File " + srcpath + " exists.")
                     if exists(self.imagepath):
                         print("File " + self.imagepath + " exists.")
                         print("Here's information about it:")
@@ -225,11 +267,11 @@ class Photo(object):
                         print("File " + self.imagepath + " does not. Unable to continue.")
                         exit()  # TODO: Make it able to continue without this picture
                 else:
-                    move(self.srcpath[:-3] + "tiff", self.imagepath[:-4] + "tiff")
+                    move(srcpath[:-3] + "tiff", self.imagepath[:-4] + "tiff")
                     call(["convert", self.imagepath[:-4] + "tiff", self.imagepath])
 
         else:
-            print("Unable to find file in given path: " + self.srcpath + ". Find out what's wrong and try again.")
+            print("Unable to find file in given path: " + srcpath + ". Find out what's wrong and try again.")
             print("Can't continue. Exiting.")
             exit()
 
@@ -296,9 +338,6 @@ class Photo(object):
         Release not needed images from memory
         """
 
-        self.imager = None
-        self.imageg = None
-        self.imageb = None
         self.image = None
         gc.collect()
         self.data = None

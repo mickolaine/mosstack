@@ -5,7 +5,7 @@
 __author__ = 'Mikko Laine'
 
 
-from Stacker.Stacking import Stacking
+from .. Stacker.Stacking import Stacking
 import numpy as np
 import gc
 

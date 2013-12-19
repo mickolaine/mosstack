@@ -14,13 +14,9 @@ to run different stacking operations according to the project file.
 """
 
 import sys
-import Conf
+from pyastrostack import Conf
 import os
-import Photo
-from UserInterface import UserInterface
-from Stacker import Mean
-#from Registering import *
-#from Demosaic import *
+from pyastrostack.UserInterface import UserInterface
 
 
 def imagetype():
@@ -47,7 +43,8 @@ def imagetype():
     elif number == 4:
         imaget = "flat"
     else:
-        "Invalid input. Try again."
+        print("Invalid input. Try again.")
+        imaget = None
 
     return imaget
 
@@ -62,16 +59,12 @@ def main(argv):
 
     setup = Conf.Setup()
 
-    shorthelp = """
-    pyAstroStack is run with:
-    AstroStack.py <operation> <projectfile> <arguments>
+    shorthelp = ui.shorthelp
 
-    <operation>   - init, adddir, addfile, ... Try AstroStack help for full list
-    <projectname> - File in configured working directory. Type the name without extension
-    <arguments>   - Depends on <operation>
-    """
-
-    longhelp = shorthelp
+    longhelp = ui.longhelp
+    project  = None
+    section  = None
+    calib    = None
 
     if len(argv) == 0:
         print(shorthelp)

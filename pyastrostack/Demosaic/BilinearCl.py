@@ -1,6 +1,6 @@
 __author__ = 'micko'
 
-from Demosaic.Demosaic import Demosaic
+from .. Demosaic.Demosaic import Demosaic
 import numpy as np
 import pyopencl as cl
 
@@ -140,7 +140,6 @@ class BilinearCl(Demosaic):
         prg_green.bilinear(self.queue, cfag.shape, None, cfa_bufg, dest_bufg)
         g = np.empty_like(cfag)
         cl.enqueue_copy(self.queue, g, dest_bufg)
-
 
         cfa_bufr = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=cfar)
         dest_bufr = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfar.nbytes)

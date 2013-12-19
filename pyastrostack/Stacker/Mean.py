@@ -4,7 +4,7 @@
 
 __author__ = 'micko'
 
-from Stacker.Stacking import Stacking
+from .. Stacker.Stacking import Stacking
 #import numpy as np
 from numpy import amax, zeros_like
 
