@@ -33,7 +33,9 @@ class LRPCl(Demosaic):
         print("Processing image " + image.imagepath)
         mf = cl.mem_flags
 
+        print(image.data.shape)
         cfa = np.ravel(np.float32(image.data), order='C')
+        print(cfa.shape)
 
         codegreen = """
         __kernel void bilinear(__global const float *a, __global float *c)

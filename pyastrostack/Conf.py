@@ -92,6 +92,7 @@ class Setup:
             if temppath[len(temppath)-1] != "/":
                 temppath += "/"
 
+            print("You have to manually copy SExtractor files default.param adn default.conv to temp directory.")
             self.conf.save("Path", temppath)
             self.conf.write(self.file)
 
@@ -151,6 +152,7 @@ class Setup:
         self.conf.read(self.file)
         self.conf.save(key, value, section)
         self.conf.write(self.file)
+
 
 class Project:
     """

@@ -88,7 +88,7 @@ class Photo(object):
 
         # Instance variables required later
         self.srcpath   = None       # Path for source image
-        self.rgb       = None       # Is image rgb or monochrome (Boolean)
+        self.rgb       = False      # Is image rgb or monochrome (Boolean)
         self.tri       = []         # List of triangles
         self.match     = []         # List of matching triangles with reference picture
 
@@ -101,9 +101,14 @@ class Photo(object):
         self.data = np.array([])    # Image data as an numpy.array
 
         if section in ("dark", "bias", "flat"):
+            print("täällä 1")
             self.imagename = self.wdir + self.name + "_" + section + "_" + str(self.number)
+            print(self.imagename)
+        elif section == "Master frames":
+            self.imagename = self.wdir + self.name + "_" + number + "_master"
         else:
             self.imagename = self.wdir + self.name + "_" + str(self.number)
+            print(self.imagename)
 
         self.imagepath = self.imagename + self.format
 
@@ -118,11 +123,12 @@ class Photo(object):
 
         if raw:
             self._load_raw(self.suffix[section], number)
-            return
+            #return
         if self.format == ".fits":
             self._load_fits(self.suffix[section], number)
         elif self.format == ".tiff":
-            self._load_tiff(self.suffix[section], number)
+            print(section)
+            self._load_tiff(section, number)
 
     def _load_raw(self, suffix, number):
         """
@@ -136,7 +142,7 @@ class Photo(object):
         """
 
         srcpath = self.project.get(suffix, number)  # Path for source file
-        rawformat = splitext(self.srcpath)[1][1:]
+        rawformat = splitext(srcpath)[1][1:]
 
         if rawformat == "fits":
             # If image source image resides outside wdir, copy it there
@@ -155,16 +161,19 @@ class Photo(object):
         suffix - file name suffix indicating progress of process. eg. calib, reg, rgb
         number - number of file
         """
-        color = self.project.get("colors", suffix)
+
+        color = self.project.get("Colors", suffix)
 
         if color == "rgb":
-            self.imagepath = ["", "", ""]
+            self.imagepath = []
             self.hdu       = []
             self.image     = []
-            self.data      = np.array([])
-            self.srcpath   = self.project.get(suffix, number + "r")[:-7]
+            self.data      = []
+            self.srcpath   = self.project.get(self.section[suffix], number + "r")[:-7]
             for i in [0, 1, 2]:
+                print(self.srcpath)
                 self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".tiff")
+                print(self.imagepath[i])
                 self.image.append(Im.open(self.imagepath[i]))
                 self.data.append(np.flipud(np.array(self.image[i])))
             self.x = len(self.data[0][0])
@@ -176,6 +185,7 @@ class Photo(object):
 
         else:
             self.rgb   = False
+            print(self.imagepath)
             self.image = Im.open(self.imagepath)
             self.data  = np.array(self.image)
             self.data  = np.flipud(self.data)
@@ -297,6 +307,9 @@ class Photo(object):
             self.imagename = self.wdir + self.name + "_final"
         self.imagepath = self.imagename + ".fits"
 
+        print("Suffix = " + suffix)
+        print("Section = " + section)
+
         # Monochrome data
         if self.data.ndim == 2:
             fits.writeto(self.imagepath, np.int16(self.data), hdu.header, clobber=True)
@@ -362,6 +375,7 @@ class Batch:
         self.project = project
         files        = self.project.get(Photo.section[section])
         self.list    = {}                     # Empty list for Photos
+        self.section = section
 
         filestemp = {}
         for key in files:
@@ -376,18 +390,31 @@ class Batch:
         else:
             rgb = False
 
-        for key in files:
-            # Only one channel
-            if not rgb:
-                photo = Photo(section=section, number=key, project=self.project)
-            # Three channels
-            else:
-                photo = Photo(section=section, number=key, rgb=True, project=self.project)
-
-            self.list[key] = photo
+        if section in ("light", "dark", "flat", "bias"):
+            print("RAAAAAAAAAAAAAAAWWWWWWWWWWWWW")
+            self.project.set("Colors", section, "cfa")
+            raw = True
+        else:
+            raw = False
 
         if section in ("dark", "bias", "flat"):
             self.itype = section              # Define type of batch. Possibilities are light, flat, bias and dark
+            self.project.set("Colors", "Master frames", "cfa")
+            self.project.write()
+        else:
+            self.itype = "light"
+
+        for key in files:
+            # Only one channel
+            if not rgb:
+                photo = Photo(section=section, number=key, project=self.project, raw=raw)
+            # Three channels
+            else:
+                #photo = Photo(section=section, number=key, rgb=True, project=self.project, raw=raw)
+                photo = Photo(section=section, number=key, project=self.project, raw=raw)
+
+            self.list[key] = photo
+
         else:
             self.itype = "light"
 
@@ -412,9 +439,12 @@ class Batch:
 
         for i in self.list:
             self.list[i].load_data()
+            print(self.list[i].data.shape)
             new = Photo(project=self.project, data=demosaic.demosaic(self.list[i]))
             new.write(section="RGB images", number=i, final=True)
             self.list[i].release_data()
+        print(self.section)
+        self.project.set("Colors", "rgb", "rgb")
         self.project.set("State", "Demosaic", "1")
         self.project.write()
 
@@ -427,6 +457,7 @@ class Batch:
         """
 
         register.register(self.list, self.project)
+        self.project.set("Colors", "reg", "rgb")
         self.project.set("State", "Registering", "1")
         self.project.write()
 
@@ -473,7 +504,8 @@ class Batch:
         for i in self.list:
             self.list[i].load_data()
             new = Photo(project=self.project, data=stacker.divide(self.list[i], calib))
-            new.write(section=self.itype, number=i, final=True)
+            new.write(section="Calibrated images", number=i, final=True)
             self.list[i].release_data()
         calib.release_data()
+        self.project.set("Colors", "calib", "cfa")
         self.project.write()
