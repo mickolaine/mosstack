@@ -174,8 +174,8 @@ class LRPCl(Demosaic):
 
         green_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=g)
 
-        prg_red   = cl.Program(self.ctx, codered  ).build()
-        prg_blue  = cl.Program(self.ctx, codeblue ).build()
+        prg_red   = cl.Program(self.ctx, codered).build()
+        prg_blue  = cl.Program(self.ctx, codeblue).build()
 
         dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)    # Reset dest_buf just in case. Maybe not necessary
         prg_red.bilinear(self.queue, cfa.shape, None, cfa_buf, green_buf, dest_buf)

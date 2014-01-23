@@ -303,12 +303,11 @@ class Photo(object):
             except KeyError:
                 suffix = section
             self.imagename = self.wdir + self.name + "_" + str(self.number) + "_" + suffix
+            print("Suffix = " + suffix)
+            print("Section = " + section)
         else:
             self.imagename = self.wdir + self.name + "_final"
         self.imagepath = self.imagename + ".fits"
-
-        print("Suffix = " + suffix)
-        print("Section = " + section)
 
         # Monochrome data
         if self.data.ndim == 2:
@@ -341,6 +340,8 @@ class Photo(object):
                     rgbpath[i] = rgbname[i] + ".tiff"
                     image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])))
                     image[i].save(rgbpath[i], format="tiff")
+                call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine",
+                      self.imagename + "_combined.tiff"])
             if section:
                 for i in [0, 1, 2]:
                     self.project.set(section, str(self.number) + self.ccode[i], rgbname[i] + ".tiff")
@@ -415,9 +416,6 @@ class Batch:
 
             self.list[key] = photo
 
-        else:
-            self.itype = "light"
-
         self.refnum = int(project.get("Reference images", key="light"))  # Number of reference frame
         self.name   = self.project.get("Default", key="project name")  # Name for the resulting image
 
@@ -471,6 +469,7 @@ class Batch:
 
         newdata = stacker.stack(self.list, self.project)
 
+        print(self.itype)
         if self.itype == "light":
             new = Photo(project=self.project, data=newdata)
             new.write(final=True)
@@ -489,9 +488,10 @@ class Batch:
         for i in self.list:
             self.list[i].load_data()
             new = Photo(project=self.project, data=stacker.subtract(self.list[i], calib))
-            new.write(section=self.itype, number=i, final=True)
+            new.write(section="Calibrated images", number=i, final=True)
             self.list[i].release_data()
         calib.release_data()
+        self.project.set("Colors", "calib", "cfa")
         self.project.write()
 
     def divide(self, calib, stacker):

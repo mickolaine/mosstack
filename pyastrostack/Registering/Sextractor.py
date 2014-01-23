@@ -378,7 +378,7 @@ class Sex:
         """
         Create configuration file for SExtractor.
         """
-        self.confname = self.image.imagename + str(self.image.number) + ".sex"
+        self.confname = self.image.imagename + ".sex"
         f = open(self.confname, "w")
         for i in self.config:
             f.write(i + " " + self.config[i] + "\n")
@@ -392,8 +392,8 @@ class Sex:
         """
         print("Looking for suitable DETECT_MINAREA...")
         x = 0
-        min = 25
-        max = 30
+        min = 20
+        max = 25
 
         while x > max or x < min:
             self.createconf()

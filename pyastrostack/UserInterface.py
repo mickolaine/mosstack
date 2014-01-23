@@ -238,7 +238,7 @@ Example:
         """
 
         batch = Batch(section=section, project=self.project)
-        batch.demosaic(Demosaic.LRPCl())
+        batch.demosaic(Demosaic.Bilinear())
 
     def stack(self, section):
         """
