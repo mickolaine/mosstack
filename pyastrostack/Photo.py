@@ -123,7 +123,6 @@ class Photo(object):
 
         if raw:
             self._load_raw(self.suffix[section], number)
-            #return
         if self.format == ".fits":
             self._load_fits(self.suffix[section], number)
         elif self.format == ".tiff":
@@ -144,6 +143,8 @@ class Photo(object):
         srcpath = self.project.get(suffix, number)  # Path for source file
         rawformat = splitext(srcpath)[1][1:]
 
+        print("Loading RAW image " + srcpath + "...")
+
         if rawformat == "fits":
             # If image source image resides outside wdir, copy it there
             if split(srcpath)[0] + "/" != self.wdir:
@@ -152,6 +153,7 @@ class Photo(object):
                 self.imagepath = srcpath
         else:
             self.convert(srcpath)
+        print("Done!")
 
     def _load_tiff(self, suffix, number):
         """
@@ -173,7 +175,7 @@ class Photo(object):
             for i in [0, 1, 2]:
                 print(self.srcpath)
                 self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".tiff")
-                print(self.imagepath[i])
+                print("Loading RGB image element " + self.imagepath[i] + "...")
                 self.image.append(Im.open(self.imagepath[i]))
                 self.data.append(np.flipud(np.array(self.image[i])))
             self.x = len(self.data[0][0])
@@ -181,11 +183,12 @@ class Photo(object):
             self.rgb    = True
             self.data   = None
 
-            print(self.imagepath[0] + " - X: " + str(self.x) + ", Y: " + str(self.y))
+            print("Done!")
+            print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
 
         else:
             self.rgb   = False
-            print(self.imagepath)
+            print("Loading image " + self.imagepath + "...")
             self.image = Im.open(self.imagepath)
             self.data  = np.array(self.image)
             self.data  = np.flipud(self.data)
@@ -193,7 +196,8 @@ class Photo(object):
             self.y = len(self.data)
             self.data  = None
 
-            print(self.imagepath + " - X: " + str(self.x) + ", Y: " + str(self.y))
+            print("Done!")
+            print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
 
     def _load_fits(self, suffix, number):
         """
@@ -213,6 +217,7 @@ class Photo(object):
             self.srcpath   = self.project.get(suffix, number + "r")[:-7]
             for i in [0, 1, 2]:
                 self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".fits")
+                print("Loading image " + self.imagepath[i] + "...")
                 self.hdu.append(fits.open(self.imagepath[i], memmap=True))
                 self.image.append(self.hdu[i][0])
             self.x = self.image[0].shape[1]
@@ -223,17 +228,20 @@ class Photo(object):
             self.rgb    = True
             self.data   = None
 
-            print(self.imagepath[0] + " - X: " + str(self.x) + ", Y: " + str(self.y))
+            print("Done!")
+            print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
 
         else:
             self.rgb   = False
+            print("Loading image " + self.imagepath + "...")
             self.hdu   = fits.open(self.imagepath, memmap=True)
             self.image = self.hdu[0]
             self.x = self.image.shape[1]
             self.y = self.image.shape[0]
             self.data  = None
 
-            print(self.imagepath + " - X: " + str(self.x) + ", Y: " + str(self.y))
+            print("Done!")
+            print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
 
     def load_data(self):
         """
@@ -266,6 +274,7 @@ class Photo(object):
 
         if exists(srcpath):
             if not exists(self.imagepath):                   # Don't convert raws again
+                print("Converting RAW image...")
                 if call(["dcraw -v -T -4 -t 0 -D " + srcpath], shell=True):
                     print("Something went wrong... There might be helpful output from Rawtran above this line.")
                     print("File " + srcpath + " exists.")
@@ -279,6 +288,7 @@ class Photo(object):
                 else:
                     move(srcpath[:-3] + "tiff", self.imagepath[:-4] + "tiff")
                     call(["convert", self.imagepath[:-4] + "tiff", self.imagepath])
+                    print("Conversion successful!")
 
         else:
             print("Unable to find file in given path: " + srcpath + ". Find out what's wrong and try again.")
@@ -303,8 +313,6 @@ class Photo(object):
             except KeyError:
                 suffix = section
             self.imagename = self.wdir + self.name + "_" + str(self.number) + "_" + suffix
-            print("Suffix = " + suffix)
-            print("Section = " + section)
         else:
             self.imagename = self.wdir + self.name + "_final"
         self.imagepath = self.imagename + ".fits"
@@ -312,11 +320,13 @@ class Photo(object):
         # Monochrome data
         if self.data.ndim == 2:
             fits.writeto(self.imagepath, np.int16(self.data), hdu.header, clobber=True)
+            print("Written FITS file " + self.imagepath)
 
             # Write TIFF is image is final light
             if final:
                 image = Im.fromarray(np.flipud(np.int16(self.data)))
                 image.save(self.imagename + ".tiff", format="tiff")
+                print("Written TIFF file " + self.imagename + ".tiff")
             if section == "Master frames":
                 self.project.set(section, number, self.imagename + ".tiff")
             elif section:
@@ -330,8 +340,8 @@ class Photo(object):
             for i in [0, 1, 2]:
                 rgbname[i] = self.imagename + "_" + self.ccode[i]
                 rgbpath[i] = rgbname[i] + ".fits"
-                print(self.data[i])
                 fits.writeto(rgbpath[i], np.int16(self.data[i]), hdu.header, clobber=True)
+                print("Written FITS file " + rgbpath[i])
 
             # Write TIFF is image is final
             if final:
@@ -340,8 +350,10 @@ class Photo(object):
                     rgbpath[i] = rgbname[i] + ".tiff"
                     image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])))
                     image[i].save(rgbpath[i], format="tiff")
+                    print("Written TIFF file " + rgbpath[i])
                 call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine",
                       self.imagename + "_combined.tiff"])
+                print("Combined them into RGB file " + self.imagename + "_combined.tiff")
             if section:
                 for i in [0, 1, 2]:
                     self.project.set(section, str(self.number) + self.ccode[i], rgbname[i] + ".tiff")
@@ -392,7 +404,6 @@ class Batch:
             rgb = False
 
         if section in ("light", "dark", "flat", "bias"):
-            print("RAAAAAAAAAAAAAAAWWWWWWWWWWWWW")
             self.project.set("Colors", section, "cfa")
             raw = True
         else:
@@ -406,14 +417,7 @@ class Batch:
             self.itype = "light"
 
         for key in files:
-            # Only one channel
-            if not rgb:
-                photo = Photo(section=section, number=key, project=self.project, raw=raw)
-            # Three channels
-            else:
-                #photo = Photo(section=section, number=key, rgb=True, project=self.project, raw=raw)
-                photo = Photo(section=section, number=key, project=self.project, raw=raw)
-
+            photo = Photo(section=section, number=key, project=self.project, raw=raw)
             self.list[key] = photo
 
         self.refnum = int(project.get("Reference images", key="light"))  # Number of reference frame
@@ -469,7 +473,6 @@ class Batch:
 
         newdata = stacker.stack(self.list, self.project)
 
-        print(self.itype)
         if self.itype == "light":
             new = Photo(project=self.project, data=newdata)
             new.write(final=True)

@@ -28,11 +28,11 @@ class Median(Stacking):
         glist = []
         blist = []
 
+        print("Loading images in memory...")
         for i in imagelist:
             if imagelist[i].rgb:
                 rgb = True
                 for i in imagelist:
-                    print(i)
                     imagelist[i].load_data()
                     rlist.append(imagelist[i].data[0])
                     glist.append(imagelist[i].data[1])
@@ -42,14 +42,14 @@ class Median(Stacking):
             else:
                 rgb = False
                 for i in imagelist:
-                    print(i)
                     imagelist[i].load_data()
                     rlist.append(imagelist[i].data)
                     imagelist[i].release()
                     gc.collect()
             break
 
-        print("Huge array created. Now the median...")
+        print("Done!")
+        print("Calculating the median. This might take a while...")
         r = np.median(rlist, axis=0)
         del rlist
         gc.collect()
@@ -60,6 +60,7 @@ class Median(Stacking):
             b = np.median(blist, axis=0)
             del blist
             gc.collect()
+        print("Calculating done!")
         if rgb:
             return np.array([r, g, b])
         else:

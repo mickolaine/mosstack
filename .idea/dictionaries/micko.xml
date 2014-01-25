@@ -13,6 +13,9 @@
       <w>bufr</w>
       <w>calib</w>
       <w>ccode</w>
+      <w>cfab</w>
+      <w>cfag</w>
+      <w>cfar</w>
       <w>codeblue</w>
       <w>codecommon</w>
       <w>codegreen</w>
@@ -46,6 +49,7 @@
       <w>imagetype</w>
       <w>initproject</w>
       <w>itype</w>
+      <w>libraw</w>
       <w>longhelp</w>
       <w>magick</w>
       <w>magick's</w>

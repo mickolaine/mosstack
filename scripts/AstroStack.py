@@ -17,6 +17,7 @@ import sys
 from pyastrostack import Conf
 import os
 from pyastrostack.UserInterface import UserInterface
+import cProfile
 
 
 def imagetype():
@@ -47,7 +48,6 @@ def imagetype():
         imaget = None
 
     return imaget
-
 
 def main(argv):
     """

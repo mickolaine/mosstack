@@ -238,7 +238,7 @@ Example:
         """
 
         batch = Batch(section=section, project=self.project)
-        batch.demosaic(Demosaic.Bilinear())
+        batch.demosaic(Demosaic.VNG())
 
     def stack(self, section):
         """
