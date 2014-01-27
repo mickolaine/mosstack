@@ -3,6 +3,7 @@ __author__ = 'micko'
 from .. Demosaic.Demosaic import Demosaic
 import numpy as np
 import pyopencl as cl
+import datetime   # For profiling
 
 
 class VNG(Demosaic):
@@ -31,14 +32,8 @@ class VNG(Demosaic):
         print("Processing image " + image.imagepath)
 
         cfa = np.ravel(np.float32(image.data), order='C')
-
+        t1 = datetime.datetime.now()
         bayer = "RGGB"      # This goes somewhere outside this file. Now for testing here
-
-        #        GR
-        #        BG
-
-        #           RG
-        #           GB
 
         if bayer == "RGGB":
             r_condition  = "(gid%2 == 0) && (gid/x)%2 == 1"
@@ -52,7 +47,6 @@ class VNG(Demosaic):
             pass
         else:
             print("Unknown Bayer configuration. Please inform the developer.")
-
 
         code = """
 
@@ -163,53 +157,57 @@ else if (""" + r_condition + """ || """ + b_condition + """)
           gsum = 0,
           bsum = 0;
 
-    if (grn  < T) {
+    if (grn  <= T) {
         rsum = rsum + (r3 + r13)/2;
         gsum = gsum + g8;
         bsum = bsum + (b7 + b9)/2;
         n++;
     }
-    if (gre  < T) {
+    if (gre  <= T) {
         rsum = rsum + (r15 + r13)/2;
         gsum = gsum + g14;
         bsum = bsum + (b19 + b9)/2;
         n++;
     }
-    if (grs  < T) {
+    if (grs  <= T) {
         rsum = rsum + (r23 + r13)/2;
         gsum = gsum + g18;
         bsum = bsum + (b17 + b19)/2;
         n++;
     }
-    if (grw  < T)  {
+    if (grw  <= T)  {
         rsum = rsum + (r11 + r13)/2;
         gsum = gsum + g12;
         bsum = bsum + (b7 + b17)/2;
         n++;
     }
-    if (grne < T)  {
+    if (grne <= T)  {
         rsum = rsum + (r5 + r13)/2;
         gsum = gsum + (g4 + g8 + g10 + g14)/4;
         bsum = bsum + b9;
         n++;
     }
-    if (grse < T)  {
+    if (grse <= T)  {
         rsum = rsum + (r25 + r13)/2;
         gsum = gsum + (g14 + g18 + g20 + g24)/4;
         bsum = bsum + b19;
         n++;
     }
-    if (grnw < T) {
+    if (grnw <= T) {
         rsum = rsum + (r1 + r13)/2;
         gsum = gsum + (g2 + g6 + g8 + g12)/4;
         bsum = bsum + b7;
         n++;
     }
-    if (grsw < T) {
+    if (grsw <= T) {
         rsum = rsum + (r21 + r13)/2;
         gsum = gsum + (g12 + g16 + g18 + g22)/4;
         bsum = bsum + b17;
         n++;
+    }
+
+    if(n==0){
+        n = 1;
     }
 
     if (""" + r_condition + """) {
@@ -303,53 +301,56 @@ else if (""" + g_condition + """)
           gsum = 0,
           bsum = 0;
 
-    if (grn  < T) {
+    if (grn  <= T) {
         rsum = rsum + (r2 + r4 + r12 + r14)/4;
         gsum = gsum + (g3 + g13)/2;
         bsum = bsum + b8;
         n++;
     }
-    if (gre  < T) {
+    if (gre  <= T) {
         rsum = rsum + r14;
         gsum = gsum + (g13 + g15)/2;
         bsum = bsum + (b8 + b10 + b18 + b20)/4;
         n++;
     }
-    if (grs  < T) {
+    if (grs  <= T) {
         rsum = rsum + (r12 + r14 + r22 + r24)/4;
         gsum = gsum + (g13 + g23)/2;
         bsum = bsum + b18;
         n++;
     }
-    if (grw  < T)  {
+    if (grw  <= T)  {
         rsum = rsum + r12;
         gsum = gsum + (g11 + g13)/2;
         bsum = bsum + (b6 + b8 + b16 + b18)/4;
         n++;
     }
-    if (grne < T)  {
+    if (grne <= T)  {
         rsum = rsum + (r4 + r14)/2;
         gsum = gsum + g9;
         bsum = bsum + (b8 + b10)/2;
         n++;
     }
-    if (grse < T)  {
+    if (grse <= T)  {
         rsum = rsum + (r14 + r24)/2;
         gsum = gsum + g19;
         bsum = bsum + (b18 + b20)/2;
         n++;
     }
-    if (grnw < T) {
+    if (grnw <= T) {
         rsum = rsum + (r2 + r12)/2;
         gsum = gsum + g7;
         bsum = bsum + (b6 + b8)/2;
         n++;
     }
-    if (grsw < T) {
+    if (grsw <= T) {
         rsum = rsum + (r12 + r22)/2;
         gsum = gsum + g17;
         bsum = bsum + (b16 + b18)/2;
         n++;
+    }
+    if(n==0){
+        n = 1;
     }
 
     if (""" + g_nexttored + """) {
@@ -383,10 +384,11 @@ else if (""" + g_condition + """)
         cl.enqueue_copy(self.queue, r, dest_bufr)
         cl.enqueue_copy(self.queue, g, dest_bufg)
         cl.enqueue_copy(self.queue, b, dest_bufb)
-
-        r = np.int16(np.reshape(r, (image.y, -1), order='C'))
-        g = np.int16(np.reshape(g, (image.y, -1), order='C'))
-        b = np.int16(np.reshape(b, (image.y, -1), order='C'))
+        t2 = datetime.datetime.now()
+        r = np.reshape(r, (image.y, -1), order='C')
+        g = np.reshape(g, (image.y, -1), order='C')
+        b = np.reshape(b, (image.y, -1), order='C')
 
         print("...Done")
+        print("Debayering took " + str(t2-t1) + " milliseconds.")
         return np.array([r, g, b])

@@ -49,6 +49,7 @@ def imagetype():
 
     return imaget
 
+
 def main(argv):
     """
     The idea is to call program with
@@ -183,4 +184,5 @@ def main(argv):
         ui.divide(section, calib)
 
 if __name__ == "__main__":
+    #cProfile.run("main(sys.argv[1:])", "/home/micko/profiili_")
     main(sys.argv[1:])

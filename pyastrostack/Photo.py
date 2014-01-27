@@ -80,7 +80,7 @@ class Photo(object):
         """
 
         # Common variables for any case
-        self.format    = ".tiff"
+        self.format    = ".fits"
         self.project   = project
         self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
         self.number    = number     # Number to identify the image
@@ -101,14 +101,11 @@ class Photo(object):
         self.data = np.array([])    # Image data as an numpy.array
 
         if section in ("dark", "bias", "flat"):
-            print("täällä 1")
             self.imagename = self.wdir + self.name + "_" + section + "_" + str(self.number)
-            print(self.imagename)
         elif section == "Master frames":
             self.imagename = self.wdir + self.name + "_" + number + "_master"
         else:
             self.imagename = self.wdir + self.name + "_" + str(self.number)
-            print(self.imagename)
 
         self.imagepath = self.imagename + self.format
 
@@ -124,7 +121,7 @@ class Photo(object):
         if raw:
             self._load_raw(self.suffix[section], number)
         if self.format == ".fits":
-            self._load_fits(self.suffix[section], number)
+            self._load_fits(section, number)
         elif self.format == ".tiff":
             print(section)
             self._load_tiff(section, number)
@@ -152,7 +149,7 @@ class Photo(object):
             else:
                 self.imagepath = srcpath
         else:
-            self.convert(srcpath)
+            self._convert_pgm(srcpath)
         print("Done!")
 
     def _load_tiff(self, suffix, number):
@@ -207,14 +204,15 @@ class Photo(object):
         suffix - file name suffix indicating progress of process. eg. calib, reg, rgb
         number - number of file
         """
-        color = self.project.get("colors", suffix)
+        color = self.project.get("Colors", suffix)
 
         if color == "rgb":
+            self.rgb    = True
             self.imagepath = []
             self.hdu       = []
             self.image     = []
             self.data      = np.array([])
-            self.srcpath   = self.project.get(suffix, number + "r")[:-7]
+            self.srcpath   = self.project.get(self.section[suffix], number + "r")[:-7]
             for i in [0, 1, 2]:
                 self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".fits")
                 print("Loading image " + self.imagepath[i] + "...")
@@ -223,9 +221,10 @@ class Photo(object):
             self.x = self.image[0].shape[1]
             self.y = self.image[0].shape[0]
 
+            self.load_data()
+
             self.x = len(self.data[0][0])
             self.y = len(self.data[0])
-            self.rgb    = True
             self.data   = None
 
             print("Done!")
@@ -267,15 +266,51 @@ class Photo(object):
         self.data = None
         gc.collect()
 
+    def _convert_pgm(self, srcpath):
+        """
+        Convert the raw file into FITS via PGM. This is a test because I think the PIL-kit has some problems
+        with TIFF files.
+
+        Arguments:
+        srcpath - Full unix path where to find source file
+
+        Return:
+        Nothing. File is created or program crashed. Perhaps this is a good place for try-except...
+        """
+
+        if exists(srcpath):
+            """
+            if exists(self.imagepath):
+                print("Image already converted. Do you wish to overwrite? (Yes/No/All)")
+                answer = input("Y/N/A: ")
+                if answer == "N":
+                    pass
+            """
+            print("Converting RAW image...")
+            if call(["dcraw -v -4 -t 0 -d " + srcpath], shell=True):
+                print("Something went wrong... There might be helpful output from Rawtran above this line.")
+                if exists(self.imagepath):
+                    print("File " + self.imagepath + " was created but dcraw returned an error.")
+                else:
+                    print("Unable to continue.")
+            else:
+                move(srcpath[:-3] + "pgm", self.imagepath[:-4] + "pgm")
+                call(["convert", self.imagepath[:-4] + "pgm", self.imagepath])
+                print("Conversion successful!")
+        else:
+            print("Unable to find file in given path: " + srcpath + ". Find out what's wrong and try again.")
+            print("Can't continue. Exiting.")
+            exit()
+
     def convert(self, srcpath):
         """
-        Convert the raw into FITS
+        Convert the raw into TIFF
         """
 
         if exists(srcpath):
             if not exists(self.imagepath):                   # Don't convert raws again
                 print("Converting RAW image...")
-                if call(["dcraw -v -T -4 -t 0 -D " + srcpath], shell=True):
+                if call(["dcraw -v -T -4 -t 0 -d " + srcpath], shell=True):
                     print("Something went wrong... There might be helpful output from Rawtran above this line.")
                     print("File " + srcpath + " exists.")
                     if exists(self.imagepath):
@@ -319,10 +354,10 @@ class Photo(object):
 
         # Monochrome data
         if self.data.ndim == 2:
-            fits.writeto(self.imagepath, np.int16(self.data), hdu.header, clobber=True)
+            fits.writeto(self.imagepath, np.float32(self.data), hdu.header, clobber=True)
             print("Written FITS file " + self.imagepath)
 
-            # Write TIFF is image is final light
+            # Write TIFF if image is final light
             if final:
                 image = Im.fromarray(np.flipud(np.int16(self.data)))
                 image.save(self.imagename + ".tiff", format="tiff")
@@ -340,7 +375,8 @@ class Photo(object):
             for i in [0, 1, 2]:
                 rgbname[i] = self.imagename + "_" + self.ccode[i]
                 rgbpath[i] = rgbname[i] + ".fits"
-                fits.writeto(rgbpath[i], np.int16(self.data[i]), hdu.header, clobber=True)
+                print("Max value from data array: " + str(np.amax(self.data[i])))
+                fits.writeto(rgbpath[i], np.float32(self.data[i]/np.amax(self.data[i])*63000.), hdu.header, clobber=True)
                 print("Written FITS file " + rgbpath[i])
 
             # Write TIFF is image is final
@@ -349,6 +385,7 @@ class Photo(object):
                 for i in [0, 1, 2]:
                     rgbpath[i] = rgbname[i] + ".tiff"
                     image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])))
+
                     image[i].save(rgbpath[i], format="tiff")
                     print("Written TIFF file " + rgbpath[i])
                 call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine",
@@ -356,7 +393,7 @@ class Photo(object):
                 print("Combined them into RGB file " + self.imagename + "_combined.tiff")
             if section:
                 for i in [0, 1, 2]:
-                    self.project.set(section, str(self.number) + self.ccode[i], rgbname[i] + ".tiff")
+                    self.project.set(section, str(self.number) + self.ccode[i], rgbname[i] + self.format)
         self.project.write()
 
     def release(self):
