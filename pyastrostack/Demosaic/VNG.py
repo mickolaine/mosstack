@@ -390,5 +390,5 @@ else if (""" + g_condition + """)
         b = np.reshape(b, (image.y, -1), order='C')
 
         print("...Done")
-        print("Debayering took " + str(t2-t1) + " milliseconds.")
+        print("Debayering took " + str(t2-t1) + " seconds.")
         return np.array([r, g, b])

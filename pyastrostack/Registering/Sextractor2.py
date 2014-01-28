@@ -15,9 +15,15 @@ from math import sqrt, log, fabs
 from operator import itemgetter
 from os.path import splitext
 from re import sub
+import datetime   # For profiling
+import pyximport
+import numpy as np
+pyximport.install(setup_args={'include_dirs': [np.get_include()]})
+from . _step2 import step2 as _step2
 
 
-class Sextractor(Registering):
+
+class Sextractor2(Registering):
     """
     Implementation of Registering interface. This class uses SExtractor to find stars on a picture and ImageMagick
     to perform affine transform accordingly. Star matching is done with method described by E.J. Groth on article
@@ -25,7 +31,6 @@ class Sextractor(Registering):
     """
 
     def __init__(self):
-
         pass
 
     def register(self, imagelist, project):
@@ -45,9 +50,15 @@ class Sextractor(Registering):
             if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
                 continue  # TODO: Copy the reference image. Now it's omitted
 
-            self.match(imagelist[ref], imagelist[i])
-            self.reduce(imagelist[i])
-            self.vote(imagelist[i])
+            t1 = datetime.datetime.now()
+
+            #self.match(imagelist[ref], imagelist[i])
+            #self.reduce(imagelist[i])
+            #self.vote(imagelist[i])
+            self.step2(imagelist[ref], imagelist[i])
+            t2 = datetime.datetime.now()
+            print("Triangle calculations took " + str(t2-t1) + " seconds.")
+
             newpath = self.transform_magick(imagelist[i], newname="reg")
 
             if len(newpath) == 3:
@@ -73,12 +84,16 @@ class Sextractor(Registering):
     def step1(self, image):
         """
         Calculates R,C,tR and tC for every triangle in image. These quantities are described in article #TODO: Cite the article
+
+        Result image.tri = [[x1,y1,x2,y2,x3,y3, R, C, tR, tC], ... , ...]
         """
 
         ep = 0.3
         xi = 3. * ep
 
+        newtri = []
         for tri in image.tri:      # tri is a list of coordinates. ((x1,y1),(x2,y2),(x3,y3))
+
             x1 = tri[0][0]
             y1 = tri[0][1]
             x2 = tri[1][0]
@@ -100,11 +115,26 @@ class Sextractor(Registering):
             tC = sqrt(2. * S * ep ** 2. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.) +
                       3. * C ** 2. * ep ** 4. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.) ** 2.)
 
-            tri.append(R)
-            tri.append(C)
-            tri.append(tR)
-            tri.append(tC)
+            temp = [tri[0][0], tri[0][1], tri[1][0], tri[1][1], tri[2][0], tri[2][1]]
+            temp.append(R)
+            temp.append(C)
+            temp.append(tR)
+            temp.append(tC)
+            newtri.append(np.array(temp))
+        image.tri = newtri
+
         print("Step 1 complete for image " + str(image.number) + ".")
+
+    def step2(self, i1, i2):
+        """
+        An XXXXX implementation of the algorithm
+
+        i1 and i2 have a list tri = [[(x1,y1),(x2,y2),(x3,y3), R, C, tR, tC], ... , ...]
+        """
+
+        print("Starting to match image " + str(i2.number) + " to reference image " + str(i1.number))
+
+        i2.pairs = _step2(np.array(i1.tri), np.array(i2.tri))
 
     def match(self, i1, i2):
         """
@@ -414,8 +444,7 @@ class Sex:
     def execsex(self):
         """ Execute SExtractor with created conf """
         # TODO: try-except here about conf-file and other requirements
-        print(splitext(self.image.imagepath[1])[0][:-6] + ".fits")
-        commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0][:-6] + ".fits", "-c", self.confname]
+        commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0] + ".fits", "-c", self.confname]
 
         call(commandlist, cwd=Conf.path)  # cwd changes working directory
 
@@ -434,13 +463,18 @@ class Sex:
                 pass
             else:
                 #self.coord.append((float(i.split()[4]), float(i.split()[5])))
-                self.coord.append((float(i.split()[4]), self.image.y - float(i.split()[5])))
+                self.coord.append([float(i.split()[4]), self.image.y - float(i.split()[5])])
 
+
+        self.coord = sorted(self.coord)
         return self.coord
+
 
     def maketriangles(self):
         """
         Make all possible triangles from coordinates in self.coord and save it to self.image.tri
+
+        Result: image.tri = [[(x1,y1),(x2,y2),(x3,y3)], ... , ...]
         """
 
         self.image.tri = []
@@ -452,6 +486,7 @@ class Sex:
                 for k in self.coord:
                     if (j == k) or (i == k):
                         break
-                    n=n+1
+                    n += 1
                     self.image.tri.append([i, j, k])
+
         print("Total number of triangles in image " + self.image.imagename + str(self.image.number) + " is " + str(n) + ".")
