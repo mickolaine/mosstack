@@ -229,7 +229,7 @@ Example:
         Register project files under specified section.
         """
 
-        batch = Batch(section=section, project=self.project)
+        batch = Batch(section=section, project=self.project, load=False)
         batch.register(Registering.Sextractor())
 
     def demosaic(self, section):
@@ -246,7 +246,7 @@ Example:
         """
 
         batch = Batch(section=section, project=self.project)
-        batch.stack(Stacker.Median())
+        batch.stack(Stacker.Median2())
 
     def subtract(self, section, calib):
         """

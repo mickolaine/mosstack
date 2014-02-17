@@ -64,7 +64,7 @@ class Photo(object):
     arrays where index 0 is red, 1 is green and 2 is blue.
     """
 
-    def __init__(self, section=None, number=None, project=None, data=None, raw=False):
+    def __init__(self, section=None, number=None, project=None, data=None, raw=False, load=True):
         """
         Constructor requires a filename of a raw image. I have a Canon EOS 1100D so Canon CR2 is what I originally
         write this for.
@@ -85,6 +85,8 @@ class Photo(object):
         self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
         self.number    = number     # Number to identify the image
         self.wdir      = self.project.get("Setup", "Path")  # Working directory
+        self.sec       = section
+        self.load      = load
 
         # Instance variables required later
         self.srcpath   = None       # Path for source image
@@ -215,6 +217,9 @@ class Photo(object):
             self.srcpath   = self.project.get(self.section[suffix], number + "r")[:-7]
             for i in [0, 1, 2]:
                 self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".fits")
+            #if not self.load:
+            #    return
+            for i in [0, 1, 2]:
                 print("Loading image " + self.imagepath[i] + "...")
                 self.hdu.append(fits.open(self.imagepath[i], memmap=True))
                 self.image.append(self.hdu[i][0])
@@ -223,9 +228,9 @@ class Photo(object):
 
             self.load_data()
 
-            self.x = len(self.data[0][0])
-            self.y = len(self.data[0])
-            self.data   = None
+            #self.data   = None
+            self.release_data2()
+            gc.collect()
 
             print("Done!")
             print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
@@ -241,6 +246,33 @@ class Photo(object):
 
             print("Done!")
             print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
+
+    def _load_fits2(self, suffix, number):
+        """
+        Load a fits file created by this program
+
+        Arguments:
+        suffix - file name suffix indicating progress of process. eg. calib, reg, rgb
+        number - number of file
+        """
+        color = self.project.get("Colors", suffix)
+
+        if self.rgb:
+            self.imagepath = []
+            self.hdu       = []
+            self.image     = []
+            self.data      = np.array([])
+            self.srcpath   = self.project.get(self.section[suffix], number + "r")[:-7]
+            for i in [0, 1, 2]:
+                self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".fits")
+                self.hdu.append(fits.open(self.imagepath[i], memmap=True))
+                self.image.append(self.hdu[i][0])
+        else:
+            self.hdu   = fits.open(self.imagepath, memmap=True)
+            self.image = self.hdu[0]
+            self.x = self.image.shape[1]
+            self.y = self.image.shape[0]
+            self.data  = None
 
     def load_data(self):
         """
@@ -259,11 +291,74 @@ class Photo(object):
             else:
                 self.data = np.flipud(np.array(self.image))
 
+    def load_data2(self, clip=None):
+        """
+        Load portion of FITS-data into memory. Does not work with TIFF
+
+        Arguments:
+        rangetuple - coordinates of the clipping area (x0, x1, y0, y1)
+        """
+
+        if self.format != ".fits":
+            print("This method works only with FITS files.")
+
+        if clip is not None:
+            y0 = clip[0]
+            y1 = clip[1]
+            x0 = clip[2]
+            x1 = clip[3]
+
+            self._load_fits2(self.sec, self.number)
+
+            if self.rgb:
+                self.data = np.array([self.image[0].data[x0:x1, y0:y1],
+                                      self.image[1].data[x0:x1, y0:y1],
+                                      self.image[2].data[x0:x1, y0:y1]])
+            else:
+                self.data = self.image.data[x0:x1, y0:y1]
+
+        else:
+            self._load_fits2(self.sec, self.number)
+
+            if self.rgb:
+                self.data = np.array([self.image[0].data,
+                                      self.image[1].data,
+                                      self.image[2].data])
+            else:
+                self.data = self.image.data
+
     def release_data(self):
         """
         Release data from memory
         """
-        self.data = None
+        #self.data = None
+        for i in [0, 1, 2]:
+            self.hdu[i].close()
+            self.image[i] = None
+            self.data[i] = None
+        del self.image
+        del self.data
+        gc.collect()
+
+    def release_data2(self):
+        """
+        Release data from memory and delete even the hdu
+        """
+        if self.rgb:
+            for i in [0, 1, 2]:
+                self.hdu[i].close()
+                self.image[i] = None
+                self.data = None
+                self.hdu[i] = None
+            del self.image
+            del self.data
+
+        else:
+            self.hdu.close()
+            self.image = None
+            self.data = None
+            self.hdu = None
+
         gc.collect()
 
     def _convert_pgm(self, srcpath):
@@ -279,15 +374,13 @@ class Photo(object):
         """
 
         if exists(srcpath):
-            """
+
             if exists(self.imagepath):
-                print("Image already converted. Do you wish to overwrite? (Yes/No/All)")
-                answer = input("Y/N/A: ")
-                if answer == "N":
-                    pass
-            """
+                print("Image already converted.")
+                return
+
             print("Converting RAW image...")
-            if call(["dcraw -v -4 -t 0 -d " + srcpath], shell=True):
+            if call(["dcraw -v -4 -t 0 -D " + srcpath], shell=True):
                 print("Something went wrong... There might be helpful output from Rawtran above this line.")
                 if exists(self.imagepath):
                     print("File " + self.imagepath + " was created but dcraw returned an error.")
@@ -330,17 +423,76 @@ class Photo(object):
             print("Can't continue. Exiting.")
             exit()
 
-    def write(self, section=None, number=None, final=False):
+    def _write_fits(self, section, number, final=False, log=False):
         """
-        Write the image on disk
+        Write self.data to disk as a fits file
 
         Arguments:
         suffix   = Suffix to add to file name: <Project name>_suffix.fits
-        final    = Define writing of final image. Temporary files are saved as FITS only
-                   but final also as TIFF
+        number   = Number of the image
+        final    = Add "final" to file name
+        log      = Write file info to project file
         """
 
         hdu = fits.PrimaryHDU()                 # To create a default header
+
+        if self.data is None:
+            print("No data set! Exiting...")
+            exit()
+
+        if final:
+            self.imagename = self.wdir + self.name + "_final"
+        else:
+            self.number = number
+            try:
+                suffix = self.suffix[section]
+            except KeyError:
+                suffix = section
+            self.imagename = self.wdir + self.name + "_" + str(self.number) + "_" + suffix
+
+        self.imagepath = self.imagename + ".fits"
+
+        # CFA or single channel data. Only one file to create.
+        # TODO: modify data so that single channel has ndim == 1 (ISSUE #3)
+        if self.data.ndim == 2:
+            fits.writeto(self.imagepath, np.int16(self.data), hdu.header, clobber=True)
+            if log:
+                if section == "Master frames":
+                    self.project.set(section, number, self.imagepath)
+                else:
+                    self.project.set(section, str(self.number), self.imagepath)
+
+        elif self.data.ndim == 3:
+            rgbname = ["", "", ""]
+            rgbpath = ["", "", ""]
+            for i in [0, 1, 2]:
+                rgbname[i] = self.imagename + "_" + self.ccode[i]
+                rgbpath[i] = rgbname[i] + ".fits"
+                fits.writeto(rgbpath[i],
+                             np.int16(self.data[i]),  # / np.amax(self.data[i]) * 63000.),
+                             hdu.header,
+                             clobber=True)
+                if log:
+                    self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
+            if final:
+                call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine",
+                      "-depth", "16", self.imagename + "_combined.tiff"])
+        else:
+            print("Data has unsupported number of dimensions. Exiting...")
+            exit()
+        self.project.write()
+
+    def _write_tiff(self, section, number, final=False, log=False):
+        """
+        Write self.data to disk as a tiff file
+
+        Arguments:
+        suffix   = Suffix to add to file name: <Project name>_suffix.fits
+        number   = Number of the image
+        final    = Add "final" to file name
+        log      = Write file info to project file
+        """
+
         if section:
             self.number = number
             try:
@@ -350,51 +502,53 @@ class Photo(object):
             self.imagename = self.wdir + self.name + "_" + str(self.number) + "_" + suffix
         else:
             self.imagename = self.wdir + self.name + "_final"
-        self.imagepath = self.imagename + ".fits"
+        self.imagepath = self.imagename + ".tiff"
 
-        # Monochrome data
         if self.data.ndim == 2:
-            fits.writeto(self.imagepath, np.float32(self.data), hdu.header, clobber=True)
-            print("Written FITS file " + self.imagepath)
+            image = Im.fromarray(np.flipud(np.int16(self.data)))
+            image.save(self.imagename + ".tiff", format="tiff")
+            if log:
+                self.project.set(section, str(self.number), self.imagepath)
 
-            # Write TIFF if image is final light
-            if final:
-                image = Im.fromarray(np.flipud(np.int16(self.data)))
-                image.save(self.imagename + ".tiff", format="tiff")
-                print("Written TIFF file " + self.imagename + ".tiff")
-            if section == "Master frames":
-                self.project.set(section, number, self.imagename + ".tiff")
-            elif section:
-                self.project.set(section, self.number, self.imagename + ".tiff")
-
-        # RGB data
-        else:
-            rgbname = [0, 0, 0]
+        elif self.data.ndim == 3:
+            rgbname = ["", "", ""]
             rgbpath = ["", "", ""]
 
+            image = [0, 0, 0]
             for i in [0, 1, 2]:
-                rgbname[i] = self.imagename + "_" + self.ccode[i]
-                rgbpath[i] = rgbname[i] + ".fits"
-                print("Max value from data array: " + str(np.amax(self.data[i])))
-                fits.writeto(rgbpath[i], np.float32(self.data[i]/np.amax(self.data[i])*63000.), hdu.header, clobber=True)
-                print("Written FITS file " + rgbpath[i])
-
-            # Write TIFF is image is final
-            if final:
-                image = [0, 0, 0]
-                for i in [0, 1, 2]:
-                    rgbpath[i] = rgbname[i] + ".tiff"
-                    image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])))
-
-                    image[i].save(rgbpath[i], format="tiff")
-                    print("Written TIFF file " + rgbpath[i])
-                call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine",
-                      self.imagename + "_combined.tiff"])
-                print("Combined them into RGB file " + self.imagename + "_combined.tiff")
-            if section:
-                for i in [0, 1, 2]:
-                    self.project.set(section, str(self.number) + self.ccode[i], rgbname[i] + self.format)
+                rgbpath[i] = rgbname[i] + ".tiff"
+                image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])))
+                image[i].save(rgbpath[i], format="tiff")
+                if log:
+                    self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
         self.project.write()
+
+    def write_tiff(self):
+        """
+        Load data from current fits and save it as a tiff. Required because ImageMagick
+        doesn't work with fits too well.
+        """
+        self.load_data2()
+
+        image = [0, 0, 0]
+        for i in [0, 1, 2]:
+            image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])))
+            image[i].save(self.imagepath[i][:-5] + ".tiff", format="tiff")
+
+        self.release_data2()
+
+    def write(self, section=None, number=None, final=False, log=True):
+        """
+        Wrapper function to relay writing of the image on disk
+
+        Arguments:
+        suffix   = Suffix to add to file name: <Project name>_suffix.fits
+        number   = Defines the number of photo.
+        final    = Define writing of final image. Temporary files are saved as FITS only
+                   but final also as TIFF
+        """
+
+        self._write_fits(section, number, final=final, log=log)
 
     def release(self):
         """
@@ -412,7 +566,7 @@ class Batch:
     It also checks compatibility for each photo loaded
     """
 
-    def __init__(self, section=None, project=None):
+    def __init__(self, section=None, project=None, load=True):
         """
         Constructor loads all necessary objects and sets some default values
         list will have Photo.Photo type objects which will hold all the information of one image.
@@ -454,7 +608,7 @@ class Batch:
             self.itype = "light"
 
         for key in files:
-            photo = Photo(section=section, number=key, project=self.project, raw=raw)
+            photo = Photo(section=section, number=key, project=self.project, raw=raw, load=load)
             self.list[key] = photo
 
         self.refnum = int(project.get("Reference images", key="light"))  # Number of reference frame
@@ -477,11 +631,11 @@ class Batch:
         """
 
         for i in self.list:
-            self.list[i].load_data()
+            self.list[i].load_data2()
             print(self.list[i].data.shape)
             new = Photo(project=self.project, data=demosaic.demosaic(self.list[i]))
-            new.write(section="RGB images", number=i, final=True)
-            self.list[i].release_data()
+            new.write(section="RGB images", number=i)
+            self.list[i].release_data2()
         print(self.section)
         self.project.set("Colors", "rgb", "rgb")
         self.project.set("State", "Demosaic", "1")
@@ -512,10 +666,10 @@ class Batch:
 
         if self.itype == "light":
             new = Photo(project=self.project, data=newdata)
-            new.write(final=True)
+            new.write(final=True, log=False)
         elif self.itype in ("bias", "dark", "flat"):
             new = Photo(project=self.project, data=newdata)
-            new.write(section="Master frames", number=self.itype, final=True)
+            new.write(section="Master frames", number=self.itype)
 
     def subtract(self, calib, stacker):
         """
@@ -526,11 +680,14 @@ class Batch:
         calib.load_data()
 
         for i in self.list:
-            self.list[i].load_data()
+            self.list[i].load_data2()
             new = Photo(project=self.project, data=stacker.subtract(self.list[i], calib))
-            new.write(section="Calibrated images", number=i, final=True)
-            self.list[i].release_data()
-        calib.release_data()
+            if self.section in ("flat", "bias", "dark"):
+                new.write(section=self.section, number=i)
+            else:
+                new.write(section="Calibrated images", number=i)
+            self.list[i].release_data2()
+        calib.release_data2()
         self.project.set("Colors", "calib", "cfa")
         self.project.write()
 
@@ -542,10 +699,10 @@ class Batch:
         calib = Photo(section="Master frames", number=calib, project=self.project)
         calib.load_data()
         for i in self.list:
-            self.list[i].load_data()
+            self.list[i].load_data2()
             new = Photo(project=self.project, data=stacker.divide(self.list[i], calib))
-            new.write(section="Calibrated images", number=i, final=True)
-            self.list[i].release_data()
-        calib.release_data()
+            new.write(section="Calibrated images", number=i)
+            self.list[i].release_data2()
+        calib.release_data2()
         self.project.set("Colors", "calib", "cfa")
         self.project.write()

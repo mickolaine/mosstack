@@ -31,7 +31,7 @@ class VNG(Demosaic):
 
         print("Processing image " + image.imagepath)
 
-        cfa = np.ravel(np.float32(image.data), order='C')
+        cfa = np.ravel(np.float32(image.data, order='C'))
         t1 = datetime.datetime.now()
         bayer = "RGGB"      # This goes somewhere outside this file. Now for testing here
 
@@ -66,6 +66,9 @@ if (gid < 2*x || gid%x < 2 || gid%x > x-3 || gid > len - 2*x)    // Two row bord
     r[gid] = a[gid];
     g[gid] = a[gid];
     b[gid] = a[gid];
+    //r[gid] = 0;
+    //g[gid] = 0;
+    //b[gid] = 0;
 }
 
 // Red pixels
@@ -105,32 +108,14 @@ else if (""" + r_condition + """ || """ + b_condition + """)
 
     float grn, gre, grs, grw, grne, grse, grnw, grsw;
 
-    grn  = fabs(g8  - g18) + fabs(r3  - r13) + fabs(b7  - b17)/2 + fabs(b9  - b19)/2 + fabs(g2  - g12)/2 + fabs(g4  - g14)/2;
-    gre  = fabs(g14 - g12) + fabs(r15 - r13) + fabs(b9  - b7 )/2 + fabs(b19 - b17)/2 + fabs(g10 - g8 )/2 + fabs(g20 - g18)/2;
-    grs  = fabs(g18 - g8 ) + fabs(r23 - r13) + fabs(b19 - b9 )/2 + fabs(b17 - b7 )/2 + fabs(g24 - g14)/2 + fabs(g22 - g12)/2;
-    grw  = fabs(g12 - g14) + fabs(r11 - r13) + fabs(b17 - b19)/2 + fabs(b7  - b9 )/2 + fabs(g16 - g18)/2 + fabs(g6  - g8 )/2;
-    grne = fabs(b9  - b17) + fabs(r5  - r13) + fabs(g8  - g12)/2 + fabs(g14 - g18)/2 + fabs(g4  - g8 )/2 + fabs(g10 - g14)/2;
-    grse = fabs(b19 - b7 ) + fabs(r25 - r13) + fabs(g14 - g8 )/2 + fabs(g18 - g12)/2 + fabs(g20 - g14)/2 + fabs(g24 - g18)/2;
-    grnw = fabs(b7  - b19) + fabs(r1  - r13) + fabs(g12 - g18)/2 + fabs(g8  - g14)/2 + fabs(g6  - g12)/2 + fabs(g2  - g8 )/2;
-    grsw = fabs(b17 - b9 ) + fabs(r21 - r13) + fabs(g18 - g14)/2 + fabs(g12 - g8 )/2 + fabs(g22 - g18)/2 + fabs(g16 - g12)/2;
-
-    // min = gn;
-    // if (ge  < min) min = ge;
-    // if (gs  < min) min = gs;
-    // if (gw  < min) min = gw;
-    // if (gne < min) min = gne;
-    // if (gse < min) min = gse;
-    // if (gnw < min) min = gnw;
-    // if (gsw < min) min = gsw;
-
-    // max = gn;
-    // if (ge  > max) max = ge;
-    // if (gs  > max) max = gs;
-    // if (gw  > max) max = gw;
-    // if (gne > max) max = gne;
-    // if (gse > max) max = gse;
-    // if (gnw > max) max = gnw;
-    // if (gsw > max) max = gsw;
+    grn  = fabs(g8  - g18) + fabs(r3  - r13) + fabs(b7  - b17)/2.0 + fabs(b9  - b19)/2.0 + fabs(g2  - g12)/2.0 + fabs(g4  - g14)/2.0;
+    gre  = fabs(g14 - g12) + fabs(r15 - r13) + fabs(b9  - b7 )/2.0 + fabs(b19 - b17)/2.0 + fabs(g10 - g8 )/2.0 + fabs(g20 - g18)/2.0;
+    grs  = fabs(g18 - g8 ) + fabs(r23 - r13) + fabs(b19 - b9 )/2.0 + fabs(b17 - b7 )/2.0 + fabs(g24 - g14)/2.0 + fabs(g22 - g12)/2.0;
+    grw  = fabs(g12 - g14) + fabs(r11 - r13) + fabs(b17 - b19)/2.0 + fabs(b7  - b9 )/2.0 + fabs(g16 - g18)/2.0 + fabs(g6  - g8 )/2.0;
+    grne = fabs(b9  - b17) + fabs(r5  - r13) + fabs(g8  - g12)/2.0 + fabs(g14 - g18)/2.0 + fabs(g4  - g8 )/2.0 + fabs(g10 - g14)/2.0;
+    grse = fabs(b19 - b7 ) + fabs(r25 - r13) + fabs(g14 - g8 )/2.0 + fabs(g18 - g12)/2.0 + fabs(g20 - g14)/2.0 + fabs(g24 - g18)/2.0;
+    grnw = fabs(b7  - b19) + fabs(r1  - r13) + fabs(g12 - g18)/2.0 + fabs(g8  - g14)/2.0 + fabs(g6  - g12)/2.0 + fabs(g2  - g8 )/2.0;
+    grsw = fabs(b17 - b9 ) + fabs(r21 - r13) + fabs(g18 - g14)/2.0 + fabs(g12 - g8 )/2.0 + fabs(g22 - g18)/2.0 + fabs(g16 - g12)/2.0;
 
     float min, max, t1, t2, t3, t4;
 
@@ -158,56 +143,56 @@ else if (""" + r_condition + """ || """ + b_condition + """)
           bsum = 0;
 
     if (grn  <= T) {
-        rsum = rsum + (r3 + r13)/2;
+        rsum = rsum + (r3 + r13)/2.0;
         gsum = gsum + g8;
-        bsum = bsum + (b7 + b9)/2;
-        n++;
+        bsum = bsum + (b7 + b9)/2.0;
+        n = n+1;
     }
     if (gre  <= T) {
-        rsum = rsum + (r15 + r13)/2;
+        rsum = rsum + (r15 + r13)/2.0;
         gsum = gsum + g14;
-        bsum = bsum + (b19 + b9)/2;
-        n++;
+        bsum = bsum + (b19 + b9)/2.0;
+        n = n+1;
     }
     if (grs  <= T) {
-        rsum = rsum + (r23 + r13)/2;
+        rsum = rsum + (r23 + r13)/2.0;
         gsum = gsum + g18;
-        bsum = bsum + (b17 + b19)/2;
-        n++;
+        bsum = bsum + (b17 + b19)/2.0;
+        n = n+1;
     }
     if (grw  <= T)  {
-        rsum = rsum + (r11 + r13)/2;
+        rsum = rsum + (r11 + r13)/2.0;
         gsum = gsum + g12;
-        bsum = bsum + (b7 + b17)/2;
-        n++;
+        bsum = bsum + (b7 + b17)/2.0;
+        n = n+1;
     }
     if (grne <= T)  {
-        rsum = rsum + (r5 + r13)/2;
-        gsum = gsum + (g4 + g8 + g10 + g14)/4;
+        rsum = rsum + (r5 + r13)/2.0;
+        gsum = gsum + (g4 + g8 + g10 + g14)/4.0;
         bsum = bsum + b9;
-        n++;
+        n = n+1;
     }
     if (grse <= T)  {
-        rsum = rsum + (r25 + r13)/2;
-        gsum = gsum + (g14 + g18 + g20 + g24)/4;
+        rsum = rsum + (r25 + r13)/2.0;
+        gsum = gsum + (g14 + g18 + g20 + g24)/4.0;
         bsum = bsum + b19;
-        n++;
+        n = n+1;
     }
     if (grnw <= T) {
-        rsum = rsum + (r1 + r13)/2;
-        gsum = gsum + (g2 + g6 + g8 + g12)/4;
+        rsum = rsum + (r1 + r13)/2.0;
+        gsum = gsum + (g2 + g6 + g8 + g12)/4.0;
         bsum = bsum + b7;
-        n++;
+        n = n+1;
     }
     if (grsw <= T) {
-        rsum = rsum + (r21 + r13)/2;
-        gsum = gsum + (g12 + g16 + g18 + g22)/4;
+        rsum = rsum + (r21 + r13)/2.0;
+        gsum = gsum + (g12 + g16 + g18 + g22)/4.0;
         bsum = bsum + b17;
-        n++;
+        n = n+1;
     }
 
     if(n==0){
-        n = 1;
+        n = 1.0;
     }
 
     if (""" + r_condition + """) {
@@ -267,10 +252,10 @@ else if (""" + g_condition + """)
 
     float grn, gre, grs, grw, grne, grse, grnw, grsw;
 
-    grn  = fabs(g3  - g13) + fabs(b8  - b18) + fabs(g7  - g17)/2 + fabs(g9  - g19)/2 + fabs(r2  - r12)/2 + fabs(r4  - r14)/2;
-    gre  = fabs(r14 - r12) + fabs(g15 - g13) + fabs(g9  - g7 )/2 + fabs(g19 - g17)/2 + fabs(b10 - b8 )/2 + fabs(b20 - b18)/2;
-    grs  = fabs(b18 - b8 ) + fabs(g23 - g13) + fabs(g19 - g9 )/2 + fabs(g17 - g7 )/2 + fabs(r24 - r14)/2 + fabs(r22 - r12)/2;
-    grw  = fabs(r12 - r14) + fabs(g11 - g13) + fabs(g17 - g19)/2 + fabs(g7  - g9 )/2 + fabs(b16 - b18)/2 + fabs(b6  - b8 )/2;
+    grn  = fabs(g3  - g13) + fabs(b8  - b18) + fabs(g7  - g17)/2.0 + fabs(g9  - g19)/2.0 + fabs(r2  - r12)/2.0 + fabs(r4  - r14)/2.0;
+    gre  = fabs(r14 - r12) + fabs(g15 - g13) + fabs(g9  - g7 )/2.0 + fabs(g19 - g17)/2.0 + fabs(b10 - b8 )/2.0 + fabs(b20 - b18)/2.0;
+    grs  = fabs(b18 - b8 ) + fabs(g23 - g13) + fabs(g19 - g9 )/2.0 + fabs(g17 - g7 )/2.0 + fabs(r24 - r14)/2.0 + fabs(r22 - r12)/2.0;
+    grw  = fabs(r12 - r14) + fabs(g11 - g13) + fabs(g17 - g19)/2.0 + fabs(g7  - g9 )/2.0 + fabs(b16 - b18)/2.0 + fabs(b6  - b8 )/2.0;
     grne = fabs(g9  - g17) + fabs(g5  - g13) + fabs(r4  - r12) + fabs(b10 - b18);
     grse = fabs(g19 - g7 ) + fabs(g25 - g13) + fabs(b20 - b8 ) + fabs(r24 - r12);
     grnw = fabs(g7  - g19) + fabs(g1  - g13) + fabs(b6  - b18) + fabs(r2  - r14);
@@ -302,52 +287,52 @@ else if (""" + g_condition + """)
           bsum = 0;
 
     if (grn  <= T) {
-        rsum = rsum + (r2 + r4 + r12 + r14)/4;
-        gsum = gsum + (g3 + g13)/2;
+        rsum = rsum + (r2 + r4 + r12 + r14)/4.0;
+        gsum = gsum + (g3 + g13)/2.0;
         bsum = bsum + b8;
-        n++;
+        n = n+1;
     }
     if (gre  <= T) {
         rsum = rsum + r14;
-        gsum = gsum + (g13 + g15)/2;
-        bsum = bsum + (b8 + b10 + b18 + b20)/4;
-        n++;
+        gsum = gsum + (g13 + g15)/2.0;
+        bsum = bsum + (b8 + b10 + b18 + b20)/4.0;
+        n = n+1;
     }
     if (grs  <= T) {
-        rsum = rsum + (r12 + r14 + r22 + r24)/4;
-        gsum = gsum + (g13 + g23)/2;
+        rsum = rsum + (r12 + r14 + r22 + r24)/4.0;
+        gsum = gsum + (g13 + g23)/2.0;
         bsum = bsum + b18;
-        n++;
+        n = n+1;
     }
     if (grw  <= T)  {
         rsum = rsum + r12;
-        gsum = gsum + (g11 + g13)/2;
-        bsum = bsum + (b6 + b8 + b16 + b18)/4;
-        n++;
+        gsum = gsum + (g11 + g13)/2.0;
+        bsum = bsum + (b6 + b8 + b16 + b18)/4.0;
+        n = n+1;
     }
     if (grne <= T)  {
-        rsum = rsum + (r4 + r14)/2;
+        rsum = rsum + (r4 + r14)/2.0;
         gsum = gsum + g9;
-        bsum = bsum + (b8 + b10)/2;
-        n++;
+        bsum = bsum + (b8 + b10)/2.0;
+        n = n+1;
     }
     if (grse <= T)  {
-        rsum = rsum + (r14 + r24)/2;
+        rsum = rsum + (r14 + r24)/2.0;
         gsum = gsum + g19;
-        bsum = bsum + (b18 + b20)/2;
-        n++;
+        bsum = bsum + (b18 + b20)/2.0;
+        n = n+1;
     }
     if (grnw <= T) {
-        rsum = rsum + (r2 + r12)/2;
+        rsum = rsum + (r2 + r12)/2.0;
         gsum = gsum + g7;
-        bsum = bsum + (b6 + b8)/2;
-        n++;
+        bsum = bsum + (b6 + b8)/2.0;
+        n = n+1;
     }
     if (grsw <= T) {
-        rsum = rsum + (r12 + r22)/2;
+        rsum = rsum + (r12 + r22)/2.0;
         gsum = gsum + g17;
-        bsum = bsum + (b16 + b18)/2;
-        n++;
+        bsum = bsum + (b16 + b18)/2.0;
+        n = n+1;
     }
     if(n==0){
         n = 1;
@@ -385,9 +370,9 @@ else if (""" + g_condition + """)
         cl.enqueue_copy(self.queue, g, dest_bufg)
         cl.enqueue_copy(self.queue, b, dest_bufb)
         t2 = datetime.datetime.now()
-        r = np.reshape(r, (image.y, -1), order='C')
-        g = np.reshape(g, (image.y, -1), order='C')
-        b = np.reshape(b, (image.y, -1), order='C')
+        r = np.int16(np.reshape(r, (image.y, -1), order='C'))
+        g = np.int16(np.reshape(g, (image.y, -1), order='C'))
+        b = np.int16(np.reshape(b, (image.y, -1), order='C'))
 
         print("...Done")
         print("Debayering took " + str(t2-t1) + " seconds.")

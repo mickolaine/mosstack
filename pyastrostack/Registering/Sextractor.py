@@ -15,6 +15,8 @@ from math import sqrt, log, fabs
 from operator import itemgetter
 from os.path import splitext
 from re import sub
+from shutil import copyfile
+import datetime   # For profiling
 
 
 class Sextractor(Registering):
@@ -33,6 +35,8 @@ class Sextractor(Registering):
         Calls everything required for total registration process.
         """
 
+        t1 = datetime.datetime.now()
+
         self.findstars(imagelist)
 
         ref = project.get("Reference images", "light")
@@ -43,7 +47,11 @@ class Sextractor(Registering):
         for i in imagelist:
             # Don't match image with itself
             if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
-                continue  # TODO: Copy the reference image. Now it's omitted
+                newpath = []
+                for c in (0, 1, 2):
+                    newpath.append(imagelist[i].imagename + "_reg_" + imagelist[i].ccode[c] + imagelist[i].format)
+                    copyfile(imagelist[i].imagepath[c], newpath[c])
+                continue
 
             self.match(imagelist[ref], imagelist[i])
             self.reduce(imagelist[i])
@@ -55,6 +63,8 @@ class Sextractor(Registering):
                     project.set("Registered images", imagelist[i].number + imagelist[i].ccode[j], newpath[j])
             else:
                 project.set("Registered images", imagelist[i].number, newpath)
+        t2 = datetime.datetime.now()
+        print("Triangle calculations took " + str(t2-t1) + " seconds.")
 
     def findstars(self, imagelist):
         """
@@ -259,13 +269,16 @@ class Sextractor(Registering):
         # Actual transforming
         if image.rgb:
             newpath = ["", "", ""]
+            image.write_tiff()
             for i in [0, 1, 2]:
                 print(image.imagepath[i])
+                tiffpath = image.imagepath[i][:-5] + ".tiff"
                 newpath[i] = image.imagename + "_" + newname + "_" + image.ccode[i] + image.format
-                command = "convert " + image.imagepath[i] + " -distort Affine "\
-                          + points + " " + newpath[i]
-
+                command = "convert " + tiffpath + " -distort Affine " \
+                          + points + " " + newpath[i]  # -define quantum:format=signed -depth 16
+                print(command)
                 call([command], shell=True)
+                call(["rm " + tiffpath], shell=True)
 
         else:
             newpath = image.imagename + "_" + newname + image.format

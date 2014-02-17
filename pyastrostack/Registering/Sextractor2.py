@@ -20,7 +20,7 @@ import pyximport
 import numpy as np
 pyximport.install(setup_args={'include_dirs': [np.get_include()]})
 from . _step2 import step2 as _step2
-
+from shutil import copyfile
 
 
 class Sextractor2(Registering):
@@ -28,6 +28,9 @@ class Sextractor2(Registering):
     Implementation of Registering interface. This class uses SExtractor to find stars on a picture and ImageMagick
     to perform affine transform accordingly. Star matching is done with method described by E.J. Groth on article
     'A pattern-matching algorithm for two-dimensional coordinate' (http://adsabs.harvard.edu/abs/1986AJ.....91.1244G)
+
+    This file is an attempt to make triangle matching faster by doing the calculations on Cython. So far it's a failure
+    and calculations actually take more than 50% more time.
     """
 
     def __init__(self):
@@ -37,6 +40,8 @@ class Sextractor2(Registering):
         """
         Calls everything required for total registration process.
         """
+
+        t1 = datetime.datetime.now()
 
         self.findstars(imagelist)
 
@@ -48,16 +53,19 @@ class Sextractor2(Registering):
         for i in imagelist:
             # Don't match image with itself
             if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
-                continue  # TODO: Copy the reference image. Now it's omitted
+                newpath = []
+                for c in (0, 1, 2):
+                    newpath.append(imagelist[i].imagename + "_reg_" + imagelist[i].ccode[c] + imagelist[i].format)
+                    copyfile(imagelist[i].imagepath[c], newpath[c])
+                continue
 
-            t1 = datetime.datetime.now()
+
 
             #self.match(imagelist[ref], imagelist[i])
             #self.reduce(imagelist[i])
             #self.vote(imagelist[i])
             self.step2(imagelist[ref], imagelist[i])
-            t2 = datetime.datetime.now()
-            print("Triangle calculations took " + str(t2-t1) + " seconds.")
+
 
             newpath = self.transform_magick(imagelist[i], newname="reg")
 
@@ -66,6 +74,8 @@ class Sextractor2(Registering):
                     project.set("Registered images", imagelist[i].number + imagelist[i].ccode[j], newpath[j])
             else:
                 project.set("Registered images", imagelist[i].number, newpath)
+        t2 = datetime.datetime.now()
+        print("Triangle calculations took " + str(t2-t1) + " seconds.")
 
     def findstars(self, imagelist):
         """
@@ -444,7 +454,9 @@ class Sex:
     def execsex(self):
         """ Execute SExtractor with created conf """
         # TODO: try-except here about conf-file and other requirements
-        commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0] + ".fits", "-c", self.confname]
+        print(splitext(self.image.imagepath[1])[0][:-6] + ".fits")
+        #commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0] + ".fits", "-c", self.confname]
+        commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0][:-6] + ".fits", "-c", self.confname]
 
         call(commandlist, cwd=Conf.path)  # cwd changes working directory
 
@@ -468,7 +480,6 @@ class Sex:
 
         self.coord = sorted(self.coord)
         return self.coord
-
 
     def maketriangles(self):
         """
