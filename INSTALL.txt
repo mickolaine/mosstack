@@ -1,52 +1,58 @@
-This document will explain how to install pyAstroStack. For now, it only
-contains list of dependencies. PyAstroStack relies heavily on other open source
-projects and actually for now it could be considered only as a script to
-automate some tasks. My intention is to make a full program with GUI and all,
-but since my programming experience and time to do this are heavily limited,
-I can't promise anything.
+Installing
+=========
 
+Download the archive and extract it. That you most likely have already done since you're reading this document.
+Installing can be done by
 
-PyAstroStack will need these to work... This list has become too long. I would
-like to see this with as few dependencies as possible.
+    ``python setup.py install``
 
-Rawtran - http://integral.physics.muni.cz/rawtran/									<---- Trying to get rid of this
-This will convert raw photos into fits-files. The task could probably be done
-with just Dcraw, but I'll see about changing that behaviour later on. Rawtran
-does the stuff for now. I couldn't find this on any distro so you'll have to
-install it manually.
+or if you want to install under $HOME
 
-DCRaw - http://www.cybercom.net/~dcoffin/dcraw/
-Rawtran requires this. This can be found on any Linux distribution.
+    ``python setup.py install --user``
 
-SExtractor - http://www.astromatic.net/software/sextractor
-SExtractor extracts star coordinates from fits-images. This data will be used
-for aligning the photos.
+Note that command python should run python3 and python2 won't work. If you have python2 as default python interpreter,
+running the script
 
-ImageMagick - http://www.imagemagick.org
-Needed for converting files and perhaps for rotating and aligning images. 
-Luckily this comes with most Linux distributions and probably is already
-installed.
+    ``python3 setup.py install --user``
 
-ExifTool - http://www.sno.phy.queensu.ca/~phil/exiftool/
-Extract information from original photos. This comes with almost any Linux and
-probably is already installed if you have installed any photo-related stuff.
+might work.
 
-AstroPy - http://www.astropy.org/													<---- Probably not needed with tiff anymore
-For now I'm only using PyFITS from this package, but since authors of PyFITS
-recommend using AstroPy, that's what I'll do. I'll try to change behaviour of
-my programs so that it checks which one is installed, AstroPy or just PyFITS
-and use the one found. Gentoo has this on Portage, but Ubuntu does not. Can be
-installed with pip (http://www.pip-installer.org/en/latest/) by running
-"pip install astropy". Pip can be found on several distros
+Installing required software
+=========
 
-NumPy - http://www.numpy.org/
-AstroPy requires this. Also used by straight import in order to fiddle with
-numpy.arrays. This should be in your distros package manager.
+Debian and Ubuntu (and perhaps derivatives)
+-------------
 
-Scikit-image - http://scikit-image.org/
-This provides easy and working functions for affine transform and acquiring
-transform matrix for it. Requires SciPy.
+This oneliner ought install most of the required software
 
-SciPy - http://www.scipy.org/
-Scikit-image requires this. Full of useful tools so probably this will be
-needed for something else as well.
+    ``apt-get install dcraw sextractor imagemagick numpy python3-pip``
+
+Rawtran is installed by following instructions in
+<http://integral.physics.muni.cz/rawtran/>
+
+AstroPy can be installed now with
+
+    ``pip-3.2 install astropy``
+
+as root or
+
+    ``pip-3.2 install --user astropy``
+
+if you want the installation on users $HOME
+
+Gentoo
+------------
+AstroPy and SExtractor are in Science overlay, so that has to be activated. Easiest way is to use Layman
+
+    ``emerge layman``
+
+and activate the overlay by
+
+    ``layman -a science``
+
+After that all the requirements can be installed with
+
+    ``emerge dcraw sextractor imagemagick exiftool astropy numpy cython pyopencl``
+
+Some of these might be ~arch and require unmasking, but as a Gentoo user you might know how to get around it
+

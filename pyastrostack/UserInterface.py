@@ -1,142 +1,37 @@
-===========
-pyAstroStack
-===========
+"""
+Classes related to user interface. Main program "AstroStack.py" parses the input (at least for now), but
+this file controls all the actions after that.
+"""
 
-pyAstroStack is an open source registering and stacking software for
-astronomical images. Original (and current) design is made for photos taken
-with DSLR camera. The program is still quite incomplete; only the core modules
-regarding image registration and stacking are working. If you understood none
-of that, this program probably isn't for you.
+from . import Conf
+from . Photo import Photo, Batch
+from . import Registering
+from . import Demosaic
+from . import Stacker
 
-
-Prerequisites
-=========
-
-pyAstroStack relies heavily on other open source programs and libraries. Here's
-a complete list:
-
-* Python 3 - <http://www.python.org>
-
-* DCRaw - <http://www.cybercom.net/~dcoffin/dcraw/>
-
-* SExtractor - <http://www.astromatic.net/software/sextractor>
-  Installation of this might be tricky if it's not included in your Linux
-  distribution. RPM-packages on the link above should work in most cases.
-  I even installed this on Gentoo with provided RPM.
-
-* Rawtran - <http://integral.physics.muni.cz/rawtran/>
-  I try to get rid of this. It's not included in any Linux distribution I
-  checked so installation is done from source.
-  
-* ImageMagick - <http://www.imagemagick.org>
-
-* ExifTool - <http://www.sno.phy.queensu.ca/~phil/exiftool/>
-
-* AstroPy - <http://www.astropy.org/>
-  or
-  pyFITS - <http://www.stsci.edu/institute/software_hardware/pyfits>
-
-* NumPy - <http://www.numpy.org/>
-
-* Cython - <http://www.cython.org/>
-
-* PyOpenCL - <http://mathema.tician.de/software/pyopencl>
+__author__ = 'Mikko Laine'
 
 
-Installing
-=========
+class UserInterface:
+    """
+    Command line user interface for pyAstroStack. The script AstroStack.py parses the arguments
+    but this class holds all the functionality
+    """
 
-Download the archive and extract it. That you most likely have already done since you're reading this document.
-Installing can be done by
+    setup = Conf.Setup()
 
-    ``python setup.py install``
+    shorthelp = """
+    pyAstroStack is run with:
+    AstroStack.py <operation> <arguments>
 
-or if you want to install under $HOME
+    <operation>   - init, adddir, addfile, ... Try AstroStack help for full list
+    <arguments>   - Depends on <operation>
+    """
+    """
+    String to print when program run with no parameters or false parameters.
+    """
 
-    ``python setup.py install --user``
-
-Note that command python should run python3 and python2 won't work. If you have python2 as default python interpreter,
-running the script
-
-    ``python3 setup.py install --user``
-
-might work.
-
-Installing required software
-=========
-
-Debian and Ubuntu (and perhaps derivatives)
--------------
-
-This oneliner ought install most of the required software
-
-    ``apt-get install dcraw sextractor imagemagick numpy python3-pip``
-
-Rawtran is installed by following instructions in
-<http://integral.physics.muni.cz/rawtran/>
-
-AstroPy can be installed now with
-
-    ``pip-3.2 install astropy``
-
-as root or
-
-    ``pip-3.2 install --user astropy``
-
-if you want the installation on users $HOME
-
-Gentoo
-------------
-AstroPy and SExtractor are in Science overlay, so that has to be activated. Easiest way is to use Layman
-
-    ``emerge layman``
-
-and activate the overlay by
-
-    ``layman -a science``
-
-After that all the requirements can be installed with
-
-    ``emerge dcraw sextractor imagemagick exiftool astropy numpy cython pyopencl``
-
-Some of these might be ~arch and require unmasking, but as a Gentoo user you might know how to get around it
-
-
-Features
-=========
-
-Ultimate plan is to have functionality similar to DeepSkyStacker or IRIS, but
-for now the program is limited to basic functionality.
-
-List of features
- - CFA to RGB conversion (see below for supported cameras)
-  - Bilinear (python, only for testing)
-  - Bilinear (OpenCL)
-  - LaRoche-Prescott (OpenCL)
-  - Variable Number of Gradients (OpenCL)
-
- - Registering
-  - SExtractor and http://adsabs.harvard.edu/abs/1986AJ.....91.1244G
-
- - Aligning
-  - Affine transformations by ImageMagick
-
- - Stacking
-  - Mean value
-  - Median value
-
-Supported cameras
-------------
-I have a Canon EOS 1100D and I've used that to do all the testings. Most likely
-everything with the same Bayer filter pattern works.
-
-List of tested Camera Model IDs (as printed by exiftool)
- - EOS Rebel T3 / 1100D / Kiss X50
-
-List of tested Bayer filter patterns (as printed by dcraw -i -v)
- - RGGBRGGBRGGBRGGB
-
-
+    longhelp = """
 Using pyAstroStack
 =========
 
@@ -308,3 +203,71 @@ Example:
 
     ``AstroStack stack bias``
     ``AstroStack stack reg``
+    """
+
+    """
+    String to print when program run with 'help' parameter. Will include short explanations on every
+    command line argument available.
+
+    For now is just a copy of shorthelp.
+    """
+
+    def __init__(self, project=None):
+        """
+        Initialize user interface and set project name if specified
+        """
+        self.project = project
+
+    def setproject(self, project):
+        """
+        Set project name
+        """
+        self.project = project
+
+    def register(self, section):
+        """
+        Register project files under specified section.
+        """
+
+        batch = Batch(section=section, project=self.project, load=False)
+        batch.register(Registering.Sextractor2())
+
+    def demosaic(self, section):
+        """
+        Demosaic project files under specified section. Use demosaicing algorithm TODO:
+        """
+
+        batch = Batch(section=section, project=self.project, load=False)
+        batch.demosaic(Demosaic.VNG())
+
+    def stack(self, section):
+        """
+        Stack project files under specified section. Stacker read from TODO: do this
+        """
+
+        batch = Batch(section=section, project=self.project, load=False)
+        batch.stack(Stacker.Median())
+
+    def subtract(self, section, calib):
+        """
+        Subtract calibration frame from main frame or frames.
+
+        Arguments:
+        section - section code or name for master frame (light, dark, flat, bias)
+        calib - name for master frame (dark, bias)
+        """
+
+        batch = Batch(section=section, project=self.project, load=False)
+        batch.subtract(calib, Stacker.Mean())
+
+    def divide(self, section, calib):
+        """
+        Divide main frame with calibration frame.
+
+        Arguments:
+        section - section code or name for master frame
+        calib - name for master frame (most likely flat)
+        """
+
+        batch = Batch(section=section, project=self.project, load=False)
+        batch.divide(calib, Stacker.Mean())
