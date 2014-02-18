@@ -6,12 +6,12 @@ import numpy
 
 setup(
     name='pyAstroStack',
-    version='0.0.9dev',
+    version='0.1',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=['pyastrostack', 'pyastrostack.Demosaic', 'pyastrostack.Registering', 'pyastrostack.Stacker'],
 #    packages=find_packages(),
-    scripts=['scripts/Testi.py','scripts/AstroStack.py'],
+    scripts=['scripts/AstroStack.py'],
     include_dirs=[numpy.get_include()],
     ext_modules = cythonize("pyastrostack/Registering/_step2.pyx"),
     url='https://bitbucket.org/mikko_laine/pyastrostack/',

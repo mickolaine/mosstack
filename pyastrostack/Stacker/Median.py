@@ -121,10 +121,8 @@ class Median(Stacking):
                         glist.append(imagelist[i].data[1].copy())
                         blist.append(imagelist[i].data[2].copy())  # *2.525858)
                         imagelist[i].release_data2()
-                    print(rlist)
                     r = np.median(rlist, axis=0)
                     del rlist
-                    print(r)
                     gc.collect()
                     g = np.median(glist, axis=0)
                     del glist
@@ -160,10 +158,7 @@ class Median(Stacking):
                         rslice = r
 
                     else:
-                        print(rslice.shape)
-                        print(r.shape)
                         rslice = np.r_[rslice, r]
-                        print(rslice.shape)
 
                 inumber += 1
 
@@ -174,15 +169,9 @@ class Median(Stacking):
                     result = rslice
             else:
                 if rgb:
-                    print(result[0].shape)
-                    print(rslice)
                     result = [np.c_[result[0], rslice], np.c_[result[1], gslice], np.c_[result[2], bslice]]
-                    print(result[0].shape)
                 else:
-                    print(result.shape)
-                    print(rslice)
                     result = np.c_[result, rslice]
-                    print(result.shape)
 
         for i in imagelist:
             imagelist[i].release()

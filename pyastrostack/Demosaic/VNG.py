@@ -42,7 +42,7 @@ class VNG(Demosaic):
             g_condition  = g_nexttored + " || " + g_nexttoblue
             b_condition  = "(gid%2 == 1) && (gid/x)%2 == 0"
         elif bayer == "RGBG":
-            pass
+            pass  # TODO: Implement other bayer filters
         elif bayer == "GRGB":
             pass
         else:
@@ -108,14 +108,22 @@ else if (""" + r_condition + """ || """ + b_condition + """)
 
     float grn, gre, grs, grw, grne, grse, grnw, grsw;
 
-    grn  = fabs(g8  - g18) + fabs(r3  - r13) + fabs(b7  - b17)/2.0 + fabs(b9  - b19)/2.0 + fabs(g2  - g12)/2.0 + fabs(g4  - g14)/2.0;
-    gre  = fabs(g14 - g12) + fabs(r15 - r13) + fabs(b9  - b7 )/2.0 + fabs(b19 - b17)/2.0 + fabs(g10 - g8 )/2.0 + fabs(g20 - g18)/2.0;
-    grs  = fabs(g18 - g8 ) + fabs(r23 - r13) + fabs(b19 - b9 )/2.0 + fabs(b17 - b7 )/2.0 + fabs(g24 - g14)/2.0 + fabs(g22 - g12)/2.0;
-    grw  = fabs(g12 - g14) + fabs(r11 - r13) + fabs(b17 - b19)/2.0 + fabs(b7  - b9 )/2.0 + fabs(g16 - g18)/2.0 + fabs(g6  - g8 )/2.0;
-    grne = fabs(b9  - b17) + fabs(r5  - r13) + fabs(g8  - g12)/2.0 + fabs(g14 - g18)/2.0 + fabs(g4  - g8 )/2.0 + fabs(g10 - g14)/2.0;
-    grse = fabs(b19 - b7 ) + fabs(r25 - r13) + fabs(g14 - g8 )/2.0 + fabs(g18 - g12)/2.0 + fabs(g20 - g14)/2.0 + fabs(g24 - g18)/2.0;
-    grnw = fabs(b7  - b19) + fabs(r1  - r13) + fabs(g12 - g18)/2.0 + fabs(g8  - g14)/2.0 + fabs(g6  - g12)/2.0 + fabs(g2  - g8 )/2.0;
-    grsw = fabs(b17 - b9 ) + fabs(r21 - r13) + fabs(g18 - g14)/2.0 + fabs(g12 - g8 )/2.0 + fabs(g22 - g18)/2.0 + fabs(g16 - g12)/2.0;
+    grn  = fabs(g8  - g18) + fabs(r3  - r13) + fabs(b7  - b17)/2.0 +
+           fabs(b9  - b19)/2.0 + fabs(g2  - g12)/2.0 + fabs(g4  - g14)/2.0;
+    gre  = fabs(g14 - g12) + fabs(r15 - r13) + fabs(b9  - b7 )/2.0 +
+           fabs(b19 - b17)/2.0 + fabs(g10 - g8 )/2.0 + fabs(g20 - g18)/2.0;
+    grs  = fabs(g18 - g8 ) + fabs(r23 - r13) + fabs(b19 - b9 )/2.0 +
+           fabs(b17 - b7 )/2.0 + fabs(g24 - g14)/2.0 + fabs(g22 - g12)/2.0;
+    grw  = fabs(g12 - g14) + fabs(r11 - r13) + fabs(b17 - b19)/2.0 +
+           fabs(b7  - b9 )/2.0 + fabs(g16 - g18)/2.0 + fabs(g6  - g8 )/2.0;
+    grne = fabs(b9  - b17) + fabs(r5  - r13) + fabs(g8  - g12)/2.0 +
+           fabs(g14 - g18)/2.0 + fabs(g4  - g8 )/2.0 + fabs(g10 - g14)/2.0;
+    grse = fabs(b19 - b7 ) + fabs(r25 - r13) + fabs(g14 - g8 )/2.0 +
+           fabs(g18 - g12)/2.0 + fabs(g20 - g14)/2.0 + fabs(g24 - g18)/2.0;
+    grnw = fabs(b7  - b19) + fabs(r1  - r13) + fabs(g12 - g18)/2.0 +
+           fabs(g8  - g14)/2.0 + fabs(g6  - g12)/2.0 + fabs(g2  - g8 )/2.0;
+    grsw = fabs(b17 - b9 ) + fabs(r21 - r13) + fabs(g18 - g14)/2.0 +
+           fabs(g12 - g8 )/2.0 + fabs(g22 - g18)/2.0 + fabs(g16 - g12)/2.0;
 
     float min, max, t1, t2, t3, t4;
 
@@ -252,10 +260,14 @@ else if (""" + g_condition + """)
 
     float grn, gre, grs, grw, grne, grse, grnw, grsw;
 
-    grn  = fabs(g3  - g13) + fabs(b8  - b18) + fabs(g7  - g17)/2.0 + fabs(g9  - g19)/2.0 + fabs(r2  - r12)/2.0 + fabs(r4  - r14)/2.0;
-    gre  = fabs(r14 - r12) + fabs(g15 - g13) + fabs(g9  - g7 )/2.0 + fabs(g19 - g17)/2.0 + fabs(b10 - b8 )/2.0 + fabs(b20 - b18)/2.0;
-    grs  = fabs(b18 - b8 ) + fabs(g23 - g13) + fabs(g19 - g9 )/2.0 + fabs(g17 - g7 )/2.0 + fabs(r24 - r14)/2.0 + fabs(r22 - r12)/2.0;
-    grw  = fabs(r12 - r14) + fabs(g11 - g13) + fabs(g17 - g19)/2.0 + fabs(g7  - g9 )/2.0 + fabs(b16 - b18)/2.0 + fabs(b6  - b8 )/2.0;
+    grn  = fabs(g3  - g13) + fabs(b8  - b18) + fabs(g7  - g17)/2.0 +
+           fabs(g9  - g19)/2.0 + fabs(r2  - r12)/2.0 + fabs(r4  - r14)/2.0;
+    gre  = fabs(r14 - r12) + fabs(g15 - g13) + fabs(g9  - g7 )/2.0 +
+           fabs(g19 - g17)/2.0 + fabs(b10 - b8 )/2.0 + fabs(b20 - b18)/2.0;
+    grs  = fabs(b18 - b8 ) + fabs(g23 - g13) + fabs(g19 - g9 )/2.0 +
+           fabs(g17 - g7 )/2.0 + fabs(r24 - r14)/2.0 + fabs(r22 - r12)/2.0;
+    grw  = fabs(r12 - r14) + fabs(g11 - g13) + fabs(g17 - g19)/2.0 +
+           fabs(g7  - g9 )/2.0 + fabs(b16 - b18)/2.0 + fabs(b6  - b8 )/2.0;
     grne = fabs(g9  - g17) + fabs(g5  - g13) + fabs(r4  - r12) + fabs(b10 - b18);
     grse = fabs(g19 - g7 ) + fabs(g25 - g13) + fabs(b20 - b8 ) + fabs(r24 - r12);
     grnw = fabs(g7  - g19) + fabs(g1  - g13) + fabs(b6  - b18) + fabs(r2  - r14);
@@ -363,8 +375,8 @@ else if (""" + g_condition + """)
 
         program = cl.Program(self.ctx, code).build()
         program.vng(self.queue, cfa.shape, None, cfa_buf, dest_bufr, dest_bufg, dest_bufb)
-        r = np.empty_like(cfa)
-        g = np.empty_like(cfa)
+        r = np.empty_like(cfa)  # TODO: Maybe rotating these same arrays from frame to frame could be done
+        g = np.empty_like(cfa)  # It might save a little time
         b = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, r, dest_bufr)
         cl.enqueue_copy(self.queue, g, dest_bufg)

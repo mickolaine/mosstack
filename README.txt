@@ -15,6 +15,8 @@ Prerequisites
 pyAstroStack relies heavily on other open source programs and libraries. Here's
 a complete list:
 
+* Python 3 - <http://www.python.org>
+
 * DCRaw - <http://www.cybercom.net/~dcoffin/dcraw/>
 
 * SExtractor - <http://www.astromatic.net/software/sextractor>
@@ -36,7 +38,29 @@ a complete list:
 
 * NumPy - <http://www.numpy.org/>
 
+* Cython - <http://www.cython.org/>
 
+* PyOpenCL - <http://mathema.tician.de/software/pyopencl>
+
+
+Installing
+=========
+
+Download the archive and extract it. That you most likely have already done since you're reading this document.
+Installing can be done by
+
+    ``python setup.py install``
+
+or if you want to install under $HOME
+
+    ``python setup.py install --user``
+
+Note that command python should run python3 and python2 won't work. If you have python2 as default python interpreter,
+running the script
+
+    ``python3 setup.py install --user``
+
+might work.
 
 Installing required software
 =========
@@ -63,7 +87,19 @@ if you want the installation on users $HOME
 
 Gentoo
 ------------
-Foo
+AstroPy and SExtractor are in Science overlay, so that has to be activated. Easiest way is to use Layman
+
+    ``emerge layman``
+
+and activate the overlay by
+
+    ``layman -a science``
+
+After that all the requirements can be installed with
+
+    ``emerge dcraw sextractor imagemagick exiftool astropy numpy cython pyopencl``
+
+Some of these might be ~arch and require unmasking, but as a Gentoo user you might know how to get around it
 
 
 Features
@@ -77,6 +113,7 @@ List of features
   - Bilinear (python, only for testing)
   - Bilinear (OpenCL)
   - LaRoche-Prescott (OpenCL)
+  - Variable Number of Gradients (OpenCL)
 
  - Registering
   - SExtractor and http://adsabs.harvard.edu/abs/1986AJ.....91.1244G

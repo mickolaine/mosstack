@@ -31,6 +31,9 @@ class Sextractor2(Registering):
 
     This file is an attempt to make triangle matching faster by doing the calculations on Cython. So far it's a failure
     and calculations actually take more than 50% more time.
+
+    Update 14-02-18: With couple of modifications this became about 30% faster than pure Python. Making the default for
+    now. This file needs a cleanup though...
     """
 
     def __init__(self):
@@ -43,7 +46,7 @@ class Sextractor2(Registering):
 
         t1 = datetime.datetime.now()
 
-        self.findstars(imagelist)
+        self.findstars(imagelist, project)
 
         ref = project.get("Reference images", "light")
 
@@ -58,8 +61,6 @@ class Sextractor2(Registering):
                     newpath.append(imagelist[i].imagename + "_reg_" + imagelist[i].ccode[c] + imagelist[i].format)
                     copyfile(imagelist[i].imagepath[c], newpath[c])
                 continue
-
-
 
             #self.match(imagelist[ref], imagelist[i])
             #self.reduce(imagelist[i])
@@ -77,16 +78,16 @@ class Sextractor2(Registering):
         t2 = datetime.datetime.now()
         print("Triangle calculations took " + str(t2-t1) + " seconds.")
 
-    def findstars(self, imagelist):
+    def findstars(self, imagelist, project):
         """
         Finds the stars and creates all the triangles from them
         """
-        S = Sex(imagelist['1'])    # TODO: Ref image here
+        S = Sex(imagelist['1'], project)    # TODO: Ref image here
         sensitivity = S.findsensitivity()
         del S
 
         for i in imagelist:
-            S = Sex(imagelist[i])
+            S = Sex(imagelist[i], project)
             S.setsensitivity(sensitivity[0], sensitivity[1])
             imagelist[i].coordinates = S.getcoordinates()
             S.maketriangles()
@@ -130,21 +131,23 @@ class Sextractor2(Registering):
             temp.append(C)
             temp.append(tR)
             temp.append(tC)
-            newtri.append(np.array(temp))
+            newtri.append(temp)
         image.tri = newtri
 
         print("Step 1 complete for image " + str(image.number) + ".")
 
     def step2(self, i1, i2):
         """
-        An XXXXX implementation of the algorithm
+        A Cython implementation of the algorithm
 
         i1 and i2 have a list tri = [[(x1,y1),(x2,y2),(x3,y3), R, C, tR, tC], ... , ...]
         """
 
-        print("Starting to match image " + str(i2.number) + " to reference image " + str(i1.number))
+        print("Matching image " + str(i2.number) + " to reference image " + str(i1.number) + "...")
 
-        i2.pairs = _step2(np.array(i1.tri), np.array(i2.tri))
+        i2.pairs = _step2(i1.tri, i2.tri)
+
+        print("Done.")
 
     def match(self, i1, i2):
         """
@@ -299,19 +302,23 @@ class Sextractor2(Registering):
         # Actual transforming
         if image.rgb:
             newpath = ["", "", ""]
+            image.write_tiff()
             for i in [0, 1, 2]:
-                print(image.imagepath[i])
+                tiffpath = image.imagepath[i][:-5] + ".tiff"
                 newpath[i] = image.imagename + "_" + newname + "_" + image.ccode[i] + image.format
-                command = "convert " + image.imagepath[i] + " -distort Affine "\
-                          + points + " " + newpath[i]
-
+                command = "convert " + tiffpath + " -distort Affine " \
+                          + points + " " + newpath[i]  # -define quantum:format=signed -depth 16
                 call([command], shell=True)
+                call(["rm " + tiffpath], shell=True)
 
         else:
+            image.write_tiff()
+            tiffpath = image.imagepath[:-5] + ".tiff"
             newpath = image.imagename + "_" + newname + image.format
-            command = "convert " + image.imagepath + " -distort Affine "\
+            command = "convert " + tiffpath + " -distort Affine "\
                       + points + " " + newpath
             call([command], shell=True)
+            call(["rm " + tiffpath], shell=True)
 
         return newpath
 
@@ -324,13 +331,14 @@ class Sex:
     checks and parses the output.
     """
 
-    def __init__(self, image):
+    def __init__(self, image, project):
         """
         Initializes the object and common configuration values
         """
 
         self.image = image
-
+        self.sextractor = project.sex
+        self.path = project.path
         self.catname = self.image.imagename + ".cat"
 
         self.config = {
@@ -456,9 +464,9 @@ class Sex:
         # TODO: try-except here about conf-file and other requirements
         print(splitext(self.image.imagepath[1])[0][:-6] + ".fits")
         #commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0] + ".fits", "-c", self.confname]
-        commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0][:-6] + ".fits", "-c", self.confname]
+        commandlist = [self.sextractor, splitext(self.image.imagepath[1])[0][:-6] + ".fits", "-c", self.confname]
 
-        call(commandlist, cwd=Conf.path)  # cwd changes working directory
+        call(commandlist, cwd=self.path)  # cwd changes working directory
 
     def getcoordinates(self):
         """

@@ -1,8 +1,7 @@
 #cython: boundscheck=False
 #cython: wraparound=False
 
-cimport numpy as np
-import math
+#cimport numpy as np
 from operator import itemgetter
 
 cdef extern from "math.h":
@@ -28,35 +27,41 @@ cdef _step2(tri1, tri2):
     cdef float Ra, Rb, tRa, tRb, Ca, Cb, tCa, tCb, pA, pB
     cdef float x1, x2, x3, y1, y2, y3
     cdef float mean, variance
+    cdef float raba2, tra2, tca2
 
     match = []
-    print(1)
-    print(len(tri1))
-    print(len(tri2))
+
     for i in range(0, len(tri1)):
         temp = []
 
         best = None
+        Ra  = tri1[i][6]
+        tRa = tri1[i][8]
+        Ca  = tri1[i][7]
+        tCa = tri1[i][9]
+
+        tra2 = tRa*tRa
+        tca2 = tCa*tCa
+
         for j in range(0, len(tri2)):
-            Ra  = tri1[i][6]
+
             Rb  = tri2[j][6]
-            tRa = tri1[i][8]
             tRb = tri2[j][8]
-            Ca  = tri1[i][7]
             Cb  = tri2[j][7]
-            tCa = tri1[i][9]
             tCb = tri2[j][9]
 
+            raba2 = (Ra - Rb) ** 2
+
             # Run the check described in articles equations (7) and (8)
-            if ((Ra - Rb) ** 2 < (tRa*tRa + tRb*tRb)) & ((Ca - Cb)*(Ca-Cb) < (tCa*tCa + tCb*tCb)):
+            if (raba2 < (tra2 + tRb*tRb)) & ((Ca - Cb)*(Ca-Cb) < (tca2 + tCb*tCb)):
                 if (best is None) or ((Ra-Rb)*(Ra-Rb) < best):
                     #if so, save it for later use
-                    best = (Ra - Rb)*(Ra-Rb)
+                    best = raba2
                     temp = [tri1[i], tri2[j]]
         if best is not None:
             match.append(temp)
         del temp
-    print(2)
+
     for i in range(0, len(match)):
 
         x1 = match[i][0][0]
@@ -85,7 +90,6 @@ cdef _step2(tri1, tri2):
     do_it_again = True
 
     times = 0
-    print(3)
     while do_it_again:
         newlist = []
         mean = 0.
@@ -108,7 +112,7 @@ cdef _step2(tri1, tri2):
         times += 1
 
     pairs = {}          # vertex pair as the key and votes as the value
-    print(4)
+
     for m in range(0, len(match)):
         for i in range(3):
             key = ((match[m][1][2*i], match[m][1][2*i+1]),
@@ -117,7 +121,7 @@ cdef _step2(tri1, tri2):
                 pairs[key] += 1
             else:
                 pairs[key] = 1
-    print(5)
+
     newpairs = {}
     for key in pairs:
         if pairs[key] > 2:                      # Should be >1 but I really don't need that much points.
@@ -129,6 +133,6 @@ cdef _step2(tri1, tri2):
         final.append((key[0], key[1], pairs[key]))
 
     final = sorted(final, key=itemgetter(2), reverse=True)
-    print("After voting there are " + str(len(pairs)) + " pairs found")
+    #print("After voting there are " + str(len(pairs)) + " pairs found")
 
     return final

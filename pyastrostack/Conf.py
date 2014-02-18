@@ -175,6 +175,8 @@ class Project:
         self.projectfile = pfile
         self.conf = ConfigAbstractor()
         self.setup = Setup()
+        self.sex   = self.setup.get("Programs", "SExtractor")
+        self.path  = self.setup.get("Default", "path")
 
     def readproject(self):
         """
@@ -196,7 +198,7 @@ class Project:
                 print("Try again using a file not already in use.")
                 exit()
             else:
-                print(self.projectfile)
+                print("Using project file " + self.projectfile)
                 os.unlink(self.projectfile)
         self.conf.save("Project name", pname)
         self.set("Setup", "Path", self.setup.conf.conf["Default"]["Path"])
@@ -320,50 +322,94 @@ class Project:
         self.conf.save(key, value, section)
 
 
+class Frame:
+    """
+    Class to save frame information.
+
+    Frame has information of one photo frame and what has been done for it.
+    At the moment project file holds most of this, but for 0.2 this might change # TODO: check this before 0.2
+    At first Frame will include information about image dimensions so the files won't have to be loaded every time
+    Image.shape is asked.
+    """
+
+    def __init__(self, ffile, project):
+        """
+        Initialize project
+
+        Arguments:
+        ffile - frame info file to use
+        project - project configurator. remove if not needed
+        """
+
+        self.framefile = ffile
+        self.conf = ConfigAbstractor()
+        self.project = project
+
+        if os.path.exists(self.framefile):
+            return
+
+        self.set("Default", "Loaded", "0")
+        self.conf.write(self.framefile)
+
+    def readproject(self):
+        """
+        Read frame info from specified file
+        """
+        if self.framefile is None:
+            self.initproject(self.fname)
+        if os.path.exists(self.projectfile):
+            self.conf.read(self.projectfile)
+
+    def initproject(self, fnumber):
+        """
+        Initialize a frame file
+
+        If file exists, do nothing. TODO: Change this
+        """
+        if os.path.exists(self.framefile):
+            print("File already exists yet trying to create a new one.")
+
+        self.conf.save("Frame number", fnumber)
+        self.set("Default", "Loaded", "0")
+        self.conf.write(self.framefile)
+
+    def get(self, section, key=None):
+        """
+        Return frame information under defined section
+
+        Arguments:
+        section = string to look for in configuration
+        key     = key to look for in section, not needed
+
+        Returns:
+        dict {key: value}
+        string value, if key defined
+        """
+
+        self.conf.read(self.framefile)
+        if key:
+            return self.conf.conf[section][key]
+        else:
+            return dict(self.conf.conf._sections[section])
+
+    def set(self, section, key, value):
+        """
+        Set key: value under section in frame info
+
+        Arguments:
+        section
+        key
+        value
+
+        Returns:
+        Nothing
+        """
+        self.conf.read(self.framefile)
+        self.conf.save(key, value, section)
+        self.conf.write(self.framefile)
 
 
-path     = "/media/data/Temp/astrostack/"            # Working path to use during procedure
 
-sex      = "sex"                                     # Name of SExtractor executable. sex is default
+#path     = "/media/data/Temp/astrostack/"            # Working path to use during procedure
 
-rawprefix  = "/media/Dee/Astrokuvat/2013-09-25/Andromeda/"
-rawprefix2 = "/media/Dee/Astrokuvat/2013-10-21/Andromeda/"
-shortlist = ("Andromeda_2013-09-25_19.06.54.175028.cr2", "Andromeda_2013-09-25_19.15.11.803218.cr2", "Andromeda_2013-09-25_19.08.09.317766.cr2", "Andromeda_2013-09-25_19.15.40.536755.cr2")
-             #"Andromeda_2013-09-25_19.15.40.536755.cr2", "Andromeda_2013-09-25_19.08.37.571008.cr2", "Andromeda_2013-09-25_19.16.08.441205.cr2",
-             #"Andromeda_2013-09-25_19.09.05.428895.cr2", "Andromeda_2013-09-25_19.16.36.976464.cr2", "Andromeda_2013-09-25_19.09.33.511740.cr2")
-rawlist = (
-"Andromeda_2013-09-25_19.06.54.175028.cr2", "Andromeda_2013-09-25_19.15.11.803218.cr2", "Andromeda_2013-09-25_19.08.09.317766.cr2", "Andromeda_2013-09-25_19.15.40.536755.cr2",
-"Andromeda_2013-09-25_19.08.37.571008.cr2", "Andromeda_2013-09-25_19.16.08.441205.cr2", "Andromeda_2013-09-25_19.09.05.428895.cr2", "Andromeda_2013-09-25_19.16.36.976464.cr2",
-"Andromeda_2013-09-25_19.09.33.511740.cr2", "Andromeda_2013-09-25_19.17.04.994163.cr2", "Andromeda_2013-09-25_19.10.01.946076.cr2", "Andromeda_2013-09-25_19.17.33.131743.cr2",
-"Andromeda_2013-09-25_19.10.30.087332.cr2", "Andromeda_2013-09-25_19.18.01.504639.cr2", "Andromeda_2013-09-25_19.10.58.246614.cr2", "Andromeda_2013-09-25_19.18.29.477342.cr2",
-"Andromeda_2013-09-25_19.11.26.339471.cr2", "Andromeda_2013-09-25_19.18.57.431874.cr2", "Andromeda_2013-09-25_19.11.55.225213.cr2", "Andromeda_2013-09-25_19.19.26.545332.cr2",
-"Andromeda_2013-09-25_19.12.23.153909.cr2", "Andromeda_2013-09-25_19.19.54.459613.cr2", "Andromeda_2013-09-25_19.12.50.976853.cr2", "Andromeda_2013-09-25_19.20.22.529075.cr2",
-"Andromeda_2013-09-25_19.13.18.917980.cr2", "Andromeda_2013-09-25_19.20.50.918664.cr2", "Andromeda_2013-09-25_19.13.47.252966.cr2", "Andromeda_2013-09-25_19.21.18.982024.cr2",
-"Andromeda_2013-09-25_19.14.15.240230.cr2", "Andromeda_2013-09-25_19.21.47.276579.cr2", "Andromeda_2013-09-25_19.14.43.169013.cr2"
-            )
-rawlist2 = ("andromeda10.CR2",  "andromeda19.CR2",  "andromeda28.CR2",  "andromeda37.CR2",  "andromeda46.CR2",
-"andromeda11.CR2",  "andromeda20.CR2",  "andromeda29.CR2",  "andromeda38.CR2",  "andromeda47.CR2",
-"andromeda12.CR2",  "andromeda21.CR2",  "andromeda30.CR2",  "andromeda39.CR2",  "andromeda48.CR2",
-"andromeda13.CR2",  "andromeda22.CR2",  "andromeda31.CR2",  "andromeda40.CR2",  "andromeda49.CR2",
-"andromeda14.CR2",  "andromeda23.CR2",  "andromeda32.CR2",  "andromeda41.CR2",  "andromeda5.CR2",
-"andromeda15.CR2",  "andromeda24.CR2",  "andromeda33.CR2",  "andromeda42.CR2",  "andromeda50.CR2",
-"andromeda16.CR2",  "andromeda25.CR2",  "andromeda34.CR2",  "andromeda43.CR2",  "andromeda8.CR2",
-"andromeda17.CR2",  "andromeda26.CR2",  "andromeda35.CR2",  "andromeda44.CR2",
-"andromeda18.CR2",  "andromeda27.CR2",  "andromeda36.CR2",  "andromeda45.CR2")
-
-biasprefix = "/media/Dee/Astrokuvat/2013-09-25/Bias/"
-biaslist   = (
-"bias1.CR2",  "bias2.CR2",  "bias3.CR2",  "bias4.CR2",  "bias5.CR2",  "bias6.CR2",  "bias7.CR2",  "bias8.CR2",  "bias9.CR2",  "bias10.CR2", 
-"bias11.CR2", "bias12.CR2", "bias13.CR2", "bias14.CR2", "bias15.CR2", "bias16.CR2", "bias17.CR2", "bias18.CR2", "bias19.CR2", "bias20.CR2",
-"bias21.CR2", "bias22.CR2", "bias23.CR2", "bias24.CR2", "bias25.CR2", "bias26.CR2", "bias27.CR2", "bias28.CR2", "bias29.CR2", "bias30.CR2"
-              )
-
-darkprefix = "/media/Dee/Astrokuvat/2013-09-25/Dark/"
-darklist   = (
-"dark1.cr2", "dark2.cr2", "dark3.cr2", "dark4.cr2", "dark5.cr2", "dark6.cr2", "dark7.cr2", "dark8.cr2", "dark9.cr2", "dark10.cr2"
-              )
-
-flatprefix = "/media/Dee/Astrokuvat/2013-09-25/Flätit/"
-flatlist   = (
-"flat1.CR2", "flat2.CR2", "flat3.CR2", "flat4.CR2", "flat5.CR2", "flat6.CR2", "flat7.CR2"
-              )
+#sex      = "sex"                                     # Name of SExtractor executable. sex is default

@@ -37,7 +37,7 @@ class Sextractor(Registering):
 
         t1 = datetime.datetime.now()
 
-        self.findstars(imagelist)
+        self.findstars(imagelist, project)
 
         ref = project.get("Reference images", "light")
 
@@ -61,21 +61,22 @@ class Sextractor(Registering):
             if len(newpath) == 3:
                 for j in [0, 1, 2]:
                     project.set("Registered images", imagelist[i].number + imagelist[i].ccode[j], newpath[j])
+                    imagelist[i].frame.set("Paths", "Registered images " + imagelist[i].ccode[j], newpath[j])
             else:
                 project.set("Registered images", imagelist[i].number, newpath)
         t2 = datetime.datetime.now()
         print("Triangle calculations took " + str(t2-t1) + " seconds.")
 
-    def findstars(self, imagelist):
+    def findstars(self, imagelist, project):
         """
         Finds the stars and creates all the triangles from them
         """
-        S = Sex(imagelist['1'])    # TODO: Ref image here
+        S = Sex(imagelist['1'], project)    # TODO: Ref image here
         sensitivity = S.findsensitivity()
         del S
 
         for i in imagelist:
-            S = Sex(imagelist[i])
+            S = Sex(imagelist[i], project)
             S.setsensitivity(sensitivity[0], sensitivity[1])
             imagelist[i].coordinates = S.getcoordinates()
             S.maketriangles()
@@ -131,34 +132,37 @@ class Sextractor(Registering):
         for tri1 in i1.tri:
             temp = ()
             best = None        # temporary variable to hold information about the best R-ratio.
+            Ra  = tri1[3]
+            tRa = tri1[5]
+            Ca  = tri1[4]
+            tCa = tri1[6]
+
+            tRa2 = tRa**2      # Hoping this speeds up a little
+            tCa2 = tCa**2
+
             for tri2 in i2.tri:
 
-                Ra  = tri1[3]
                 Rb  = tri2[3]
-                tRa = tri1[5]
                 tRb = tri2[5]
-                Ca  = tri1[4]
                 Cb  = tri2[4]
-                tCa = tri1[6]
                 tCb = tri2[6]
 
-                # Run the check described in articles equations (7) and (8)
-                if ((Ra - Rb) ** 2 < (tRa ** 2 + tRb ** 2)) & ((Ca - Cb) ** 2 < (tCa ** 2 + tCb ** 2)):
-                    # print("Found! Ra-Rb = " + str((Ra-Rb)))   #Debugging
+                raba2 = (Ra - Rb) ** 2  # Hoping this speeds up a little
 
+                # Run the check described in articles equations (7) and (8)
+                if (raba2 < (tRa2 + tRb ** 2)) & ((Ca - Cb) ** 2 < (tCa2 + tCb ** 2)):
                     #Test if newfound match is better than the previous found with same tri1
-                    if (best is None) or ((Ra-Rb)**2 < best):
+                    if (best is None) or (raba2 < best):
                         #if so, save it for later use
-                        best = (Ra-Rb)**2
+                        best = raba2
                         temp = [tri1, tri2]
             if best is not None:
-                # print("Adding triangles " + str(temp[0]) + " and " + str(temp[1]) + " as a match.")      # Debugging
                 i2.match.append(temp)
             del temp
             del best
         print("Matching done for image " + str(i2.number) + ".")
         print("    " + str(len(i2.match)) + " matches found.")
-        #print(i2.match)                #Debugging
+
 
     def reduce(self, image):
         """
@@ -271,20 +275,20 @@ class Sextractor(Registering):
             newpath = ["", "", ""]
             image.write_tiff()
             for i in [0, 1, 2]:
-                print(image.imagepath[i])
                 tiffpath = image.imagepath[i][:-5] + ".tiff"
                 newpath[i] = image.imagename + "_" + newname + "_" + image.ccode[i] + image.format
                 command = "convert " + tiffpath + " -distort Affine " \
                           + points + " " + newpath[i]  # -define quantum:format=signed -depth 16
-                print(command)
                 call([command], shell=True)
                 call(["rm " + tiffpath], shell=True)
 
         else:
+            tiffpath = image.imagepath[:-5] + ".tiff"
             newpath = image.imagename + "_" + newname + image.format
-            command = "convert " + image.imagepath + " -distort Affine "\
+            command = "convert " + tiffpath + " -distort Affine "\
                       + points + " " + newpath
             call([command], shell=True)
+            call(["rm " + tiffpath], shell=True)
 
         return newpath
 
@@ -297,13 +301,14 @@ class Sex:
     checks and parses the output.
     """
 
-    def __init__(self, image):
+    def __init__(self, image, project):
         """
         Initializes the object and common configuration values
         """
 
         self.image = image
-
+        self.sextractor = project.sex
+        self.path = project.path
         self.catname = self.image.imagename + ".cat"
 
         self.config = {
@@ -427,10 +432,10 @@ class Sex:
     def execsex(self):
         """ Execute SExtractor with created conf """
         # TODO: try-except here about conf-file and other requirements
-        print(splitext(self.image.imagepath[1])[0][:-6] + ".fits")
-        commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0][:-6] + ".fits", "-c", self.confname]
+        commandlist = [self.sextractor, splitext(self.image.imagepath[1])[0][:-6] + ".fits", "-c", self.confname]
+        #commandlist = [self.sextractor, self.image.imagepath, "-c", self.confname]
 
-        call(commandlist, cwd=Conf.path)  # cwd changes working directory
+        call(commandlist, cwd=self.path)  # cwd changes working directory
 
     def getcoordinates(self):
         """
@@ -448,7 +453,7 @@ class Sex:
             else:
                 #self.coord.append((float(i.split()[4]), float(i.split()[5])))
                 self.coord.append((float(i.split()[4]), self.image.y - float(i.split()[5])))
-
+        self.coord = sorted(self.coord)
         return self.coord
 
     def maketriangles(self):
@@ -467,4 +472,4 @@ class Sex:
                         break
                     n=n+1
                     self.image.tri.append([i, j, k])
-        print("Total number of triangles in image " + self.image.imagename + str(self.image.number) + " is " + str(n) + ".")
+        print("Total number of triangles in image " + self.image.imagename + " is " + str(n) + ".")

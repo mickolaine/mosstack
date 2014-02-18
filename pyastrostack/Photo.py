@@ -109,6 +109,9 @@ class Photo(object):
         else:
             self.imagename = self.wdir + self.name + "_" + str(self.number)
 
+        # Frame information file.
+        self.frame = Conf.Frame(self.imagename + ".info", self.project)
+
         self.imagepath = self.imagename + self.format
 
         # Create image from data
@@ -120,13 +123,24 @@ class Photo(object):
         if (section is None) & (number is None) & (data is None):
             return
 
-        if raw:
-            self._load_raw(self.suffix[section], number)
-        if self.format == ".fits":
-            self._load_fits(section, number)
-        elif self.format == ".tiff":
-            print(section)
-            self._load_tiff(section, number)
+        loaded = bool(int(self.frame.get("Default", "Loaded")))
+
+        if loaded:
+            self.x = float(self.frame.get("Image", "X"))
+            self.y = float(self.frame.get("Image", "Y"))
+            self.imagepath = []
+            if self.project.get("Colors", section) == "rgb":
+                self.rgb = True
+            for i in (0, 1, 2):
+                self.imagepath.append(self.frame.get("Paths", self.section[section] + " " + self.ccode[i]))
+
+        if not loaded or self.load:
+            if raw:
+                self._load_raw(self.suffix[section], number)
+            if self.format == ".fits":
+                self._load_fits(section, number)
+            elif self.format == ".tiff":
+                self._load_tiff(section, number)
 
     def _load_raw(self, suffix, number):
         """
@@ -172,13 +186,16 @@ class Photo(object):
             self.data      = []
             self.srcpath   = self.project.get(self.section[suffix], number + "r")[:-7]
             for i in [0, 1, 2]:
-                print(self.srcpath)
                 self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".tiff")
+                self.frame.set("Paths", self.section[suffix] + " " + self.ccode[i], self.imagepath[i])
                 print("Loading RGB image element " + self.imagepath[i] + "...")
                 self.image.append(Im.open(self.imagepath[i]))
                 self.data.append(np.flipud(np.array(self.image[i])))
             self.x = len(self.data[0][0])
             self.y = len(self.data[0])
+
+            self.frame.set("Image", "X", str(self.x))
+            self.frame.set("Image", "Y", str(self.y))
             self.rgb    = True
             self.data   = None
 
@@ -193,10 +210,14 @@ class Photo(object):
             self.data  = np.flipud(self.data)
             self.x = len(self.data[0])
             self.y = len(self.data)
+
+            self.frame.set("Image", "X", str(self.x))
+            self.frame.set("Image", "Y", str(self.y))
             self.data  = None
 
             print("Done!")
             print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
+        self.frame.set("Default", "Loaded", "1")
 
     def _load_fits(self, suffix, number):
         """
@@ -217,14 +238,16 @@ class Photo(object):
             self.srcpath   = self.project.get(self.section[suffix], number + "r")[:-7]
             for i in [0, 1, 2]:
                 self.imagepath.append(self.srcpath + "_" + self.ccode[i] + ".fits")
-            #if not self.load:
-            #    return
+                self.frame.set("Paths", self.section[suffix] + " " + self.ccode[i], self.imagepath[i])
             for i in [0, 1, 2]:
                 print("Loading image " + self.imagepath[i] + "...")
                 self.hdu.append(fits.open(self.imagepath[i], memmap=True))
                 self.image.append(self.hdu[i][0])
             self.x = self.image[0].shape[1]
             self.y = self.image[0].shape[0]
+
+            self.frame.set("Image", "X", str(self.x))
+            self.frame.set("Image", "Y", str(self.y))
 
             self.load_data()
 
@@ -242,10 +265,15 @@ class Photo(object):
             self.image = self.hdu[0]
             self.x = self.image.shape[1]
             self.y = self.image.shape[0]
+
+            self.frame.set("Image", "X", str(self.x))
+            self.frame.set("Image", "Y", str(self.y))
+
             self.data  = None
 
             print("Done!")
             print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
+        self.frame.set("Default", "Loaded", "1")
 
     def _load_fits2(self, suffix, number):
         """
@@ -272,7 +300,12 @@ class Photo(object):
             self.image = self.hdu[0]
             self.x = self.image.shape[1]
             self.y = self.image.shape[0]
+
+            self.frame.set("Image", "X", str(self.x))
+            self.frame.set("Image", "Y", str(self.y))
+
             self.data  = None
+        self.frame.set("Default", "Loaded", "1")
 
     def load_data(self):
         """
@@ -461,6 +494,7 @@ class Photo(object):
                     self.project.set(section, number, self.imagepath)
                 else:
                     self.project.set(section, str(self.number), self.imagepath)
+                    self.frame.set("Paths", section, self.imagepath)
 
         elif self.data.ndim == 3:
             rgbname = ["", "", ""]
@@ -474,6 +508,7 @@ class Photo(object):
                              clobber=True)
                 if log:
                     self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
+                    self.frame.set("Paths", section + " " + self.ccode[i], rgbpath[i])
             if final:
                 call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine",
                       "-depth", "16", self.imagename + "_combined.tiff"])
@@ -632,11 +667,9 @@ class Batch:
 
         for i in self.list:
             self.list[i].load_data2()
-            print(self.list[i].data.shape)
-            new = Photo(project=self.project, data=demosaic.demosaic(self.list[i]))
+            new = Photo(project=self.project, number=i, data=demosaic.demosaic(self.list[i]))
             new.write(section="RGB images", number=i)
             self.list[i].release_data2()
-        print(self.section)
         self.project.set("Colors", "rgb", "rgb")
         self.project.set("State", "Demosaic", "1")
         self.project.write()
@@ -681,7 +714,7 @@ class Batch:
 
         for i in self.list:
             self.list[i].load_data2()
-            new = Photo(project=self.project, data=stacker.subtract(self.list[i], calib))
+            new = Photo(project=self.project, number=i, data=stacker.subtract(self.list[i], calib))
             if self.section in ("flat", "bias", "dark"):
                 new.write(section=self.section, number=i)
             else:
@@ -700,7 +733,7 @@ class Batch:
         calib.load_data()
         for i in self.list:
             self.list[i].load_data2()
-            new = Photo(project=self.project, data=stacker.divide(self.list[i], calib))
+            new = Photo(project=self.project, number=i, data=stacker.divide(self.list[i], calib))
             new.write(section="Calibrated images", number=i)
             self.list[i].release_data2()
         calib.release_data2()

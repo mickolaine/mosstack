@@ -230,14 +230,14 @@ Example:
         """
 
         batch = Batch(section=section, project=self.project, load=False)
-        batch.register(Registering.Sextractor())
+        batch.register(Registering.Sextractor2())
 
     def demosaic(self, section):
         """
         Demosaic project files under specified section. Use demosaicing algorithm TODO:
         """
 
-        batch = Batch(section=section, project=self.project)
+        batch = Batch(section=section, project=self.project, load=False)
         batch.demosaic(Demosaic.VNG())
 
     def stack(self, section):
@@ -245,8 +245,8 @@ Example:
         Stack project files under specified section. Stacker read from TODO: do this
         """
 
-        batch = Batch(section=section, project=self.project)
-        batch.stack(Stacker.Median2())
+        batch = Batch(section=section, project=self.project, load=False)
+        batch.stack(Stacker.Median())
 
     def subtract(self, section, calib):
         """
@@ -257,7 +257,7 @@ Example:
         calib - name for master frame (dark, bias)
         """
 
-        batch = Batch(section=section, project=self.project)
+        batch = Batch(section=section, project=self.project, load=False)
         batch.subtract(calib, Stacker.Mean())
 
     def divide(self, section, calib):
@@ -269,5 +269,5 @@ Example:
         calib - name for master frame (most likely flat)
         """
 
-        batch = Batch(section=section, project=self.project)
+        batch = Batch(section=section, project=self.project, load=False)
         batch.divide(calib, Stacker.Mean())
