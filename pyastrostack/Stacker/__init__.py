@@ -1,5 +1,5 @@
 __author__ = 'Mikko Laine'
-__all__ = ["Mean", "Median", "Median2"]
+__all__ = ["Mean", "Median"]
 
 from . import *
 

@@ -65,7 +65,7 @@ class Sextractor2(Registering):
             #self.match(imagelist[ref], imagelist[i])
             #self.reduce(imagelist[i])
             #self.vote(imagelist[i])
-            self.step2(imagelist[ref], imagelist[i])
+            self._step2(imagelist[ref], imagelist[i])
 
 
             newpath = self.transform_magick(imagelist[i], newname="reg")
@@ -73,8 +73,11 @@ class Sextractor2(Registering):
             if len(newpath) == 3:
                 for j in [0, 1, 2]:
                     project.set("Registered images", imagelist[i].number + imagelist[i].ccode[j], newpath[j])
+                    imagelist[i].frame.set("Paths", "Registered images " + imagelist[i].ccode[j], newpath[j])
             else:
                 project.set("Registered images", imagelist[i].number, newpath)
+                imagelist[i].frame.set("Paths", "Registered images " + imagelist[i], newpath)
+
         t2 = datetime.datetime.now()
         print("Triangle calculations took " + str(t2-t1) + " seconds.")
 

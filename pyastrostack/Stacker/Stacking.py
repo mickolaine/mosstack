@@ -50,7 +50,8 @@ class Stacking:
         calibrated data as an array
         """
         
-        newdata = np.float32(image.data) - np.float32(calib.data)
+        #newdata = np.float32(image.data) - np.float32(calib.data)
+        newdata = image.data - calib.data
         newdata = newdata.clip(0)
         return np.uint16(newdata)
 
@@ -85,6 +86,6 @@ class Stacking:
         image - Photo to calibrate
         calib - Masterframe Photo to calibrate with
         """
-        maxim = np.amax(image.data)
+        maxim = np.amax(calib.data)
         newdata = image.data / calib.data * maxim
         return newdata

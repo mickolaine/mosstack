@@ -23,10 +23,6 @@ a complete list:
   Installation of this might be tricky if it's not included in your Linux
   distribution. RPM-packages on the link above should work in most cases.
   I even installed this on Gentoo with provided RPM.
-
-* Rawtran - <http://integral.physics.muni.cz/rawtran/>
-  I try to get rid of this. It's not included in any Linux distribution I
-  checked so installation is done from source.
   
 * ImageMagick - <http://www.imagemagick.org>
 
@@ -65,15 +61,30 @@ might work.
 Installing required software
 =========
 
+Ubuntu
+-------------
+
+Most dependencies can be installed straight from package manager. Here's an Apt-get one-liner for that
+
+    ``apt-get install python3-pip cython3 python3-numpy dcraw python3-pyopencl imagemagick sextractor libtiff5-dev``
+
+This assumes you have the newest full Ubuntu desktop installed. If you have customized your installation, other packages
+might be required as well.
+
+Python packages AstroPy and Python-imaging (Pillow) are also on package manager, but only for Python2. For Python3
+they can be easily installed with
+
+    ``pip3 install astropy``
+    ``pip3 install pillow``
+
+
+
 Debian and Ubuntu (and perhaps derivatives)
 -------------
 
 This oneliner ought install most of the required software
 
-    ``apt-get install dcraw sextractor imagemagick numpy python3-pip``
-
-Rawtran is installed by following instructions in
-<http://integral.physics.muni.cz/rawtran/>
+    ``apt-get install dcraw sextractor libtiff5-dev imagemagick numpy python3-pip python3-pyopencl``
 
 AstroPy can be installed now with
 
@@ -83,7 +94,12 @@ as root or
 
     ``pip-3.2 install --user astropy``
 
-if you want the installation on users $HOME
+if you want the installation on users $HOME.
+
+Also Python packages Pillow and Cython have to be installed with pip
+
+    ``pip-3.2 install cython``
+    ``pip-3.2 install pillow``
 
 Gentoo
 ------------

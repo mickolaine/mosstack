@@ -1,2 +1,3 @@
 include *.txt
-recursive-include docs *.txt
+recursive-include doc *
+recursive-include pyastrostack *.pyx *.c

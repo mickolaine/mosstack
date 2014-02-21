@@ -58,6 +58,11 @@ class Photo(object):
     Dictionary to hold file suffix to section name mappings. Same as dict suffix but backwards
     """
 
+    calib = ("flat", "bias", "dark", "Master frames")
+    """
+    Tuple of identifiers of calibration frames
+    """
+
     ccode = {0: "r", 1: "g", 2: "b"}
     """
     Dictionary to fetch colour channel suffix to file names. RGB data is usually handled by
@@ -102,10 +107,12 @@ class Photo(object):
         self.image = []             # Image object. Required for Tiff and Fits
         self.data = np.array([])    # Image data as an numpy.array
 
-        if section in ("dark", "bias", "flat"):
-            self.imagename = self.wdir + self.name + "_" + section + "_" + str(self.number)
-        elif section == "Master frames":
-            self.imagename = self.wdir + self.name + "_" + number + "_master"
+        if section in self.calib:
+            if section == "Master frames":
+                self.imagename = self.wdir + self.name + "_" + number + "_master"
+            else:
+                self.imagename = self.wdir + self.name + "_" + section + "_" + str(self.number)
+
         else:
             self.imagename = self.wdir + self.name + "_" + str(self.number)
 
@@ -125,16 +132,19 @@ class Photo(object):
 
         loaded = bool(int(self.frame.get("Default", "Loaded")))
 
-        if loaded:
+        if loaded and section not in self.calib:
             self.x = float(self.frame.get("Image", "X"))
             self.y = float(self.frame.get("Image", "Y"))
             self.imagepath = []
             if self.project.get("Colors", section) == "rgb":
                 self.rgb = True
-            for i in (0, 1, 2):
-                self.imagepath.append(self.frame.get("Paths", self.section[section] + " " + self.ccode[i]))
+            if self.rgb:
+                for i in (0, 1, 2):
+                    self.imagepath.append(self.frame.get("Paths", self.section[section] + " " + self.ccode[i]))
+            else:
+                self.imagepath = self.frame.get("Paths", self.section[section])
 
-        if not loaded or self.load:
+        if not loaded or self.load or section in self.calib:
             if raw:
                 self._load_raw(self.suffix[section], number)
             if self.format == ".fits":
@@ -166,6 +176,7 @@ class Photo(object):
                 self.imagepath = srcpath
         else:
             self._convert_pgm(srcpath)
+            self.frame.set("Paths", "Light", self.imagepath)
         print("Done!")
 
     def _load_tiff(self, suffix, number):
