@@ -10,25 +10,38 @@ or if you want to install under $HOME
 
     ``python setup.py install --user``
 
-Note that command python should run python3 and python2 won't work. If you have python2 as default python interpreter,
-running the script
-
-    ``python3 setup.py install --user``
-
-might work.
 
 Installing required software
 =========
 
-Debian and Ubuntu (and perhaps derivatives)
+Everything has been written and tested using Python3, but those dependencies have problems in Ubuntu. Seems like
+this works on Python2 as well.
+
+Ubuntu
+-------------
+
+Most dependencies can be installed straight from package manager. Here's an Apt-get one-liner for that
+
+    ``sudo apt-get install python-pip cython dcraw python-pyopencl imagemagick sextractor python-imaging python-astropy python-numpy python-configparser``
+
+This assumes you have the newest full Ubuntu desktop installed. If you have customized your installation, other packages
+might be required as well.
+
+Newer versions of Python packages can be installed via pip. For example
+
+    ``pip install --upgrade --user numpy
+
+The switch --user installs package into $HOME, so it won't mess up your system. Without that you need sudo in front
+of that command.
+
+
+
+Debian (Under construction. Instructions probably doesn't work)
 -------------
 
 This oneliner ought install most of the required software
 
-    ``apt-get install dcraw sextractor imagemagick numpy python3-pip``
-
-Rawtran is installed by following instructions in
-<http://integral.physics.muni.cz/rawtran/>
+    ``apt-get install dcraw sextractor libtiff5-dev imagemagick numpy python3-pip python3-pyopencl``
 
 AstroPy can be installed now with
 
@@ -38,7 +51,12 @@ as root or
 
     ``pip-3.2 install --user astropy``
 
-if you want the installation on users $HOME
+if you want the installation on users $HOME.
+
+Also Python packages Pillow and Cython have to be installed with pip
+
+    ``pip-3.2 install cython``
+    ``pip-3.2 install pillow``
 
 Gentoo
 ------------

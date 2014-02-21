@@ -551,7 +551,7 @@ class Photo(object):
         self.imagepath = self.imagename + ".tiff"
 
         if self.data.ndim == 2:
-            image = Im.fromarray(np.flipud(np.int16(self.data)))
+            image = Im.fromarray(np.flipud(np.int16(self.data)).copy())
             image.save(self.imagename + ".tiff", format="tiff")
             if log:
                 self.project.set(section, str(self.number), self.imagepath)
@@ -563,7 +563,7 @@ class Photo(object):
             image = [0, 0, 0]
             for i in [0, 1, 2]:
                 rgbpath[i] = rgbname[i] + ".tiff"
-                image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])))
+                image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])).copy())
                 image[i].save(rgbpath[i], format="tiff")
                 if log:
                     self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
@@ -578,7 +578,7 @@ class Photo(object):
 
         image = [0, 0, 0]
         for i in [0, 1, 2]:
-            image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])))
+            image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])).copy())
             image[i].save(self.imagepath[i][:-5] + ".tiff", format="tiff")
 
         self.release_data2()

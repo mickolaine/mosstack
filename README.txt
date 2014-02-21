@@ -15,7 +15,7 @@ Prerequisites
 pyAstroStack relies heavily on other open source programs and libraries. Here's
 a complete list:
 
-* Python 3 - <http://www.python.org>
+* Python - <http://www.python.org>
 
 * DCRaw - <http://www.cybercom.net/~dcoffin/dcraw/>
 
@@ -37,85 +37,6 @@ a complete list:
 * Cython - <http://www.cython.org/>
 
 * PyOpenCL - <http://mathema.tician.de/software/pyopencl>
-
-
-Installing
-=========
-
-Download the archive and extract it. That you most likely have already done since you're reading this document.
-Installing can be done by
-
-    ``python setup.py install``
-
-or if you want to install under $HOME
-
-    ``python setup.py install --user``
-
-Note that command python should run python3 and python2 won't work. If you have python2 as default python interpreter,
-running the script
-
-    ``python3 setup.py install --user``
-
-might work.
-
-Installing required software
-=========
-
-Ubuntu
--------------
-
-Most dependencies can be installed straight from package manager. Here's an Apt-get one-liner for that
-
-    ``apt-get install python3-pip cython3 python3-numpy dcraw python3-pyopencl imagemagick sextractor libtiff5-dev``
-
-This assumes you have the newest full Ubuntu desktop installed. If you have customized your installation, other packages
-might be required as well.
-
-Python packages AstroPy and Python-imaging (Pillow) are also on package manager, but only for Python2. For Python3
-they can be easily installed with
-
-    ``pip3 install astropy``
-    ``pip3 install pillow``
-
-
-
-Debian and Ubuntu (and perhaps derivatives)
--------------
-
-This oneliner ought install most of the required software
-
-    ``apt-get install dcraw sextractor libtiff5-dev imagemagick numpy python3-pip python3-pyopencl``
-
-AstroPy can be installed now with
-
-    ``pip-3.2 install astropy``
-
-as root or
-
-    ``pip-3.2 install --user astropy``
-
-if you want the installation on users $HOME.
-
-Also Python packages Pillow and Cython have to be installed with pip
-
-    ``pip-3.2 install cython``
-    ``pip-3.2 install pillow``
-
-Gentoo
-------------
-AstroPy and SExtractor are in Science overlay, so that has to be activated. Easiest way is to use Layman
-
-    ``emerge layman``
-
-and activate the overlay by
-
-    ``layman -a science``
-
-After that all the requirements can be installed with
-
-    ``emerge dcraw sextractor imagemagick exiftool astropy numpy cython pyopencl``
-
-Some of these might be ~arch and require unmasking, but as a Gentoo user you might know how to get around it
 
 
 Features

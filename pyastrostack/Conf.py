@@ -13,6 +13,7 @@ from any point forward.
 import configparser
 import os
 from subprocess import check_output, CalledProcessError
+from sys import version_info
 
 
 class ConfigAbstractor:
@@ -76,7 +77,7 @@ class Setup:
         if not os.path.exists(self.file):
 
             print("Seems like this is the first time you run pyAstroStack. Creating the setup file.")
-            input("Press enter to continue.")
+            self.input("Press enter to continue.")
 
             try:
                 print("Looking for SExtractor binaries...")
@@ -86,7 +87,7 @@ class Setup:
                 print(e.args[0])
 
             print("Be aware that the temporary files can take a lot of space (from 1 GB to 20 GB)")
-            temppath = input("Path for temporary files: ")
+            temppath = self.input("Path for temporary files: ")
 
             # Make sure path ends in /
             if temppath[len(temppath)-1] != "/":
@@ -97,6 +98,21 @@ class Setup:
             self.conf.write(self.file)
 
         self.conf.read(self.file)
+
+    def input(self, string):
+        """
+        Wrapper for input - raw_input differences between Python 2 and 3
+        """
+
+        version = version_info[0]
+
+        if version == 2:
+            return raw_input(string)
+        elif version == 3:
+            return input(string)
+        else:
+            print(version)
+            print("It appears there's a new version of Python...")
 
     def findsex(self):
         """
@@ -109,7 +125,7 @@ class Setup:
                 sexpath = check_output(["which", "sextractor"])
             except CalledProcessError:
                 print("Can't find SExtractor executable. Only $PATH has been checked.")
-                sexpath = input("Give full path to SExtractor executable, eg. ~/bin/sex")
+                sexpath = self.input("Give full path to SExtractor executable, eg. ~/bin/sex")
                 if not os.path.exists(sexpath):
                     raise IOError("File not found:", sexpath)
         #else:
@@ -178,6 +194,21 @@ class Project:
         self.sex   = self.setup.get("Programs", "SExtractor")
         self.path  = self.setup.get("Default", "path")
 
+    def input(self, string):
+        """
+        Wrapper for input - raw_input differences between Python 2 and 3
+        """
+
+        version = version_info[0]
+
+        if version == 2:
+            return raw_input(string)
+        elif version == 3:
+            return input(string)
+        else:
+            print(version)
+            print("It appears there's a new version of Python...")
+
     def readproject(self):
         """
         Read project settings from specified project file
@@ -194,7 +225,7 @@ class Project:
         """
         if os.path.exists(self.projectfile):
             print("Trying to initialize a new project, but the file already exists.")
-            if input("Type y to rewrite: ") != "y":
+            if self.input("Type y to rewrite: ") != "y":
                 print("Try again using a file not already in use.")
                 exit()
             else:
@@ -234,7 +265,7 @@ class Project:
             print("Found files " + string)
         else:
             print("None found. All files found are listed here: " + tempstr)
-            ext = input("Please specify the extension for your files: ")
+            ext = self.input("Please specify the extension for your files: ")
             for i in temp:
                 if os.path.splitext(i)[1] == ext:
                     filelist.append(i)
@@ -258,7 +289,7 @@ class Project:
         if "Reference" not in self.conf.conf:
             print("Setting first image in list as reference image.")
             ref = "1"
-            if input("Type y to change the reference image (anything else to continue): ") == "y":
+            if self.input("Type y to change the reference image (anything else to continue): ") == "y":
                 pass  # TODO: Implementation
             self.conf.save(imagetype, ref, "Reference images")
 

@@ -65,7 +65,7 @@ class Sextractor2(Registering):
             #self.match(imagelist[ref], imagelist[i])
             #self.reduce(imagelist[i])
             #self.vote(imagelist[i])
-            self._step2(imagelist[ref], imagelist[i])
+            self.step2(imagelist[ref], imagelist[i])
 
 
             newpath = self.transform_magick(imagelist[i], newname="reg")
@@ -511,4 +511,4 @@ class Sex:
                     n += 1
                     self.image.tri.append([i, j, k])
 
-        print("Total number of triangles in image " + self.image.imagename + str(self.image.number) + " is " + str(n) + ".")
+        print("Total number of triangles in image " + self.image.imagename + " is " + str(n) + ".")
