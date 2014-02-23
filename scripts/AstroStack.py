@@ -103,7 +103,7 @@ def main(argv):
             print("No project name specified. Available projects are: Implement this")
             print("Try AstroStack set <project name>, without extension.")
 
-    if argv[0] == "adddir":
+    elif argv[0] == "dir":
 
         if argv[1]:
             directory = argv[1]
@@ -113,12 +113,12 @@ def main(argv):
         itype = argv[2]
         project.adddir(directory, itype)
 
-    if argv[0] == "addfile":
+    elif argv[0] == "file":
 
         itype = argv[2]
         project.addfile(argv[1], itype)
 
-    if argv[0] == "stack":
+    elif argv[0] == "stack":
         # AstroStack stack <srcname>
         srclist = ("light", "dark", "bias", "flat", "rgb", "calib", "reg")
         if argv[1] in srclist:
@@ -129,7 +129,7 @@ def main(argv):
 
         ui.stack(section)
 
-    if argv[0] == "demosaic":
+    elif argv[0] == "demosaic":
         # AstroStack demosaic <srcname>
 
         if argv[1]:
@@ -140,7 +140,7 @@ def main(argv):
 
         ui.demosaic(section)
 
-    if argv[0] == "register":
+    elif argv[0] == "register":
         # AstroStack register <srcname>
 
         if argv[1]:
@@ -151,7 +151,7 @@ def main(argv):
 
         ui.register(section)
 
-    if argv[0] == "subtract":
+    elif argv[0] == "subtract":
         # AstroStack subtract <srcname> <calibname>
 
         if argv[1]:
@@ -167,7 +167,7 @@ def main(argv):
 
         ui.subtract(section, calib)
 
-    if argv[0] == "divide":
+    elif argv[0] == "divide":
         # AstroStack divide <srcname> <calibname>
 
         if argv[1]:
@@ -182,6 +182,11 @@ def main(argv):
             exit()
 
         ui.divide(section, calib)
+    else:
+
+        print("Invalid operation: " + argv[0])
+        print(shorthelp)
+        exit()
 
 if __name__ == "__main__":
     #cProfile.run("main(sys.argv[1:])", "/home/micko/profiili_")

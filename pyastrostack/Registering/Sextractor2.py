@@ -119,6 +119,8 @@ class Sextractor2(Registering):
             r2 = sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
             R = r3 / r2
+            if R > 1.11:
+                continue
             C = ((x3 - x1) * (x2 - x1) + (y3 - y1) * (y2 - y1)) / (r3 * r2)     #Cosine of angle at vertex 1
 
             tR = sqrt(2. * R ** 2. * ep ** 2. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.))
@@ -137,11 +139,12 @@ class Sextractor2(Registering):
             newtri.append(temp)
         image.tri = newtri
 
-        print("Step 1 complete for image " + str(image.number) + ".")
+        print("Step 1 complete for image " + str(image.number) + ". " + str(len(image.tri)) + " triangles found.")
 
+    #@staticmethod
     def step2(self, i1, i2):
         """
-        A Cython implementation of the algorithm
+        A wrapper for Cython implementation of the algorithm
 
         i1 and i2 have a list tri = [[(x1,y1),(x2,y2),(x3,y3), R, C, tR, tC], ... , ...]
         """
@@ -152,144 +155,11 @@ class Sextractor2(Registering):
 
         print("Done.")
 
-    def match(self, i1, i2):
-        """
-        Matches triangles in image i1(ref) to triangles in i2. Creates a list of matching triangles and
-        their properties in object i2.
-        #TODO:Cite the article
-
-        """
-
-        print("Starting to match image " + str(i2.number) + " to reference image " + str(i1.number))
-        #ep = 0.001
-        #xi = 3 * ep
-
-        for tri1 in i1.tri:
-            temp = ()
-            best = None        # temporary variable to hold information about the best R-ratio.
-            for tri2 in i2.tri:
-
-                Ra  = tri1[3]
-                Rb  = tri2[3]
-                tRa = tri1[5]
-                tRb = tri2[5]
-                Ca  = tri1[4]
-                Cb  = tri2[4]
-                tCa = tri1[6]
-                tCb = tri2[6]
-
-                # Run the check described in articles equations (7) and (8)
-                if ((Ra - Rb) ** 2 < (tRa ** 2 + tRb ** 2)) & ((Ca - Cb) ** 2 < (tCa ** 2 + tCb ** 2)):
-                    # print("Found! Ra-Rb = " + str((Ra-Rb)))   #Debugging
-
-                    #Test if newfound match is better than the previous found with same tri1
-                    if (best is None) or ((Ra-Rb)**2 < best):
-                        #if so, save it for later use
-                        best = (Ra-Rb)**2
-                        temp = [tri1, tri2]
-            if best is not None:
-                # print("Adding triangles " + str(temp[0]) + " and " + str(temp[1]) + " as a match.")      # Debugging
-                i2.match.append(temp)
-            del temp
-            del best
-        print("Matching done for image " + str(i2.number) + ".")
-        print("    " + str(len(i2.match)) + " matches found.")
-        #print(i2.match)                #Debugging
-
-    def reduce(self, image):
-        """
-        Reduces number of matched triangles. Essentially removes a portion of false matches. Probably no correct matches are removed.
-        """
-
-        for match in image.match:
-            x1 = match[0][0][0]
-            y1 = match[0][0][1]
-            x2 = match[0][1][0]
-            y2 = match[0][1][1]
-            x3 = match[0][2][0]
-            y3 = match[0][2][1]
-
-            pA = (sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) +
-                  sqrt((x1 - x3) ** 2 + (y1 - y3) ** 2) +
-                  sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2))
-
-            x1 = match[1][0][0]
-            y1 = match[1][0][1]
-            x2 = match[1][1][0]
-            y2 = match[1][1][1]
-            x3 = match[1][2][0]
-            y3 = match[1][2][1]
-
-            pB = (sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) +
-                  sqrt((x1 - x3) ** 2 + (y1 - y3) ** 2) +
-                  sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2))
-            match.append(log(pA) - log(pB))         # Value log(M) as described in equation (10). this will be match[2]
-
-        do_it_again = True
-        print("List has originally lenght of  " + str(len(image.match)))
-
-        times = 0
-
-        while do_it_again:
-            newlist = []
-            mean = 0.
-            variance = 0.
-            for match in image.match:                       # Calculate average value
-                mean += match[2] / len(image.match)
-            for match in image.match:                       # Calculate variance which is sigma**2
-                variance += (fabs(mean - match[2]) ** 2) / len(image.match)
-            sigma = sqrt(variance)
-
-            do_it_again = False
-            for match in image.match:
-                # print(match[2])                            #Debugging
-                if fabs(match[2] - mean) < sigma * 2:
-                    newlist.append(match)
-                else:
-                    do_it_again = True                        # If you end up here, while has to be run again
-            image.match = newlist                           # Save new list and do again if necessary
-            del newlist
-            times += 1
-        print("After reduction the length is " + str(len(image.match)))
-
-    def vote(self, image):
-        """
-        Count probabilities for vertex matches. Choose the most popular one, disregard the rest.
-        Votes mean how many times two vertices have been matched on previous steps. This is required
-        to get rid of false matches. I probably need only few matching vertices so this method suites
-        me well.
-
-        Creates list image.pairs, which has pairs (image.coordinate, reference.coordinate, votes) sorted by votes, biggest first
-        """
-        print("Voting")
-        pairs = {}          # vertex pair as the key and votes as the value
-
-        for m in image.match:
-            for i in range(3):
-                key = (m[1][i], m[0][i])            # This is where source and destination changes places
-                if key in pairs:
-                    pairs[key] += 1
-                else:
-                    pairs[key] = 1
-
-        newpairs = {}
-        for key in pairs:
-            if pairs[key] > 2:                      # Should be >1 but I really don't need that much points.
-                newpairs[key] = pairs[key]          # TODO: Check if this works
-        pairs = newpairs
-
-        final = []
-        for key in pairs:
-            final.append((key[0], key[1], pairs[key]))
-
-        final = sorted(final, key=itemgetter(2), reverse=True)
-        image.pairs = final
-        print("After voting there are " + str(len(image.pairs)) + " pairs found")
-
     def transform_magick(self, image, newname=None):
         """
-        Transforms image according to image.pairs, but instead of skimage, this function uses
-        ImageMagick's "convert -distort Affine" from command line.
+        Transforms image according to image.pairs.
+
+        Transformation is done with ImageMagick's "convert -distort Affine" from command line.
         """
 
         # Preparations
@@ -310,7 +180,7 @@ class Sextractor2(Registering):
                 tiffpath = image.imagepath[i][:-5] + ".tiff"
                 newpath[i] = image.imagename + "_" + newname + "_" + image.ccode[i] + image.format
                 command = "convert " + tiffpath + " -distort Affine " \
-                          + points + " " + newpath[i]  # -define quantum:format=signed -depth 16
+                          + points + " " + newpath[i]
                 call([command], shell=True)
                 call(["rm " + tiffpath], shell=True)
 
@@ -429,6 +299,7 @@ class Sex:
         """
         Create configuration file for SExtractor.
         """
+
         self.confname = self.image.imagename + ".sex"
         f = open(self.confname, "w")
         for i in self.config:
@@ -443,8 +314,8 @@ class Sex:
         """
         print("Looking for suitable DETECT_MINAREA...")
         x = 0
-        min = 20
-        max = 25
+        min = 16
+        max = 20
 
         while x > max or x < min:
             self.createconf()
@@ -460,7 +331,7 @@ class Sex:
                 print("DETECT_MINAREA too small. Trying " + self.config["DETECT_MINAREA"])
 
         print("Found " + self.config["DETECT_MINAREA"] + " & " + self.config["DETECT_THRESH"])
-        return (self.config["DETECT_MINAREA"], self.config["DETECT_THRESH"])
+        return self.config["DETECT_MINAREA"], self.config["DETECT_THRESH"]
 
     def execsex(self):
         """ Execute SExtractor with created conf """
@@ -488,7 +359,6 @@ class Sex:
                 #self.coord.append((float(i.split()[4]), float(i.split()[5])))
                 self.coord.append([float(i.split()[4]), self.image.y - float(i.split()[5])])
 
-
         self.coord = sorted(self.coord)
         return self.coord
 
@@ -501,14 +371,20 @@ class Sex:
 
         self.image.tri = []
         n = 0
+        #for i in self.coord:
+        #    print(i)
         for i in self.coord:
             for j in self.coord:
                 if i == j:
-                    break
+                    continue
+                    #break  # This should be continue for it to be right. For some reason this works well enough
                 for k in self.coord:
                     if (j == k) or (i == k):
-                        break
+                        continue
+                        #break
                     n += 1
                     self.image.tri.append([i, j, k])
+                    #print([i,j,k])
+
 
         print("Total number of triangles in image " + self.image.imagename + " is " + str(n) + ".")

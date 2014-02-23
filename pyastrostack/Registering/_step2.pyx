@@ -14,6 +14,57 @@ def step2(tri1, tri2):
 
     return _step2(tri1, tri2)
 
+
+def limit(tri1, tri2):
+    """
+    Limit the number of triangles before the O(N^6) operation
+    """
+
+    newlist = []
+
+    cdef unsigned int i = 0
+    cdef unsigned int j = 0
+
+    cdef float previ
+    #cdef float prevj
+    cdef float eps = 20
+
+    while (i < len(tri1)) and (j < len(tri2)):
+        #print(str(tri1[i][0]) + " " + str(tri2[j][0]))
+        #print(str(i) + " of " + str(len(tri1)) + " and " + str(j) + " of " + str(len(tri2)))
+
+        if fabsf(tri1[i][0] - tri2[j][0]) < eps:
+            newlist.append(tri2[j])
+            j = j+1
+            #if j == len(tri2):
+            #    break
+            previ = tri1[i][0]
+            #prevj = tri2[j][0]
+            #print(tri2)
+
+        else:
+            if previ == tri1[i][0]:
+                i = i + 1
+                #if i == len(tri1):
+                #    break
+            elif tri1[i][0] < tri2[j][0]:
+                i = i + 1
+                #if i == len(tri1):
+                #    break
+            elif tri1[i][0] > tri2[j][0]:
+                j = j + 1
+                #if j == len(tri2):
+                #    break
+            else:
+                print("Unlikely event.")
+                i = i + 1
+                #if i == len(tri1):
+                #    break
+
+    return newlist
+
+
+
 cdef _step2(tri1, tri2):
     """                    0  1  2  3  4  5  6  7   8   9
     tri includes a list [[x1,y1,x2,y2,x3,y3, R, C, tR, tC], ... , ...]
@@ -30,6 +81,9 @@ cdef _step2(tri1, tri2):
     cdef float raba2, tra2, tca2
 
     match = []
+    print(str(len(tri2)))
+    tri2_new = limit(tri1, tri2)
+    print(str(len(tri2_new)))
 
     for i in range(0, len(tri1)):
         temp = []
@@ -40,10 +94,14 @@ cdef _step2(tri1, tri2):
         Ca  = tri1[i][7]
         tCa = tri1[i][9]
 
-        tra2 = tRa*tRa
-        tca2 = tCa*tCa
+        tra2 = tRa * tRa
+        tca2 = tCa * tCa
 
-        for j in range(0, len(tri2)):
+        for j in range(0, len(tri2_new)):
+
+            #if fabsf(tri1[i][0] - tri2[j][0]) > 200:
+                #print("Skip " + str(tri2[j]))
+            #    continue
 
             Rb  = tri2[j][6]
             tRb = tri2[j][8]
@@ -57,7 +115,7 @@ cdef _step2(tri1, tri2):
                 if (best is None) or ((Ra-Rb)*(Ra-Rb) < best):
                     #if so, save it for later use
                     best = raba2
-                    temp = [tri1[i], tri2[j]]
+                    temp = [tri1[i], tri2_new[j]]
         if best is not None:
             match.append(temp)
         del temp
