@@ -27,7 +27,7 @@ def limit(tri1, tri2):
 
     cdef float previ
     #cdef float prevj
-    cdef float eps = 20
+    cdef float eps = 70
 
     while (i < len(tri1)) and (j < len(tri2)):
         #print(str(tri1[i][0]) + " " + str(tri2[j][0]))
@@ -82,7 +82,8 @@ cdef _step2(tri1, tri2):
 
     match = []
     print(str(len(tri2)))
-    tri2_new = limit(tri1, tri2)
+    #tri2_new = limit(tri1, tri2)
+    tri2_new = tri2
     print(str(len(tri2_new)))
 
     for i in range(0, len(tri1)):

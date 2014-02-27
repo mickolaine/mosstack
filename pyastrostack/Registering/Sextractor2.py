@@ -62,9 +62,6 @@ class Sextractor2(Registering):
                     copyfile(imagelist[i].imagepath[c], newpath[c])
                 continue
 
-            #self.match(imagelist[ref], imagelist[i])
-            #self.reduce(imagelist[i])
-            #self.vote(imagelist[i])
             self.step2(imagelist[ref], imagelist[i])
 
 
@@ -115,21 +112,28 @@ class Sextractor2(Registering):
             x3 = tri[2][0]
             y3 = tri[2][1]
 
-            r3 = sqrt((x3 - x1) ** 2 + (y3 - y1) ** 2)
-            r2 = sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+            x3x1 = x3 - x1
+            y3y1 = y3 - y1
+            x2x1 = x2 - x1
+            y2y1 = y2 - y1
+
+            r3 = sqrt(x3x1 * x3x1 + y3y1 * y3y1)
+            r2 = sqrt(x2x1 * x2x1 + y2y1 * y2y1)
 
             R = r3 / r2
-            if R > 1.11:
-                continue
-            C = ((x3 - x1) * (x2 - x1) + (y3 - y1) * (y2 - y1)) / (r3 * r2)     #Cosine of angle at vertex 1
+            #if R > 1.11:
+            #    continue
+            C = (x3x1 * x2x1 + y3y1 * y2y1) / (r3 * r2)     #Cosine of angle at vertex 1
 
-            tR = sqrt(2. * R ** 2. * ep ** 2. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.))
+            #tR = sqrt(2. * R ** 2. * ep ** 2. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.))
+            tR = sqrt(2. * R * R * ep * ep * (1. / (r3 * r3) - C / (r2 * r3) + 1. / (r2 * r2)))
 
             S = 1. - C ** 2.   #Sine^2 of angle at vertex 1
             # S should be S**2 and on above line S should be sqrt of 1-C**2,
             # but this might be faster. I don't know if python optimizes this.
-            tC = sqrt(2. * S * ep ** 2. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.) +
-                      3. * C ** 2. * ep ** 4. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.) ** 2.)
+            tC = sqrt(2. * S * ep * ep * (1. / (r3 * r3) - C / (r2 * r3) + 1. / (r2 * r2)) +
+                      3. * C * C * ep * ep * ep * ep * (1. / (r3 * r3) - C / (r2 * r3) + 1. / (r2 * r2)) ** 2.)
+
 
             temp = [tri[0][0], tri[0][1], tri[1][0], tri[1][1], tri[2][0], tri[2][1]]
             temp.append(R)
@@ -314,8 +318,8 @@ class Sex:
         """
         print("Looking for suitable DETECT_MINAREA...")
         x = 0
-        min = 16
-        max = 20
+        min = 20
+        max = 25
 
         while x > max or x < min:
             self.createconf()
@@ -348,18 +352,26 @@ class Sex:
         """
 
         self.createconf()
-        self.execsex()
+        while True:
+            self.execsex()
 
-        self.coord = []
-        f = open(self.catname, "r")
-        for i in f:
-            if i.split()[0] == "#":
-                pass
+            self.coord = []
+            f = open(self.catname, "r")
+            for i in f:
+                if i.split()[0] == "#":
+                    pass
+                else:
+                    #self.coord.append((float(i.split()[4]), float(i.split()[5])))
+                    self.coord.append([float(i.split()[4]), self.image.y - float(i.split()[5])])
+
+            self.coord = sorted(self.coord)
+
+            if (len(self.coord) < 17) or (len(self.coord) > 26):
+                area, sigma = self.findsensitivity()
+                self.setsensitivity(area, sigma)
             else:
-                #self.coord.append((float(i.split()[4]), float(i.split()[5])))
-                self.coord.append([float(i.split()[4]), self.image.y - float(i.split()[5])])
+                break
 
-        self.coord = sorted(self.coord)
         return self.coord
 
     def maketriangles(self):

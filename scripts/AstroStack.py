@@ -14,40 +14,10 @@ to run different stacking operations according to the project file.
 """
 
 import sys
-from pyastrostack import Conf
+from pyastrostack import Conf, Demosaic, Registering, Stacker
 import os
 from pyastrostack.UserInterface import UserInterface
-import cProfile
-
-
-def imagetype():
-    """
-    Ask user light, bias, dark or flat
-
-    return 1, 2, 3 or 4
-
-    Consider moving this elsewhere. Maybe a class for user interactions?
-    """
-
-    print("Specify the type of images.")
-    print("1 Light")
-    print("2 Bias")
-    print("3 Dark")
-    print("4 Flat")
-    number = int(input("Select number: "))
-    if number == 1:
-        imaget = "light"
-    elif number == 2:
-        imaget = "bias"
-    elif number == 3:
-        imaget = "dark"
-    elif number == 4:
-        imaget = "flat"
-    else:
-        print("Invalid input. Try again.")
-        imaget = None
-
-    return imaget
+#import cProfile
 
 
 def main(argv):
@@ -71,11 +41,6 @@ def main(argv):
         print(shorthelp)
         exit()
 
-    if len(argv) == 1:
-        if argv[0] == "help":
-            print(longhelp)
-        exit()
-
     if argv[0] == "init":
         project = Conf.Project(setup.get("Default", "Path") + argv[1] + ".project")
         project.initproject(argv[1])
@@ -84,7 +49,7 @@ def main(argv):
     try:
         pname = setup.get("Default", "Project")
         ppath = setup.get("Default", "Path") + pname + ".project"
-        print(ppath)
+        print("Current project is " + ppath + "\n")
         project = Conf.Project(ppath)
         project.readproject()
         ui.setproject(project)
@@ -93,15 +58,49 @@ def main(argv):
         print("No project name specified")
         exit()
 
-    if argv[0] == "set":
-        if argv[1]:
-            pname = argv[1]
-            setup.set("Default", "Project", pname)
-            ppath = setup.get("Default", "Path") + pname + ".project"
-            project = Conf.Project(ppath)
+    if argv[0] == "help":
+        print(longhelp)
+
+    elif argv[0] == "set":
+
+        if argv[1] == "project":
+            if argv[2]:
+                pname = argv[2]
+                setup.set("Default", "Project", pname)
+                ppath = setup.get("Default", "Path") + pname + ".project"
+                project = Conf.Project(ppath)
+            else:
+                print("No project name specified. Available projects are: Implement this")
+                print("Try AstroStack set project <project name>, without extension.")
+        elif argv[1] == "demosaic":
+            options = Demosaic.__all__
+            ui.set("Demosaic", options, argv[2])
+        elif argv[1] == "register":
+            options = Registering.__all__
+            ui.set("Register", options, argv[2])
+        elif argv[1] == "stack":
+            options = Stacker.__all__
+            ui.set("Stack", options, argv[2])
+
         else:
-            print("No project name specified. Available projects are: Implement this")
-            print("Try AstroStack set <project name>, without extension.")
+            print("Don't know how to set " + argv[1])
+            print("Possible options to set are \n project\n demosaic\n register\n stack")
+
+    elif argv[0] == "list":
+
+        if len(argv) == 1:
+            print("Settings to list are \n demosaic\n register\n stack")
+        else:
+            if argv[1] == "demosaic":
+                options = Demosaic.__all__
+            elif argv[1] == "register":
+                options = Registering.__all__
+            elif argv[1] == "stack":
+                options = Stacker.__all__
+            else:
+                print("No such setting " + argv[1])
+                print("Possible settings are \n demosaic\n register\n stack")
+            ui.list(argv[1], options)
 
     elif argv[0] == "dir":
 
@@ -182,12 +181,11 @@ def main(argv):
             exit()
 
         ui.divide(section, calib)
-    else:
 
+    else:
         print("Invalid operation: " + argv[0])
         print(shorthelp)
         exit()
 
 if __name__ == "__main__":
-    #cProfile.run("main(sys.argv[1:])", "/home/micko/profiili_")
     main(sys.argv[1:])

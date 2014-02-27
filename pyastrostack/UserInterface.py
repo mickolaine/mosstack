@@ -8,6 +8,7 @@ from . Photo import Photo, Batch
 from . import Registering
 from . import Demosaic
 from . import Stacker
+from sys import version_info
 
 __author__ = 'Mikko Laine'
 
@@ -203,13 +204,45 @@ Example:
 
     ``AstroStack stack bias``
     ``AstroStack stack reg``
+
+list
+------------
+List available settings and their options. Prelude to full ui. These can also
+be manually edited in the project file.
+
+Usage
+
+    ``AstroStack.py list <setting>``
+
+Examples:
+
+List of settings to adjust
+    ``AstroStack.py list``
+
+List of options for setting
+    ``AstroStack.py list demosaic``
+
+set
+------------
+Set can also be used to adjust settings. See operation 'list' to see them
+
+Usage
+
+    ``AstroStack.py set <setting> <option>``
+
+Examples:
+
+    ``AstroStack.py set demosaic Bilinear``
+    ``AstroStack.py set demosaic 2``
+
+You can use either name or number as operation 'list' shows them.
+
     """
 
     """
-    String to print when program run with 'help' parameter. Will include short explanations on every
+    String to print when program run with 'help' parameter. Includes short explanations on every
     command line argument available.
 
-    For now is just a copy of shorthelp.
     """
 
     def __init__(self, project=None):
@@ -218,11 +251,25 @@ Example:
         """
         self.project = project
 
+        # Set default values.
+        self.demosaicwrap = Demosaic.VNG
+        self.registerwrap = Registering.Sextractor2
+        self.stackerwrap = Stacker.Median
+
     def setproject(self, project):
         """
         Set project name
         """
         self.project = project
+        if project.get("Default", "demosaic") not in Demosaic.__all__ or \
+           project.get("Default", "register") not in Registering.__all__ or \
+           project.get("Default", "stack") not in Stacker.__all__:
+            print("Invalid entries in project file. Using default")
+            return
+
+        self.demosaicwrap = eval("Demosaic." + project.get("Default", "demosaic"))
+        self.registerwrap = eval("Registering." + project.get("Default", "register"))
+        self.stackerwrap = eval("Stacker." + project.get("Default", "stack"))
 
     def register(self, section):
         """
@@ -230,7 +277,7 @@ Example:
         """
 
         batch = Batch(section=section, project=self.project, load=False)
-        batch.register(Registering.Sextractor2())
+        batch.register(self.registerwrap())
 
     def demosaic(self, section):
         """
@@ -238,7 +285,7 @@ Example:
         """
 
         batch = Batch(section=section, project=self.project, load=False)
-        batch.demosaic(Demosaic.VNG())
+        batch.demosaic(self.demosaicwrap())
 
     def stack(self, section):
         """
@@ -246,7 +293,7 @@ Example:
         """
 
         batch = Batch(section=section, project=self.project, load=False)
-        batch.stack(Stacker.Median())
+        batch.stack(self.stackerwrap())
 
     def subtract(self, section, calib):
         """
@@ -258,7 +305,7 @@ Example:
         """
 
         batch = Batch(section=section, project=self.project, load=False)
-        batch.subtract(calib, Stacker.Mean())
+        batch.subtract(calib, self.stackerwrap())
 
     def divide(self, section, calib):
         """
@@ -270,4 +317,45 @@ Example:
         """
 
         batch = Batch(section=section, project=self.project, load=False)
-        batch.divide(calib, Stacker.Mean())
+        batch.divide(calib, self.stackerwrap())
+
+    def list(self, setting, options):
+        """
+        List current and available options of the setting
+        """
+
+        value = self.project.get("Default", setting)
+
+        print("Options for the setting \"" + setting + "\" are:\n")
+        n = 0
+        for i in options:
+            n += 1
+            print(str(n) + ".  " + i)
+        print("\nCurrent setting is \"" + value + "\".")
+
+    def set(self, setting, options, value):
+        """
+        Save settings with command line AstroStack.py set operation
+
+        Arguments:
+        setting - setting to alter
+        options - list of options for the setting
+        value   - int or name of value to set
+        """
+
+        if value.isdigit():
+            number = int(value) - 1
+            value = options[number]
+        else:
+            if value in options:
+                number = options.index(value)
+            else:
+                print("Value " + value + " not recognized.")
+                exit()
+
+        if number <= len(options):
+            print("Setting \"" + setting + "\" changed to value \"" + value + "\"")
+            self.project.set("Default", setting, value)
+            self.project.write()
+        else:
+            print("Invalid value")

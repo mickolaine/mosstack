@@ -1,1 +1,31 @@
+v0.1.1, 2014-02-27 -- Bugfixes and adjustable settings
+- Fixed a bug in registering which for some reason had no effect on the result
+  and made registering faster. Now it's a bit slower but the algorithm is
+  correct.
+- Some speed improvement in registering by optimizing the code.
+- Altered stellar extraction algorithms so that they find 20-25 stars for every
+  frame, not just the reference. This speeds up registering because now there
+  won't be >40 star frames
+- Algorithms for registering, demosaicing, and stacking can now be chosen with
+  commands list and set
+
+v0.1.0, 2014-02-22 -- First public version.
+
+List of features
+ - CFA to RGB conversion (see below for supported cameras)
+  - Bilinear (python, only for testing)
+  - Bilinear (OpenCL)
+  - LaRoche-Prescott (OpenCL)
+  - Variable Number of Gradients (OpenCL)
+
+ - Registering
+  - SExtractor and http://adsabs.harvard.edu/abs/1986AJ.....91.1244G
+
+ - Aligning
+  - Affine transformations by ImageMagick
+
+ - Stacking
+  - Mean value
+  - Median value
+
 v0.0.9dev, 2013-10-29 -- Initial release.
