@@ -441,9 +441,3 @@ class Frame:
         self.conf.read(self.framefile)
         self.conf.save(key, value, section)
         self.conf.write(self.framefile)
-
-
-
-#path     = "/media/data/Temp/astrostack/"            # Working path to use during procedure
-
-#sex      = "sex"                                     # Name of SExtractor executable. sex is default

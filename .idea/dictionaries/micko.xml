@@ -23,6 +23,7 @@
       <w>commandlist</w>
       <w>createconf</w>
       <w>dcraw</w>
+      <w>deldata</w>
       <w>demosaic</w>
       <w>demosaiced</w>
       <w>demosaicing</w>
@@ -30,10 +31,15 @@
       <w>dslr</w>
       <w>execsex</w>
       <w>exiftool</w>
+      <w>extractinfo</w>
       <w>findsensitivity</w>
       <w>fitspath</w>
+      <w>frameinfo</w>
       <w>fromarray</w>
+      <w>fromraw</w>
+      <w>genname</w>
       <w>getcoordinates</w>
+      <w>getdata</w>
       <w>greennewpath</w>
       <w>greenpath</w>
       <w>iformat</w>
@@ -70,6 +76,7 @@
       <w>rawpath</w>
       <w>raws</w>
       <w>rawtran</w>
+      <w>readinfo</w>
       <w>readproject</w>
       <w>rednewpath</w>
       <w>redpath</w>
@@ -80,6 +87,8 @@
       <w>savefinal</w>
       <w>savemaster</w>
       <w>savergb</w>
+      <w>setclip</w>
+      <w>setdata</w>
       <w>setname</w>
       <w>setproject</w>
       <w>setref</w>

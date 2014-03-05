@@ -604,7 +604,346 @@ class Photo(object):
         self.image = None
         gc.collect()
         self.data = None
-        
+
+
+class Frame:
+    """
+    A rewrite of the class Photo <--- remove this when done
+    Frame has all the information of a single photo frame and all the methods to read and write data on disk
+    """
+
+    def __init__(self, project, genname, frameinfo=None, number=None):
+        """
+        Create a Frame object from frameinfo file or create an empty Frame object.
+
+        Arguments
+        project = Project settings object
+        genname = Generic name for image to load (light, calib, rgb, reg...)
+        frameinfo = frameinfo settings object
+        """
+
+        # Common variables for any case
+        self.project   = project
+        self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
+        self.wdir      = self.project.get("Setup", "Path")  # Working directory
+        self.genname   = genname
+
+        # Instance variables required later
+        self.rgb       = False      # Is image rgb or monochrome (Boolean)
+        self.clip      = []
+        self.tri       = []         # List of triangles
+        self.match     = []         # List of matching triangles with reference picture
+
+        self.path = None            # Path for image
+        self.bayer = None
+        self.x = None
+        self.y = None               # Dimensions for image
+
+        self.number = number
+        self.frameinfo = frameinfo
+
+        # The following objects are lists because colour channels are separate
+        self.hdu = []               # HDU-object for loading fits. Not required for tiff
+        self.image = []             # Image object. Required for Tiff and Fits
+        self.data = np.array([])    # Image data as an numpy.array
+
+        if frameinfo:
+            self.readinfo()
+        else:
+            if self.number:
+                self.path = self.wdir + self.name + "_" + self.number + "_" + self.genname + ".fits"
+            else:
+                self.path = self.wdir + self.name + "_" + self.genname + ".fits"
+
+    def readinfo(self):
+        """
+        Read frame info from specified file
+        """
+
+        self.number = self.frameinfo.get("Default", "Number")
+        self.path = self.frameinfo.get("Paths", self.genname)
+        self.x = self.frameinfo.get("Properties", "X")
+        self.y = self.frameinfo.get("Properties", "Y")
+
+    def extractinfo(self):
+        """
+        Read the file into memory and extract all required information
+        """
+
+        # TODO: Bayer matrix from cfa-images
+        self.bayer = None
+
+        # Image dimensions
+        if len(self.image.shape) == 3:
+            self.x = self.image[0].shape[2]
+            self.y = self.image[0].shape[1]
+        else:
+            self.x = self.image[0].shape[1]
+            self.y = self.image[0].shape[0]
+        print("Done!")
+        print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
+
+    def writeinfo(self, frameinfo):
+        """
+        Write frame info to specified file
+        """
+
+        self.frameinfo = Conf.Frame(frameinfo, self.project)
+
+        self.frameinfo.set("Default", "Number", str(self.number))
+        self.frameinfo.set("Paths", self.genname, self.path)
+        self.frameinfo.set("Properties", "Bayer filter", self.bayer)
+        self.frameinfo.set("Properties", "X", str(self.x))
+        self.frameinfo.set("Properties", "Y", str(self.y))
+
+    def fromraw(self, path):
+        """
+        Create a Frame object from raw photo
+
+        Arguments:
+        path - Unix path of the photo
+
+        Returns:
+        Frame
+        """
+
+        self._convert(path)
+        self.writeinfo(self.wdir + self.name + "_" + self.number + ".info")
+
+    def setclip(self, clip):
+        """
+        Set the data clip coordinates
+        """
+
+        self.clip = clip
+
+    def getdata(self):
+        """
+        Getter for data.
+
+        Data can't be loaded in memory all the time because of the size of it. This getter handles reading data
+        from disk and returning it as if it were just Frame.data
+        """
+
+        self._load_data(self.clip)
+        data = self.data.copy()
+        self._release_data()
+        return data
+
+    def setdata(self, data):
+        """
+        Setter for data.
+        """
+
+        self.data = data
+
+    def deldata(self):
+        """
+        Destructor for data
+        """
+
+        del self.data
+
+    data = property(getdata, setdata, deldata)
+
+    def _convert(self, srcpath):
+        """
+        Convert the raw file into FITS via PGM.
+
+        There are some problems with TIFF format. That's why via PGM.
+
+        Arguments:
+        srcpath - Full unix path where to find source file
+
+        Return:
+        Nothing. File is created or program crashed. Perhaps this is a good place for try-except...
+        """
+
+        if exists(srcpath):
+
+            if exists(self.path):
+                print("Image already converted.")
+                return
+
+            print("Converting RAW image...")
+            if call(["dcraw -v -4 -t 0 -D " + srcpath], shell=True):
+                print("Something went wrong... There might be helpful output from Rawtran above this line.")
+                if exists(self.path):
+                    print("File " + self.path + " was created but dcraw returned an error.")
+                else:
+                    print("Unable to continue.")
+            else:
+                move(srcpath[:-3] + "pgm", self.path[:-4] + "pgm")
+                call(["convert", self.path[:-4] + "pgm", self.path])
+                print("Conversion successful!")
+        else:
+            print("Unable to find file in given path: " + srcpath + ". Find out what's wrong and try again.")
+            print("Can't continue. Exiting.")
+            exit()
+
+    def _load_fits(self):
+        """
+        Load a fits file created by this program
+
+        Arguments:
+        suffix - file name suffix indicating progress of process. eg. calib, reg, rgb
+        number - number of file
+        """
+
+        self.hdu = fits.open(self.path, memmap=True)
+        self.image = self.hdu[0]
+
+    def _load_data(self):
+        """
+        Load portion of FITS-data into memory. Does not work with TIFF
+
+        Arguments:
+        rangetuple - coordinates of the clipping area (x0, x1, y0, y1)
+        """
+
+        if self.format != ".fits":
+            print("This method works only with FITS files.")
+
+        if self.clip:
+            y0 = self.clip[0]
+            y1 = self.clip[1]
+            x0 = self.clip[2]
+            x1 = self.clip[3]
+
+            self._load_fits()
+
+            if self.image.shape[0] == 3:
+                self.data = self.image.data[0:3, x0:x1, y0:y1]
+            else:
+                self.data = self.image.data[x0:x1, y0:y1]
+        else:
+            self._load_fits()
+            self.data = self.image.data
+
+    def _release_data(self):
+        """
+        Release data from memory and delete even the hdu
+        """
+        self.hdu.close()
+        del self.image
+        del self.data
+        del self.hdu
+
+        gc.collect()
+
+    def _write_fits(self):
+        """
+        Write self.data to disk as a fits file
+
+        """
+
+        hdu = fits.PrimaryHDU()  # To create a default header
+
+        if self.data is None:
+            print("No data set! Exiting...")
+            exit()
+
+        fits.writeto(self.path, np.int16(self.data), hdu.header, clobber=True)
+
+
+        # CFA or single channel data. Only one file to create.
+        # TODO: modify data so that single channel has ndim == 1 (ISSUE #3)
+        if self.data.ndim == 2:
+            fits.writeto(self.imagepath, np.int16(self.data), hdu.header, clobber=True)
+            if log:
+                if section == "Master frames":
+                    self.project.set(section, number, self.imagepath)
+                else:
+                    self.project.set(section, str(self.number), self.imagepath)
+                    self.frame.set("Paths", section, self.imagepath)
+
+        elif self.data.ndim == 3:
+            rgbname = ["", "", ""]
+            rgbpath = ["", "", ""]
+            for i in [0, 1, 2]:
+                rgbname[i] = self.imagename + "_" + self.ccode[i]
+                rgbpath[i] = rgbname[i] + ".fits"
+                fits.writeto(rgbpath[i],
+                             np.int16(self.data[i]),  # / np.amax(self.data[i]) * 63000.),
+                             hdu.header,
+                             clobber=True)
+                if log:
+                    self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
+                    self.frame.set("Paths", section + " " + self.ccode[i], rgbpath[i])
+            if final:
+                call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine",
+                      "-depth", "16", self.imagename + "_combined.tiff"])
+        else:
+            print("Data has unsupported number of dimensions. Exiting...")
+            exit()
+        self.project.write()
+
+    def _write_tiff(self):
+        """
+        Write self.data to disk as a tiff file
+
+        Arguments:
+        suffix   = Suffix to add to file name: <Project name>_suffix.fits
+        number   = Number of the image
+        final    = Add "final" to file name
+        log      = Write file info to project file
+        """
+
+        if section:
+            self.number = number
+            try:
+                suffix = self.suffix[section]
+            except KeyError:
+                suffix = section
+            self.imagename = self.wdir + self.name + "_" + str(self.number) + "_" + suffix
+        else:
+            self.imagename = self.wdir + self.name + "_final"
+        self.imagepath = self.imagename + ".tiff"
+
+        if self.data.ndim == 2:
+            image = Im.fromarray(np.flipud(np.int16(self.data)).copy())
+            image.save(self.imagename + ".tiff", format="tiff")
+            if log:
+                self.project.set(section, str(self.number), self.imagepath)
+
+        elif self.data.ndim == 3:
+            rgbname = ["", "", ""]
+            rgbpath = ["", "", ""]
+
+            image = [0, 0, 0]
+            for i in [0, 1, 2]:
+                rgbpath[i] = rgbname[i] + ".tiff"
+                image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])).copy())
+                image[i].save(rgbpath[i], format="tiff")
+                if log:
+                    self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
+        self.project.write()
+
+    def write_tiff(self):
+        """
+        Load data from current fits and save it as a tiff. Required because ImageMagick
+        doesn't work with fits too well.
+        """
+        self.load_data2()
+
+        image = [0, 0, 0]
+        for i in [0, 1, 2]:
+            image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])).copy())
+            image[i].save(self.imagepath[i][:-5] + ".tiff", format="tiff")
+
+        self.release_data2()
+
+    def write(self, tiff=False):
+        """
+        Wrapper function to relay writing of the image on disk. This is remnants of something much more complicated...
+
+        Arguments:
+        tiff     = Write also a tiff file in addition to fits
+        """
+
+        self._write_fits()
+        if tiff:
+            self._write.tiff()
     
 class Batch:
     """
