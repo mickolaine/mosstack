@@ -655,6 +655,25 @@ class Frame:
             else:
                 self.path = self.wdir + self.name + "_" + self.genname + ".fits"
 
+    def rgbpath(self, format=None):
+        """
+        Return list of file paths where "_[rgb]" is placed before the extension
+
+        eg. if self.path is /path/to/file_2_reg.tiff this returns
+         [/path/to/file_2_reg_r.tiff, /path/to/file_2_reg_g.tiff, /path/to/file_2_reg_b.tiff]
+        This is required for ImageMagicks inability to understand rgb fits, or actually fits' in general
+        Arguments:
+        format = if specified, change the extension to this
+        """
+
+        base, ext = splitext(self.path)
+        if format:
+            ext = "." + format
+        pathlist = []
+        for i in ("_r", "_g", "_b"):
+            pathlist.append(base + i + ext)
+        return pathlist
+
     def readinfo(self):
         """
         Read frame info from specified file
@@ -746,6 +765,16 @@ class Frame:
 
     data = property(getdata, setdata, deldata)
 
+    def setgenname(self, genname):
+        """
+        Set genname and take care of info file changes
+        """
+        self.genname = genname
+        self.path = self.wdir + self.name + "_" + self.number + "_" + self.genname + ".fits"
+        self.frameinfo.set("Paths", self.genname, self.path)
+
+    genname = property(fset=setgenname)
+
     def _convert(self, srcpath):
         """
         Convert the raw file into FITS via PGM.
@@ -834,7 +863,6 @@ class Frame:
     def _write_fits(self):
         """
         Write self.data to disk as a fits file
-
         """
 
         hdu = fits.PrimaryHDU()  # To create a default header
@@ -845,79 +873,21 @@ class Frame:
 
         fits.writeto(self.path, np.int16(self.data), hdu.header, clobber=True)
 
-
-        # CFA or single channel data. Only one file to create.
-        # TODO: modify data so that single channel has ndim == 1 (ISSUE #3)
-        if self.data.ndim == 2:
-            fits.writeto(self.imagepath, np.int16(self.data), hdu.header, clobber=True)
-            if log:
-                if section == "Master frames":
-                    self.project.set(section, number, self.imagepath)
-                else:
-                    self.project.set(section, str(self.number), self.imagepath)
-                    self.frame.set("Paths", section, self.imagepath)
-
-        elif self.data.ndim == 3:
-            rgbname = ["", "", ""]
-            rgbpath = ["", "", ""]
-            for i in [0, 1, 2]:
-                rgbname[i] = self.imagename + "_" + self.ccode[i]
-                rgbpath[i] = rgbname[i] + ".fits"
-                fits.writeto(rgbpath[i],
-                             np.int16(self.data[i]),  # / np.amax(self.data[i]) * 63000.),
-                             hdu.header,
-                             clobber=True)
-                if log:
-                    self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
-                    self.frame.set("Paths", section + " " + self.ccode[i], rgbpath[i])
-            if final:
-                call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine",
-                      "-depth", "16", self.imagename + "_combined.tiff"])
-        else:
-            print("Data has unsupported number of dimensions. Exiting...")
-            exit()
-        self.project.write()
-
     def _write_tiff(self):
         """
         Write self.data to disk as a tiff file
-
-        Arguments:
-        suffix   = Suffix to add to file name: <Project name>_suffix.fits
-        number   = Number of the image
-        final    = Add "final" to file name
-        log      = Write file info to project file
         """
 
-        if section:
-            self.number = number
-            try:
-                suffix = self.suffix[section]
-            except KeyError:
-                suffix = section
-            self.imagename = self.wdir + self.name + "_" + str(self.number) + "_" + suffix
-        else:
-            self.imagename = self.wdir + self.name + "_final"
-        self.imagepath = self.imagename + ".tiff"
-
-        if self.data.ndim == 2:
+        if self.data.ndim == 1:
             image = Im.fromarray(np.flipud(np.int16(self.data)).copy())
             image.save(self.imagename + ".tiff", format="tiff")
-            if log:
-                self.project.set(section, str(self.number), self.imagepath)
 
         elif self.data.ndim == 3:
-            rgbname = ["", "", ""]
-            rgbpath = ["", "", ""]
-
             image = [0, 0, 0]
+            rgbpath = self.rgbpath(format="tiff")
             for i in [0, 1, 2]:
-                rgbpath[i] = rgbname[i] + ".tiff"
                 image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])).copy())
                 image[i].save(rgbpath[i], format="tiff")
-                if log:
-                    self.project.set(section, str(self.number) + self.ccode[i], rgbpath[i])
-        self.project.write()
 
     def write_tiff(self):
         """
@@ -944,14 +914,16 @@ class Frame:
         self._write_fits()
         if tiff:
             self._write.tiff()
-    
+
+
 class Batch:
     """
     Batch holds a list of photos loaded with astropy's fits.open
     It also checks compatibility for each photo loaded
     """
 
-    def __init__(self, section=None, project=None, load=True):
+    '''
+    def old__init__(self, section=None, project=None, load=True):
         """
         Constructor loads all necessary objects and sets some default values
         list will have Photo.Photo type objects which will hold all the information of one image.
@@ -997,15 +969,38 @@ class Batch:
             self.list[key] = photo
 
         self.refnum = int(project.get("Reference images", key="light"))  # Number of reference frame
-        self.name   = self.project.get("Default", key="project name")  # Name for the resulting image
+        self.name   = self.project.get("Default", key="project name")    # Name for the resulting image
 
         self.master = Photo(project=project)  # New empty image to save the result in
+    '''
 
+    def __init__(self, project, genname):
+        """
+        Constructor loads Frames according to arguments.
+
+        Arguments:
+        project = Configuration object for the project
+        genname = Generic name of the files
+        """
+
+        self.project = project
+        self.genname = genname
+        files        = self.project.get("Files")                          # Paths for the frame info files
+        self.refnum  = int(project.get("Reference images", key="light"))  # Number of reference frame
+        self.name    = self.project.get("Default", key="project name")    # Name for the resulting image
+
+        self.list    = {}                         # Empty list for Photos
+
+        for key in files:
+            self.list[key] = Frame(self.project, self.genname, frameinfo=files[key], number=key)
+
+    '''
     def refimg(self):
         """
         Returns the reference image
         """
         return self.list[self.refnum]
+    '''
 
     def demosaic(self, demosaic):
         """
@@ -1015,14 +1010,19 @@ class Batch:
         demosaic: a Demosaic-type object
         """
 
+        #for i in self.list:
+        #    self.list[i].load_data2()
+        #    new = Photo(project=self.project, number=i, data=demosaic.demosaic(self.list[i]))
+        #    new.write(section="RGB images", number=i)
+        #    self.list[i].release_data2()
+        #self.project.set("Colors", "rgb", "rgb")
+        #self.project.set("State", "Demosaic", "1")
+        #self.project.write()
+
         for i in self.list:
-            self.list[i].load_data2()
-            new = Photo(project=self.project, number=i, data=demosaic.demosaic(self.list[i]))
-            new.write(section="RGB images", number=i)
-            self.list[i].release_data2()
-        self.project.set("Colors", "rgb", "rgb")
-        self.project.set("State", "Demosaic", "1")
-        self.project.write()
+            self.list[i].data = demosaic.demosaic(self.list[i].data)
+            self.list[i].genname = "rgb"
+            self.list[i].write()
 
     def register(self, register):
         """

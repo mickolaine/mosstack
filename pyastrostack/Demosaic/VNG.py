@@ -22,16 +22,19 @@ class VNG(Demosaic):
         """ VNG interpolation using pyOpenCL.
 
         Arguments:
-        image - a pyAstroStack.Photo
+        image = numpy.array to demosaic
 
         Returns:
         [red, green, blue] as numpy.array
         """
         mf = cl.mem_flags
 
-        print("Processing image " + image.imagepath)
+        print("Processing image " + image.path)
 
-        cfa = np.ravel(np.float32(image.data, order='C'))
+        x = image.shape[1]
+        y = image.shape[0]
+
+        cfa = np.ravel(np.float32(image, order='C'))
         t1 = datetime.datetime.now()
         bayer = "RGGB"      # This goes somewhere outside this file. Now for testing here
 
@@ -382,9 +385,9 @@ else if (""" + g_condition + """)
         cl.enqueue_copy(self.queue, g, dest_bufg)
         cl.enqueue_copy(self.queue, b, dest_bufb)
         t2 = datetime.datetime.now()
-        r = np.int16(np.reshape(r, (image.y, -1), order='C'))
-        g = np.int16(np.reshape(g, (image.y, -1), order='C'))
-        b = np.int16(np.reshape(b, (image.y, -1), order='C'))
+        r = np.int16(np.reshape(r, (y, -1), order='C'))
+        g = np.int16(np.reshape(g, (y, -1), order='C'))
+        b = np.int16(np.reshape(b, (y, -1), order='C'))
 
         print("...Done")
         print("Debayering took " + str(t2-t1) + " seconds.")

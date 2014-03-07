@@ -279,12 +279,12 @@ You can use either name or number as operation 'list' shows them.
         batch = Batch(section=section, project=self.project, load=False)
         batch.register(self.registerwrap())
 
-    def demosaic(self, section):
+    def demosaic(self, genname):
         """
         Demosaic project files under specified section. Use demosaicing algorithm TODO:
         """
 
-        batch = Batch(section=section, project=self.project, load=False)
+        batch = Batch(self.project, genname)
         batch.demosaic(self.demosaicwrap())
 
     def stack(self, section):
