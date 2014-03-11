@@ -16,6 +16,7 @@ import numpy as np
 from PIL import Image as Im
 import gc
 from re import sub
+from os import listdir
 
 
 class Photo(object):
@@ -612,21 +613,21 @@ class Frame:
     Frame has all the information of a single photo frame and all the methods to read and write data on disk
     """
 
-    def __init__(self, project, genname, frameinfo=None, number=None):
+    def __init__(self, project, genname, infopath=None, number=None):
         """
         Create a Frame object from frameinfo file or create an empty Frame object.
 
         Arguments
         project = Project settings object
         genname = Generic name for image to load (light, calib, rgb, reg...)
-        frameinfo = frameinfo settings object
+        infopath = frame info file
         """
 
         # Common variables for any case
         self.project   = project
         self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
         self.wdir      = self.project.get("Setup", "Path")  # Working directory
-        self.genname   = genname
+        self._genname   = genname
 
         # Instance variables required later
         self.rgb       = False      # Is image rgb or monochrome (Boolean)
@@ -640,22 +641,25 @@ class Frame:
         self.y = None               # Dimensions for image
 
         self.number = number
-        self.frameinfo = frameinfo
 
         # The following objects are lists because colour channels are separate
         self.hdu = []               # HDU-object for loading fits. Not required for tiff
         self.image = []             # Image object. Required for Tiff and Fits
-        self.data = np.array([])    # Image data as an numpy.array
+        self._data = np.array([])    # Image data as an numpy.array
 
-        if frameinfo:
+        if infopath:
+            self.frameinfo = Conf.Frame(infopath, self.project)
+            self.infopath = infopath
             self.readinfo()
         else:
+            self.frameinfo = None
+            self.infopath = self.wdir + self.name + "_" + str(self.number) + "_" + self.genname + ".info"
             if self.number:
-                self.path = self.wdir + self.name + "_" + self.number + "_" + self.genname + ".fits"
+                self.path = self.wdir + self.name + "_" + str(self.number) + "_" + self.genname + ".fits"
             else:
                 self.path = self.wdir + self.name + "_" + self.genname + ".fits"
 
-    def rgbpath(self, format=None):
+    def rgbpath(self, fileformat=None):
         """
         Return list of file paths where "_[rgb]" is placed before the extension
 
@@ -668,7 +672,7 @@ class Frame:
 
         base, ext = splitext(self.path)
         if format:
-            ext = "." + format
+            ext = "." + fileformat
         pathlist = []
         for i in ("_r", "_g", "_b"):
             pathlist.append(base + i + ext)
@@ -702,16 +706,16 @@ class Frame:
         print("Done!")
         print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
 
-    def writeinfo(self, frameinfo):
+    def writeinfo(self):
         """
         Write frame info to specified file
         """
 
-        self.frameinfo = Conf.Frame(frameinfo, self.project)
+        self.frameinfo = Conf.Frame(self.infopath, self.project)
 
         self.frameinfo.set("Default", "Number", str(self.number))
         self.frameinfo.set("Paths", self.genname, self.path)
-        self.frameinfo.set("Properties", "Bayer filter", self.bayer)
+        self.frameinfo.set("Properties", "Bayer filter", str(self.bayer))
         self.frameinfo.set("Properties", "X", str(self.x))
         self.frameinfo.set("Properties", "Y", str(self.y))
 
@@ -727,7 +731,7 @@ class Frame:
         """
 
         self._convert(path)
-        self.writeinfo(self.wdir + self.name + "_" + self.number + ".info")
+        self.writeinfo()
 
     def setclip(self, clip):
         """
@@ -754,7 +758,7 @@ class Frame:
         Setter for data.
         """
 
-        self.data = data
+        self._data = data
 
     def deldata(self):
         """
@@ -765,15 +769,18 @@ class Frame:
 
     data = property(getdata, setdata, deldata)
 
+    def getgenname(self):
+        return self._genname
+
     def setgenname(self, genname):
         """
         Set genname and take care of info file changes
         """
-        self.genname = genname
+        self._genname = genname
         self.path = self.wdir + self.name + "_" + self.number + "_" + self.genname + ".fits"
         self.frameinfo.set("Paths", self.genname, self.path)
 
-    genname = property(fset=setgenname)
+    genname = property(fget=getgenname, fset=setgenname)
 
     def _convert(self, srcpath):
         """
@@ -922,6 +929,8 @@ class Batch:
     It also checks compatibility for each photo loaded
     """
 
+    extensions = (".CR2", ".cr2")   # TODO: Add here all supported extensions, and move this to a better place
+
     '''
     def old__init__(self, section=None, project=None, load=True):
         """
@@ -985,14 +994,21 @@ class Batch:
 
         self.project = project
         self.genname = genname
-        files        = self.project.get("Files")                          # Paths for the frame info files
-        self.refnum  = int(project.get("Reference images", key="light"))  # Number of reference frame
+
+#        self.refnum  = int(project.get("Reference images", key="light"))  # Number of reference frame
         self.name    = self.project.get("Default", key="project name")    # Name for the resulting image
 
-        self.list    = {}                         # Empty list for Photos
+        self.list    = {}                                                 # Empty dict for Photos
 
-        for key in files:
-            self.list[key] = Frame(self.project, self.genname, frameinfo=files[key], number=key)
+        if genname in ("flat", "dark", "bias"):
+            self.category = genname
+        else:
+            self.category = "light"
+
+        if self.project.hassection(self.category):
+            files = self.project.get(self.category)                       # Paths for the frame info files
+            for key in files:
+                self.list[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
 
     '''
     def refimg(self):
@@ -1088,4 +1104,44 @@ class Batch:
             self.list[i].release_data2()
         calib.release_data2()
         self.project.set("Colors", "calib", "cfa")
+        self.project.write()
+
+    def directory(self, path, itype):
+        """
+        Add directory to Batch
+
+        Arguments:
+        path - Unix path where the photos are (Must end in "/")
+        type - Type of photo frames (light, dark, bias, flat)
+        """
+
+        allfiles = listdir(path)
+        rawfiles = []
+
+        for i in allfiles:
+            if splitext(i)[1] in self.extensions:
+                rawfiles.append(path + i)
+
+        if len(rawfiles) != 0:
+            print("Found files :")
+            for i in rawfiles:
+                print(i)
+        else:
+            print("No supported RAW files found. All files found are listed here: " + str(allfiles))
+            exit()
+
+        n = len(self.list)
+
+        for i in rawfiles:
+            frame = Frame(self.project, self.genname, number=n)
+            frame.fromraw(i)
+            self.project.set(itype, str(n), frame.infopath)
+            n += 1
+
+        # Set reference only if not already set
+        if not self.project.hassection("Reference images"):
+            print("Setting first image in list as reference image. This can be altered in project file.")
+            ref = "1"
+            self.project.set("Reference images", itype, ref)
+
         self.project.write()

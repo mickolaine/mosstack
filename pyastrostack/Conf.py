@@ -247,11 +247,10 @@ class Project:
         imagetype is in (light, dark, bias, flat)
         """
         self.readproject()
-        #directory = os.getcwd()
         print("Looking for RAW-files in specified directory...")
 
         # Make sure path ends in /
-        if directory[len(directory) - 1] != "/":
+        if directory[-1] != "/":
             directory += "/"
 
         temp = os.listdir(directory)
@@ -297,6 +296,22 @@ class Project:
             self.conf.save(imagetype, ref, "Reference images")
 
         self.conf.write(self.projectfile)
+
+    def hassection(self, section):
+        """
+        Check if project file has section
+
+        Arguments:
+        section - string to check
+
+        Returns:
+        Boolean
+        """
+
+        if section in self.conf.conf:
+            return True
+        else:
+            return False
 
     def addfile(self, rawpath, imagetype):
         """
@@ -382,7 +397,7 @@ class Frame:
         if os.path.exists(self.framefile):
             return
 
-        self.set("Default", "Loaded", "0")
+        #self.set("Default", "Loaded", "0")
         self.conf.write(self.framefile)
 
     def readproject(self):

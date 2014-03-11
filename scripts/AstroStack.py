@@ -61,6 +61,9 @@ def main(argv):
     if argv[0] == "help":
         print(longhelp)
 
+    if argv[0] == "init":
+        exit()
+
     elif argv[0] == "set":
 
         if argv[1] == "project":
@@ -110,7 +113,8 @@ def main(argv):
             directory = os.getcwd()
 
         itype = argv[2]
-        project.adddir(directory, itype)
+        ui.adddir(directory, itype)
+        #project.adddir(directory, itype)
 
     elif argv[0] == "file":
 

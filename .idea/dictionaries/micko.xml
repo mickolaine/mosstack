@@ -53,6 +53,7 @@
       <w>imager</w>
       <w>imaget</w>
       <w>imagetype</w>
+      <w>infopath</w>
       <w>initproject</w>
       <w>itype</w>
       <w>libraw</w>
@@ -67,11 +68,13 @@
       <w>newpath</w>
       <w>newtiff</w>
       <w>origtiff</w>
+      <w>pathlist</w>
       <w>pfile</w>
       <w>pname</w>
       <w>ppath</w>
       <w>projectfile</w>
       <w>projectname</w>
+      <w>rawfiles</w>
       <w>rawformat</w>
       <w>rawpath</w>
       <w>raws</w>

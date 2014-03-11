@@ -359,3 +359,15 @@ You can use either name or number as operation 'list' shows them.
             self.project.write()
         else:
             print("Invalid value")
+
+    def adddir(self, directory, itype):
+        """
+        Add files in directory to project
+
+        Arguments:
+        directory - unix path to add
+        itype - light, flat, bias, dark
+        """
+
+        batch = Batch(project=self.project, genname=itype)
+        batch.directory(directory, itype)
