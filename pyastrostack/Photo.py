@@ -17,6 +17,7 @@ from PIL import Image as Im
 import gc
 from re import sub
 from os import listdir
+import datetime   # For profiling
 
 
 class Photo(object):
@@ -627,7 +628,8 @@ class Frame:
         self.project   = project
         self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
         self.wdir      = self.project.get("Setup", "Path")  # Working directory
-        self._genname   = genname
+        self._genname  = genname
+        self.format    = ".fits"
 
         # Instance variables required later
         self.rgb       = False      # Is image rgb or monochrome (Boolean)
@@ -643,9 +645,9 @@ class Frame:
         self.number = number
 
         # The following objects are lists because colour channels are separate
-        self.hdu = []               # HDU-object for loading fits. Not required for tiff
-        self.image = []             # Image object. Required for Tiff and Fits
-        self._data = np.array([])    # Image data as an numpy.array
+        self.hdu = None             # HDU-object for loading fits. Not required for tiff
+        self.image = None           # Image object. Required for Tiff and Fits
+        self._data = None   # Image data as an numpy.array
 
         if infopath:
             self.frameinfo = Conf.Frame(infopath, self.project)
@@ -748,8 +750,9 @@ class Frame:
         from disk and returning it as if it were just Frame.data
         """
 
-        self._load_data(self.clip)
-        data = self.data.copy()
+        if self._data is None:
+            self._load_data()
+        data = self._data.copy()
         self._release_data()
         return data
 
@@ -765,7 +768,7 @@ class Frame:
         Destructor for data
         """
 
-        del self.data
+        self._data = None
 
     data = property(getdata, setdata, deldata)
 
@@ -849,21 +852,22 @@ class Frame:
             self._load_fits()
 
             if self.image.shape[0] == 3:
-                self.data = self.image.data[0:3, x0:x1, y0:y1]
+                self._data = self.image.data[0:3, x0:x1, y0:y1]
             else:
-                self.data = self.image.data[x0:x1, y0:y1]
+                self._data = self.image.data[x0:x1, y0:y1]
         else:
             self._load_fits()
-            self.data = self.image.data
+            self._data = self.image.data
 
     def _release_data(self):
         """
         Release data from memory and delete even the hdu
         """
-        self.hdu.close()
-        del self.image
+        if self.hdu is not None:
+            self.hdu.close()
+        self.image = None
         del self.data
-        del self.hdu
+        self.hdu = None
 
         gc.collect()
 
@@ -874,7 +878,7 @@ class Frame:
 
         hdu = fits.PrimaryHDU()  # To create a default header
 
-        if self.data is None:
+        if self._data is None:
             print("No data set! Exiting...")
             exit()
 
@@ -1036,7 +1040,12 @@ class Batch:
         #self.project.write()
 
         for i in self.list:
+            print("Processing image " + self.list[i].path)
+            t1 = datetime.datetime.now()
             self.list[i].data = demosaic.demosaic(self.list[i].data)
+            t2 = datetime.datetime.now()
+            print("...Done")
+            print("Debayering took " + str(t2-t1) + " seconds.")
             self.list[i].genname = "rgb"
             self.list[i].write()
 

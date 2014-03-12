@@ -3,7 +3,6 @@ __author__ = 'micko'
 from .. Demosaic.Demosaic import Demosaic
 import numpy as np
 import pyopencl as cl
-import datetime   # For profiling
 
 
 class VNG(Demosaic):
@@ -29,13 +28,10 @@ class VNG(Demosaic):
         """
         mf = cl.mem_flags
 
-        print("Processing image " + image.path)
-
         x = image.shape[1]
         y = image.shape[0]
 
         cfa = np.ravel(np.float32(image, order='C'))
-        t1 = datetime.datetime.now()
         bayer = "RGGB"      # This goes somewhere outside this file. Now for testing here
 
         if bayer == "RGGB":
@@ -58,7 +54,7 @@ __kernel void vng(__global const float *a,
                    __global float *g,
                    __global float *b)
 {
-int x = """ + str(image.x) + """;
+int x = """ + str(x) + """;
 int len = """ + str(len(cfa)) + """;
 int gid = get_global_id(0);
 
@@ -384,11 +380,8 @@ else if (""" + g_condition + """)
         cl.enqueue_copy(self.queue, r, dest_bufr)
         cl.enqueue_copy(self.queue, g, dest_bufg)
         cl.enqueue_copy(self.queue, b, dest_bufb)
-        t2 = datetime.datetime.now()
         r = np.int16(np.reshape(r, (y, -1), order='C'))
         g = np.int16(np.reshape(g, (y, -1), order='C'))
         b = np.int16(np.reshape(b, (y, -1), order='C'))
 
-        print("...Done")
-        print("Debayering took " + str(t2-t1) + " seconds.")
         return np.array([r, g, b])
