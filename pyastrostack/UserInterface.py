@@ -271,12 +271,12 @@ You can use either name or number as operation 'list' shows them.
         self.registerwrap = eval("Registering." + project.get("Default", "register"))
         self.stackerwrap = eval("Stacker." + project.get("Default", "stack"))
 
-    def register(self, section):
+    def register(self, genname):
         """
         Register project files under specified section.
         """
 
-        batch = Batch(section=section, project=self.project, load=False)
+        batch = Batch(self.project, genname)
         batch.register(self.registerwrap())
 
     def demosaic(self, genname):
@@ -287,12 +287,12 @@ You can use either name or number as operation 'list' shows them.
         batch = Batch(self.project, genname)
         batch.demosaic(self.demosaicwrap())
 
-    def stack(self, section):
+    def stack(self, genname):
         """
         Stack project files under specified section. Stacker read from TODO: do this
         """
 
-        batch = Batch(section=section, project=self.project, load=False)
+        batch = Batch(self.project, genname)
         batch.stack(self.stackerwrap())
 
     def subtract(self, section, calib):

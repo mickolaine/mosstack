@@ -638,9 +638,10 @@ class Frame:
         self.match     = []         # List of matching triangles with reference picture
 
         self.path = None            # Path for image
+        self.tiffpath = []          # List for paths to tiff files, required for aligning with imagemagick
         self.bayer = None
-        self.x = None
-        self.y = None               # Dimensions for image
+        self._x = None
+        self._y = None               # Dimensions for image
 
         self.number = number
 
@@ -673,12 +674,33 @@ class Frame:
         """
 
         base, ext = splitext(self.path)
-        if format:
+        if fileformat:
             ext = "." + fileformat
         pathlist = []
         for i in ("_r", "_g", "_b"):
             pathlist.append(base + i + ext)
         return pathlist
+
+    def combine(self, newpath):
+        """
+        Combine channels from three fits files into one.
+        """
+        hdu = []
+        image = []
+        data = []
+
+        for i in (0, 1, 2):
+            hdu.append(fits.open(newpath[i]))
+            data.append(hdu[i][0].data)
+
+        self.data = np.array(data)
+        self.write()
+
+    def getpath(self, genname):
+        """
+        Return path by some other genname than self.genname. Read from .info
+        """
+        return self.frameinfo.get("Paths", genname)
 
     def readinfo(self):
         """
@@ -687,8 +709,8 @@ class Frame:
 
         self.number = self.frameinfo.get("Default", "Number")
         self.path = self.frameinfo.get("Paths", self.genname)
-        self.x = self.frameinfo.get("Properties", "X")
-        self.y = self.frameinfo.get("Properties", "Y")
+        self.x = int(self.frameinfo.get("Properties", "X"))
+        self.y = int(self.frameinfo.get("Properties", "Y"))
 
     def extractinfo(self):
         """
@@ -698,13 +720,17 @@ class Frame:
         # TODO: Bayer matrix from cfa-images
         self.bayer = None
 
+        self._load_data()
+
         # Image dimensions
         if len(self.image.shape) == 3:
-            self.x = self.image[0].shape[2]
-            self.y = self.image[0].shape[1]
+            self.x = self.image.shape[2]
+            self.y = self.image.shape[1]
         else:
-            self.x = self.image[0].shape[1]
-            self.y = self.image[0].shape[0]
+            self.x = self.image.shape[1]
+            self.y = self.image.shape[0]
+
+        self._release_data()
         print("Done!")
         print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
 
@@ -733,6 +759,7 @@ class Frame:
         """
 
         self._convert(path)
+        self.extractinfo()
         self.writeinfo()
 
     def setclip(self, clip):
@@ -760,8 +787,10 @@ class Frame:
         """
         Setter for data.
         """
-
-        self._data = data
+        if len(data.shape) == 3:
+            self._data = data
+        else:
+            self._data = np.array([data])
 
     def deldata(self):
         """
@@ -784,6 +813,30 @@ class Frame:
         self.frameinfo.set("Paths", self.genname, self.path)
 
     genname = property(fget=getgenname, fset=setgenname)
+
+    def get_x(self):
+        if self._x:
+            return self._x
+        else:
+            self.x = self.frameinfo.get("Properties", "X")
+            return self._x
+
+    def set_x(self, x):
+        self._x = x
+
+    x = property(fget=get_x, fset=set_x)
+
+    def get_y(self):
+        if self._y:
+            return self._y
+        else:
+            self.y = self.frameinfo.get("Properties", "Y")
+            return self._y
+
+    def set_y(self, y):
+        self._y = y
+
+    y = property(fget=get_y, fset=set_y)
 
     def _convert(self, srcpath):
         """
@@ -851,13 +904,16 @@ class Frame:
 
             self._load_fits()
 
-            if self.image.shape[0] == 3:
+            if len(self.image.shape) == 3:
                 self._data = self.image.data[0:3, x0:x1, y0:y1]
             else:
-                self._data = self.image.data[x0:x1, y0:y1]
+                self._data = np.array([self.image.data[x0:x1, y0:y1]])
         else:
             self._load_fits()
-            self._data = self.image.data
+            if len(self.image.shape) == 3:
+                self._data = self.image.data
+            else:
+                self._data = np.array([self.image.data])
 
     def _release_data(self):
         """
@@ -889,30 +945,37 @@ class Frame:
         Write self.data to disk as a tiff file
         """
 
-        if self.data.ndim == 1:
-            image = Im.fromarray(np.flipud(np.int16(self.data)).copy())
-            image.save(self.imagename + ".tiff", format="tiff")
+        print(self.data)
+        print(self.data.shape)
 
-        elif self.data.ndim == 3:
-            image = [0, 0, 0]
-            rgbpath = self.rgbpath(format="tiff")
-            for i in [0, 1, 2]:
-                image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])).copy())
-                image[i].save(rgbpath[i], format="tiff")
+        if self.data.shape[0] == 1:
+            imagedata = np.flipud(np.int16(self.data[0].copy()))
+        elif self.data.shape[0] == 3:
+            #imagedata = np.dstack((np.flipud(self.data[0].copy()),
+            #                       np.flipud(self.data[1].copy()),
+            #                       np.flipud(self.data[2].copy())))
+            imagedata = np.array([np.flipud(self.data[0].copy()),
+                                  np.flipud(self.data[1].copy()),
+                                  np.flipud(self.data[2].copy())])
+        print(imagedata)
+        print(imagedata.shape)
+        image = Im.fromarray(imagedata, mode='RGB')
+        print(np.array(image))
+        image.save(splitext(self.path)[0] + ".tiff")
 
     def write_tiff(self):
         """
         Load data from current fits and save it as a tiff. Required because ImageMagick
         doesn't work with fits too well.
         """
-        self.load_data2()
+        self._load_data()
 
-        image = [0, 0, 0]
+        image = []
         for i in [0, 1, 2]:
-            image[i] = Im.fromarray(np.flipud(np.int16(self.data[i])).copy())
-            image[i].save(self.imagepath[i][:-5] + ".tiff", format="tiff")
+            image.append(Im.fromarray(np.flipud(np.int16(self.data[i])).copy()))
+            image[i].save(splitext(self.path)[0] + "_" + "rgb"[i] + ".tiff", format="tiff")
 
-        self.release_data2()
+        self._release_data()
 
     def write(self, tiff=False):
         """
@@ -924,7 +987,7 @@ class Frame:
 
         self._write_fits()
         if tiff:
-            self._write.tiff()
+            self._write_tiff()
 
 
 class Batch:
@@ -1042,7 +1105,7 @@ class Batch:
         for i in self.list:
             print("Processing image " + self.list[i].path)
             t1 = datetime.datetime.now()
-            self.list[i].data = demosaic.demosaic(self.list[i].data)
+            self.list[i].data = demosaic.demosaic(self.list[i].data[0])
             t2 = datetime.datetime.now()
             print("...Done")
             print("Debayering took " + str(t2-t1) + " seconds.")
@@ -1058,26 +1121,28 @@ class Batch:
         """
 
         register.register(self.list, self.project)
-        self.project.set("Colors", "reg", "rgb")
-        self.project.set("State", "Registering", "1")
-        self.project.write()
+        #self.project.set("Colors", "reg", "rgb")
+        #self.project.set("State", "Registering", "1")
+        #self.project.write()
 
     def stack(self, stacker):
         """
         Stack images using given stacker
 
         Arguments:
-        stacker  = Stacking type object
+        stacker = Stacking type object
         """
 
-        newdata = stacker.stack(self.list, self.project)
+        new = Frame(self.project, self.genname, number="master")
+        new.data = stacker.stack(self.list, self.project)
+        new.write(tiff=True)
 
-        if self.itype == "light":
-            new = Photo(project=self.project, data=newdata)
-            new.write(final=True, log=False)
-        elif self.itype in ("bias", "dark", "flat"):
-            new = Photo(project=self.project, data=newdata)
-            new.write(section="Master frames", number=self.itype)
+        #if self.itype == "light":
+        #    new = Photo(project=self.project, data=newdata)
+        #    new.write(final=True, log=False)
+        #elif self.itype in ("bias", "dark", "flat"):
+        #    new = Photo(project=self.project, data=newdata)
+        #    new.write(section="Master frames", number=self.itype)
 
     def subtract(self, calib, stacker):
         """

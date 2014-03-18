@@ -39,8 +39,10 @@ class Median(Stacking):
         ### Calculating image clip coordinates
         X = imagelist["2"].x
         Y = imagelist["2"].y
-        rgb = imagelist["2"].rgb
+        #rgb = imagelist["2"].rgb
 
+        print(X)
+        print(n)
         xclip = math.ceil(X / n)
         yclip = math.ceil(Y / n)
 
@@ -91,7 +93,7 @@ class Median(Stacking):
         lines = []
         line = None
         for clip in sec:
-            #print(clip)
+            print(clip)
             if clip[0] != line:
                 lines.append([])
                 i = len(lines) - 1
@@ -100,12 +102,41 @@ class Median(Stacking):
             else:
                 lines[i].append(clip)
 
-        # for line in lines:
-        #     print(line)
-
-        t1 = datetime.datetime.now()
-
         for line in lines:
+            tempslice = None
+            for clip in line:
+                print("Calculating clip " + str(inumber + 1) + " of " + str(len(sec)))
+
+                templist = []
+                for i in imagelist:
+                    imagelist[i].setclip(clip)
+                    templist.append(imagelist[i].data)
+                temp = np.median(templist, axis=0)
+                del templist
+                gc.collect()
+
+                inumber += 1
+
+                if tempslice is None:
+                    tempslice = temp
+                else:
+                    print(tempslice.shape)
+                    print(temp.shape)
+                    tempslice = np.hstack([tempslice, temp])
+                    print(tempslice.shape)
+
+            if result is None:
+                result = tempslice
+                print(result.shape)
+            else:
+                print(result.shape)
+                print(tempslice.shape)
+                result = np.dstack([result, tempslice])
+                print(result.shape)
+
+        return result
+
+        '''
             rslice = None
             gslice = None
             bslice = None
@@ -186,3 +217,4 @@ class Median(Stacking):
             return np.int16(np.array(result))
         else:
             return result
+        '''

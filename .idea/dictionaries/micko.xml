@@ -12,6 +12,7 @@
       <w>bufg</w>
       <w>bufr</w>
       <w>calib</w>
+      <w>catname</w>
       <w>ccode</w>
       <w>cfab</w>
       <w>cfag</w>
@@ -21,6 +22,7 @@
       <w>codegreen</w>
       <w>codered</w>
       <w>commandlist</w>
+      <w>confname</w>
       <w>createconf</w>
       <w>dcraw</w>
       <w>deldata</w>
@@ -67,6 +69,7 @@
       <w>newpairs</w>
       <w>newpath</w>
       <w>newtiff</w>
+      <w>oldpath</w>
       <w>origtiff</w>
       <w>pathlist</w>
       <w>pfile</w>

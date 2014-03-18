@@ -147,12 +147,12 @@ def main(argv):
         # AstroStack register <srcname>
 
         if argv[1]:
-            section = argv[1]
+            genname = argv[1]
         else:
             print("Srcname not defined. Exiting...")
             exit()
 
-        ui.register(section)
+        ui.register(genname)
 
     elif argv[0] == "subtract":
         # AstroStack subtract <srcname> <calibname>
