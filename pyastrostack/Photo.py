@@ -657,7 +657,7 @@ class Frame:
         else:
             self.frameinfo = None
             self.infopath = self.wdir + self.name + "_" + str(self.number) + "_" + self.genname + ".info"
-            if self.number:
+            if self.number or self.number == 0:
                 self.path = self.wdir + self.name + "_" + str(self.number) + "_" + self.genname + ".fits"
             else:
                 self.path = self.wdir + self.name + "_" + self.genname + ".fits"
@@ -686,7 +686,6 @@ class Frame:
         Combine channels from three fits files into one.
         """
         hdu = []
-        image = []
         data = []
 
         for i in (0, 1, 2):
@@ -709,6 +708,7 @@ class Frame:
 
         self.number = self.frameinfo.get("Default", "Number")
         self.path = self.frameinfo.get("Paths", self.genname)
+        #self.frametype = self.frameinfo.get("Default", "Frametype")
         self.x = int(self.frameinfo.get("Properties", "X"))
         self.y = int(self.frameinfo.get("Properties", "Y"))
 
@@ -743,6 +743,7 @@ class Frame:
 
         self.frameinfo.set("Default", "Number", str(self.number))
         self.frameinfo.set("Paths", self.genname, self.path)
+        #self.frameinfo.set("Default", "Frametype", self.frametype)
         self.frameinfo.set("Properties", "Bayer filter", str(self.bayer))
         self.frameinfo.set("Properties", "X", str(self.x))
         self.frameinfo.set("Properties", "Y", str(self.y))
@@ -945,23 +946,21 @@ class Frame:
         Write self.data to disk as a tiff file
         """
 
-        print(self.data)
-        print(self.data.shape)
-
         if self.data.shape[0] == 1:
             imagedata = np.flipud(np.int16(self.data[0].copy()))
+            image = Im.fromarray(imagedata)
+            image.save(splitext(self.path)[0] + ".tiff", format="tiff")
+
         elif self.data.shape[0] == 3:
-            #imagedata = np.dstack((np.flipud(self.data[0].copy()),
-            #                       np.flipud(self.data[1].copy()),
-            #                       np.flipud(self.data[2].copy())))
-            imagedata = np.array([np.flipud(self.data[0].copy()),
-                                  np.flipud(self.data[1].copy()),
-                                  np.flipud(self.data[2].copy())])
-        print(imagedata)
-        print(imagedata.shape)
-        image = Im.fromarray(imagedata, mode='RGB')
-        print(np.array(image))
-        image.save(splitext(self.path)[0] + ".tiff")
+            rgbpath = self.rgbpath(fileformat="tiff")
+            for i in (0, 1, 2):
+                imagedata = np.flipud(np.int16(self.data[i].copy()))
+                image = Im.fromarray(imagedata)
+                image.save(rgbpath[i], format="tiff")
+            call(["convert", rgbpath[0], rgbpath[1], rgbpath[2],
+                  "-channel", "RGB", "-depth", "16", "-combine",
+                  splitext(self.path)[0] + ".tiff"])
+            call(["rm", rgbpath[0], rgbpath[1], rgbpath[2]])
 
     def write_tiff(self):
         """
@@ -971,9 +970,10 @@ class Frame:
         self._load_data()
 
         image = []
+        rgbpath = self.rgbpath(fileformat="tiff")
         for i in [0, 1, 2]:
             image.append(Im.fromarray(np.flipud(np.int16(self.data[i])).copy()))
-            image[i].save(splitext(self.path)[0] + "_" + "rgb"[i] + ".tiff", format="tiff")
+            image[i].save(rgbpath[i], format="tiff")
 
         self._release_data()
 
@@ -1149,36 +1149,58 @@ class Batch:
         Subtract calib from images in imagelist
         """
 
-        calib = Photo(section="Master frames", number=calib, project=self.project)
-        calib.load_data()
+        cframe = Frame(self.project, calib, number="master")
+
+        #calib = Photo(section="Master frames", number=calib, project=self.project)
+        #calib.load_data()
 
         for i in self.list:
-            self.list[i].load_data2()
-            new = Photo(project=self.project, number=i, data=stacker.subtract(self.list[i], calib))
-            if self.section in ("flat", "bias", "dark"):
-                new.write(section=self.section, number=i)
-            else:
-                new.write(section="Calibrated images", number=i)
-            self.list[i].release_data2()
-        calib.release_data2()
-        self.project.set("Colors", "calib", "cfa")
-        self.project.write()
+            print("Subtracting " + calib + " from image " + str(self.list[i].number))
+            self.list[i].data = stacker.subtract(self.list[i], cframe)
+            if self.list[i].genname not in ("bias", "dark", "flat"):
+                self.list[i].genname = "calib"
+            #print(self.list[i].infopath)
+            self.list[i].write()
+
+        #for i in self.list:
+        #    self.list[i].load_data2()
+        #    new = Photo(project=self.project, number=i, data=stacker.subtract(self.list[i], calib))
+        #    if self.section in ("flat", "bias", "dark"):
+        #        new.write(section=self.section, number=i)
+        #    else:
+        #        new.write(section="Calibrated images", number=i)
+        #    self.list[i].release_data2()
+        #calib.release_data2()
+        #self.project.set("Colors", "calib", "cfa")
+        #self.project.write()
 
     def divide(self, calib, stacker):
         """
         Divide images in imagelist with calib
         """
 
-        calib = Photo(section="Master frames", number=calib, project=self.project)
-        calib.load_data()
+        cframe = Frame(self.project, calib, number="master")
+
+        #calib = Photo(section="Master frames", number=calib, project=self.project)
+        #calib.load_data()
+
         for i in self.list:
-            self.list[i].load_data2()
-            new = Photo(project=self.project, number=i, data=stacker.divide(self.list[i], calib))
-            new.write(section="Calibrated images", number=i)
-            self.list[i].release_data2()
-        calib.release_data2()
-        self.project.set("Colors", "calib", "cfa")
-        self.project.write()
+            print("Dividing image " + str(self.list[i].number) + " with " + calib)
+            self.list[i].data = stacker.divide(self.list[i], cframe)
+            if self.list[i].genname not in ("bias", "dark", "flat"):
+                self.list[i].genname = "calib"
+            self.list[i].write()
+
+        #calib = Photo(section="Master frames", number=calib, project=self.project)
+        #calib.load_data()
+        #for i in self.list:
+        #    self.list[i].load_data2()
+        #    new = Photo(project=self.project, number=i, data=stacker.divide(self.list[i], calib))
+        #    new.write(section="Calibrated images", number=i)
+        #    self.list[i].release_data2()
+        #calib.release_data2()
+        #self.project.set("Colors", "calib", "cfa")
+        #self.project.write()
 
     def directory(self, path, itype):
         """

@@ -295,7 +295,7 @@ You can use either name or number as operation 'list' shows them.
         batch = Batch(self.project, genname)
         batch.stack(self.stackerwrap())
 
-    def subtract(self, section, calib):
+    def subtract(self, genname, calib):
         """
         Subtract calibration frame from main frame or frames.
 
@@ -304,10 +304,10 @@ You can use either name or number as operation 'list' shows them.
         calib - name for master frame (dark, bias)
         """
 
-        batch = Batch(section=section, project=self.project, load=False)
+        batch = Batch(self.project, genname)
         batch.subtract(calib, self.stackerwrap())
 
-    def divide(self, section, calib):
+    def divide(self, genname, calib):
         """
         Divide main frame with calibration frame.
 
@@ -316,7 +316,7 @@ You can use either name or number as operation 'list' shows them.
         calib - name for master frame (most likely flat)
         """
 
-        batch = Batch(section=section, project=self.project, load=False)
+        batch = Batch(self.project, genname)
         batch.divide(calib, self.stackerwrap())
 
     def list(self, setting, options):

@@ -41,8 +41,8 @@ class Median(Stacking):
         Y = imagelist["2"].y
         #rgb = imagelist["2"].rgb
 
-        print(X)
-        print(n)
+        #print(X)
+        #print(n)
         xclip = math.ceil(X / n)
         yclip = math.ceil(Y / n)
 
@@ -93,7 +93,7 @@ class Median(Stacking):
         lines = []
         line = None
         for clip in sec:
-            print(clip)
+            #print(clip)
             if clip[0] != line:
                 lines.append([])
                 i = len(lines) - 1
@@ -120,19 +120,19 @@ class Median(Stacking):
                 if tempslice is None:
                     tempslice = temp
                 else:
-                    print(tempslice.shape)
-                    print(temp.shape)
+                    #print(tempslice.shape)
+                    #print(temp.shape)
                     tempslice = np.hstack([tempslice, temp])
-                    print(tempslice.shape)
+                    #print(tempslice.shape)
 
             if result is None:
                 result = tempslice
-                print(result.shape)
+                #print(result.shape)
             else:
-                print(result.shape)
-                print(tempslice.shape)
+                #print(result.shape)
+                #print(tempslice.shape)
                 result = np.dstack([result, tempslice])
-                print(result.shape)
+                #print(result.shape)
 
         return result
 
