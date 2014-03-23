@@ -39,7 +39,6 @@ class Median(Stacking):
         ### Calculating image clip coordinates
         X = imagelist["2"].x
         Y = imagelist["2"].y
-        #rgb = imagelist["2"].rgb
 
         #print(X)
         #print(n)
@@ -135,86 +134,3 @@ class Median(Stacking):
                 #print(result.shape)
 
         return result
-
-        '''
-            rslice = None
-            gslice = None
-            bslice = None
-            for clip in line:
-                print("Calculating clip " + str(inumber + 1) + " of " + str(len(sec)))
-
-                if rgb:
-                    rlist = []
-                    glist = []
-                    blist = []
-                    for i in imagelist:
-                        imagelist[i].load_data2(clip)
-                        rlist.append(imagelist[i].data[0].copy())  # *1.265026)
-                        glist.append(imagelist[i].data[1].copy())
-                        blist.append(imagelist[i].data[2].copy())  # *2.525858)
-                        imagelist[i].release_data2()
-                    r = np.median(rlist, axis=0)
-                    del rlist
-                    gc.collect()
-                    g = np.median(glist, axis=0)
-                    del glist
-                    gc.collect()
-                    b = np.median(blist, axis=0)
-                    del blist
-                    gc.collect()
-
-                    if rslice is None:
-                        rslice = r
-                        gslice = g
-                        bslice = b
-                    else:
-                        #print(rslice.shape)
-                        #print(r.shape)
-                        rslice = np.r_[rslice, r]
-                        gslice = np.r_[gslice, g]
-                        bslice = np.r_[bslice, b]
-                        #print(rslice.shape)
-
-                else:
-                    rlist = []
-                    for i in imagelist:
-                        imagelist[i].load_data2(clip)
-                        rlist.append(imagelist[i].data)
-                        imagelist[i].release_data2()
-                        gc.collect()
-                    r = np.median(rlist, axis=0)  # Use r-list to store monochrome data
-                    del rlist
-                    gc.collect()
-
-                    if rslice is None:
-                        rslice = r
-
-                    else:
-                        rslice = np.r_[rslice, r]
-
-                inumber += 1
-
-            if result is None:
-                if rgb:
-                    result = [rslice, gslice, bslice]
-                else:
-                    result = rslice
-            else:
-                if rgb:
-                    result = [np.c_[result[0], rslice], np.c_[result[1], gslice], np.c_[result[2], bslice]]
-                else:
-                    result = np.c_[result, rslice]
-
-        for i in imagelist:
-            imagelist[i].release()
-            gc.collect()
-
-        t2 = datetime.datetime.now()
-
-        print("Calculating done!")
-        print("Calculating took " + str(t2 - t1))
-        if rgb:
-            return np.int16(np.array(result))
-        else:
-            return result
-        '''

@@ -57,7 +57,10 @@ class Sextractor2(Registering):
 
             # Don't match image with itself
             if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
-                copyfile(imagelist[i].path, imagelist[i].getpath("reg"))
+                oldpath = imagelist[i].path
+                imagelist[i].genname = "reg"
+                newpath = imagelist[i].path
+                copyfile(oldpath, newpath)
                 continue
 
             imagelist[i].write_tiff()
@@ -70,14 +73,6 @@ class Sextractor2(Registering):
             self.transform_magick(imagelist[i], oldpath, newpath)
 
             imagelist[i].combine(newpath)
-
-            #if len(newpath) == 3:
-            #    for j in [0, 1, 2]:
-            #        project.set("Registered images", imagelist[i].number + imagelist[i].ccode[j], newpath[j])
-            #        imagelist[i].frame.set("Paths", "Registered images " + imagelist[i].ccode[j], newpath[j])
-            #else:
-            #    project.set("Registered images", imagelist[i].number, newpath)
-            #    imagelist[i].frame.set("Paths", "Registered images " + imagelist[i], newpath)
 
         t2 = datetime.datetime.now()
         print("Triangle calculations took " + str(t2 - t1) + " seconds.")

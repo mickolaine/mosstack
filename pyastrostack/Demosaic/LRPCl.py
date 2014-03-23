@@ -16,8 +16,32 @@ class LRPCl(Demosaic):
     def __init__(self):
         """Prepare everything for running the demosaic-algorithms."""
         self.ctx = cl.create_some_context()
-
         self.queue = cl.CommandQueue(self.ctx)
+        self.mf = cl.mem_flags
+        self.init = False
+
+        self.dest_bufr = None
+        self.dest_bufg = None
+        self.dest_bufb = None
+
+        self.program = None
+
+        self.r = None
+        self.g = None
+        self.b = None
+
+        self.x = None
+        self.y = None
+        self.lencfa = None
+
+    def real_init(self):
+        """
+        Do the real initialization. This requires information about the frames, so it has to be called
+        the first time self.demosaic is called
+        """
+
+        self.init = True
+        self.build()
 
     def demosaic(self, image):
         """ LaRoche-Prescott interpolation using pyOpenCL.
@@ -31,11 +55,40 @@ class LRPCl(Demosaic):
         Interpolated image will be given to image via image.savergb()
         """
         print("Processing image " + image.imagepath)
-        mf = cl.mem_flags
+        self.mf = cl.mem_flags
 
-        print(image.data.shape)
         cfa = np.ravel(np.float32(image.data), order='C')
-        print(cfa.shape)
+
+        cfa_buf = cl.Buffer(self.ctx, self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=cfa)
+        dest_buf = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, cfa.nbytes)
+
+        self.prg_green.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_buf)
+        g = np.empty_like(cfa)
+        cl.enqueue_copy(self.queue, g, dest_buf)
+
+        green_buf = cl.Buffer(self.ctx, self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=g)
+
+        dest_buf = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, cfa.nbytes)
+        self.prg_red.bilinear(self.queue, cfa.shape, None, cfa_buf, green_buf, dest_buf)
+        r = np.empty_like(cfa)
+        cl.enqueue_copy(self.queue, r, dest_buf)
+
+        dest_buf = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, cfa.nbytes)
+        self.prg_blue.bilinear(self.queue, cfa.shape, None, cfa_buf, green_buf, dest_buf)
+        b = np.empty_like(cfa)
+        cl.enqueue_copy(self.queue, b, dest_buf)
+
+        r = np.reshape(r, (image.y, -1), order='C')
+        g = np.reshape(g, (image.y, -1), order='C')
+        b = np.reshape(b, (image.y, -1), order='C')
+
+        print("...Done")
+        return np.uint16(np.array([r, g, b]))
+
+    def build(self):
+        """
+        Parse code and build program
+        """
 
         codegreen = """
         __kernel void bilinear(__global const float *a, __global float *c)
@@ -164,35 +217,7 @@ class LRPCl(Demosaic):
         }
         """
 
-        cfa_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=cfa)
-        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)
+        self.prg_red = cl.Program(self.ctx, codered).build()
+        self.prg_green = cl.Program(self.ctx, codegreen).build()
+        self.prg_blue = cl.Program(self.ctx, codeblue).build()
 
-        prg_green = cl.Program(self.ctx, codegreen).build()
-        prg_green.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_buf)
-        g = np.empty_like(cfa)
-        cl.enqueue_copy(self.queue, g, dest_buf)
-
-        green_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=g)
-
-        prg_red   = cl.Program(self.ctx, codered).build()
-        prg_blue  = cl.Program(self.ctx, codeblue).build()
-
-        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)    # Reset dest_buf just in case. Maybe not necessary
-        prg_red.bilinear(self.queue, cfa.shape, None, cfa_buf, green_buf, dest_buf)
-        r = np.empty_like(cfa)
-        cl.enqueue_copy(self.queue, r, dest_buf)
-
-        dest_buf = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)    # Reset dest_buf just in case. Maybe not necessary
-        prg_blue.bilinear(self.queue, cfa.shape, None, cfa_buf, green_buf, dest_buf)
-        b = np.empty_like(cfa)
-        cl.enqueue_copy(self.queue, b, dest_buf)
-
-        r = np.reshape(r, (image.y, -1), order='C')
-        g = np.reshape(g, (image.y, -1), order='C')
-        b = np.reshape(b, (image.y, -1), order='C')
-        print(r)
-        print(g)
-        print(b)
-
-        print("...Done")
-        return np.uint16(np.array([r, g, b]))

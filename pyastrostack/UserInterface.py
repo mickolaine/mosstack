@@ -4,7 +4,7 @@ this file controls all the actions after that.
 """
 
 from . import Conf
-from . Photo import Photo, Batch
+from . Photo import Batch
 from . import Registering
 from . import Demosaic
 from . import Stacker

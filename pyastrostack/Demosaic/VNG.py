@@ -13,9 +13,34 @@ class VNG(Demosaic):
 
     def __init__(self):
         """Prepare everything for running the demosaic-algorithms."""
-        self.ctx = cl.create_some_context()
 
+        self.ctx = cl.create_some_context()
         self.queue = cl.CommandQueue(self.ctx)
+        self.mf = cl.mem_flags
+        self.init = False
+
+        self.dest_bufr = None
+        self.dest_bufg = None
+        self.dest_bufb = None
+
+        self.program = None
+
+        self.r = None
+        self.g = None
+        self.b = None
+
+        self.x = None
+        self.y = None
+        self.lencfa = None
+
+    def real_init(self):
+        """
+        Do the real initialization. This requires information about the frames, so it has to be called
+        the first time self.demosaic is called
+        """
+
+        self.init = True
+        self.build()
 
     def demosaic(self, image):
         """ VNG interpolation using pyOpenCL.
@@ -26,12 +51,40 @@ class VNG(Demosaic):
         Returns:
         [red, green, blue] as numpy.array
         """
-        mf = cl.mem_flags
 
-        x = image.shape[1]
-        y = image.shape[0]
+        if not self.init:
+            self.x = image.shape[1]
+            self.y = image.shape[0]
+            cfa = np.ravel(np.float32(image, order='C'))
+            self.lencfa = len(cfa)
+            self.real_init()
+        else:
+            cfa = np.ravel(np.float32(image, order='C'))
 
-        cfa = np.ravel(np.float32(image, order='C'))
+        cfa_buf = cl.Buffer(self.ctx, self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=cfa)
+
+        self.dest_bufr = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, cfa.nbytes)
+        self.dest_bufg = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, cfa.nbytes)
+        self.dest_bufb = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, cfa.nbytes)
+
+        self.program.vng(self.queue, cfa.shape, None, cfa_buf, self.dest_bufr, self.dest_bufg, self.dest_bufb)
+        self.r = np.empty_like(cfa)
+        self.g = np.empty_like(cfa)
+        self.b = np.empty_like(cfa)
+        cl.enqueue_copy(self.queue, self.r, self.dest_bufr)
+        cl.enqueue_copy(self.queue, self.g, self.dest_bufg)
+        cl.enqueue_copy(self.queue, self.b, self.dest_bufb)
+        self.r = np.int16(np.reshape(self.r, (self.y, -1), order='C'))
+        self.g = np.int16(np.reshape(self.g, (self.y, -1), order='C'))
+        self.b = np.int16(np.reshape(self.b, (self.y, -1), order='C'))
+
+        return np.array([self.r, self.g, self.b])
+
+    def build(self):
+        """
+        Parse code and build program
+        """
+
         bayer = "RGGB"      # This goes somewhere outside this file. Now for testing here
 
         if bayer == "RGGB":
@@ -54,8 +107,8 @@ __kernel void vng(__global const float *a,
                    __global float *g,
                    __global float *b)
 {
-int x = """ + str(x) + """;
-int len = """ + str(len(cfa)) + """;
+int x = """ + str(self.x) + """;
+int len = """ + str(self.lencfa) + """;
 int gid = get_global_id(0);
 
 if (gid < 2*x || gid%x < 2 || gid%x > x-3 || gid > len - 2*x)    // Two row borders
@@ -367,21 +420,5 @@ else if (""" + g_condition + """)
 }
         """
 
-        cfa_buf = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=cfa)
-        dest_bufr = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)
-        dest_bufg = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)
-        dest_bufb = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfa.nbytes)
+        self.program = cl.Program(self.ctx, code).build()
 
-        program = cl.Program(self.ctx, code).build()
-        program.vng(self.queue, cfa.shape, None, cfa_buf, dest_bufr, dest_bufg, dest_bufb)
-        r = np.empty_like(cfa)  # TODO: Maybe rotating these same arrays from frame to frame could be done
-        g = np.empty_like(cfa)  # It might save a little time
-        b = np.empty_like(cfa)
-        cl.enqueue_copy(self.queue, r, dest_bufr)
-        cl.enqueue_copy(self.queue, g, dest_bufg)
-        cl.enqueue_copy(self.queue, b, dest_bufb)
-        r = np.int16(np.reshape(r, (y, -1), order='C'))
-        g = np.int16(np.reshape(g, (y, -1), order='C'))
-        b = np.int16(np.reshape(b, (y, -1), order='C'))
-
-        return np.array([r, g, b])

@@ -313,6 +313,21 @@ class Project:
         else:
             return False
 
+    def haskey(self, section, key):
+        """
+        Check if project file has key in section
+
+        Also check the section first and return False if not
+        """
+
+        if not self.hassection(section):
+            return False
+
+        if key in self.conf.conf[section]:
+            return True
+        else:
+            return False
+
     def addfile(self, rawpath, imagetype):
         """
         Adds a single file to project
