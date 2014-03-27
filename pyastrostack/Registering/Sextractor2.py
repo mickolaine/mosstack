@@ -338,7 +338,6 @@ class Sex:
         """ Execute SExtractor with created conf """
         # TODO: try-except here about conf-file and other requirements
         print(self.imagepath)
-        #commandlist = [Conf.sex, splitext(self.image.imagepath[1])[0] + ".fits", "-c", self.confname]
         commandlist = [self.sextractor, self.imagepath, "-c", self.confname]
 
         call(commandlist, cwd=self.path)  # cwd changes working directory
@@ -386,14 +385,10 @@ class Sex:
             for j in self.coord:
                 if i == j:
                     continue
-                    #break  # This should be continue for it to be right. For some reason this works well enough
                 for k in self.coord:
                     if (j == k) or (i == k):
                         continue
-                        #break
                     n += 1
                     self.image.tri.append([i, j, k])
-                    #print([i,j,k])
-
 
         print("Total number of triangles in image " + self.image.path + " is " + str(n) + ".")

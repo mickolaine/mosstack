@@ -45,27 +45,30 @@ class Sextractor(Registering):
             self.step1(imagelist[i])                      # Step1 has to be finished before the rest
 
         for i in imagelist:
+
             # Don't match image with itself
             if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
-                newpath = []
-                for c in (0, 1, 2):
-                    newpath.append(imagelist[i].imagename + "_reg_" + imagelist[i].ccode[c] + imagelist[i].format)
-                    copyfile(imagelist[i].imagepath[c], newpath[c])
+                oldpath = imagelist[i].path
+                imagelist[i].genname = "reg"
+                newpath = imagelist[i].path
+                copyfile(oldpath, newpath)
                 continue
+
+            imagelist[i].write_tiff()
+            oldpath = imagelist[i].rgbpath(fileformat="tiff")
+            imagelist[i].genname = "reg"
+            newpath = imagelist[i].rgbpath()
 
             self.match(imagelist[ref], imagelist[i])
             self.reduce(imagelist[i])
             self.vote(imagelist[i])
-            newpath = self.transform_magick(imagelist[i], newname="reg")
 
-            if len(newpath) == 3:
-                for j in [0, 1, 2]:
-                    project.set("Registered images", imagelist[i].number + imagelist[i].ccode[j], newpath[j])
-                    imagelist[i].frame.set("Paths", "Registered images " + imagelist[i].ccode[j], newpath[j])
-            else:
-                project.set("Registered images", imagelist[i].number, newpath)
+            self.transform_magick(imagelist[i], oldpath, newpath)
+
+            imagelist[i].combine(newpath)
+
         t2 = datetime.datetime.now()
-        print("Triangle calculations took " + str(t2-t1) + " seconds.")
+        print("Triangle calculations took " + str(t2 - t1) + " seconds.")
 
     def findstars(self, imagelist, project):
         """
@@ -254,10 +257,15 @@ class Sextractor(Registering):
         image.pairs = final
         print("After voting there are " + str(len(image.pairs)) + " pairs found")
 
-    def transform_magick(self, image, newname=None):
+    def transform_magick(self, image, oldpath, newpath):
         """
-        Transforms image according to image.pairs, but instead of skimage, this function uses
-        ImageMagick's "convert -distort Affine" from command line.
+        Transforms image according to image.pairs.
+
+        Transformation is done with ImageMagick's "convert -distort Affine" from command line.
+
+        Arguments:
+        oldpath - list of pathnames for files to transform
+        newpath - list of pathnames for resulting files
         """
 
         # Preparations
@@ -271,26 +279,18 @@ class Sextractor(Registering):
         points += "'"
 
         # Actual transforming
-        if image.rgb:
-            newpath = ["", "", ""]
-            image.write_tiff()
+        if len(oldpath) == 3:
             for i in [0, 1, 2]:
-                tiffpath = image.imagepath[i][:-5] + ".tiff"
-                newpath[i] = image.imagename + "_" + newname + "_" + image.ccode[i] + image.format
-                command = "convert " + tiffpath + " -distort Affine " \
-                          + points + " " + newpath[i]  # -define quantum:format=signed -depth 16
+                command = "convert " + oldpath[i] + " -distort Affine " \
+                          + points + " " + newpath[i]
                 call([command], shell=True)
-                call(["rm " + tiffpath], shell=True)
+                call(["rm " + oldpath[i]], shell=True)
 
         else:
-            tiffpath = image.imagepath[:-5] + ".tiff"
-            newpath = image.imagename + "_" + newname + image.format
-            command = "convert " + tiffpath + " -distort Affine "\
+            command = "convert " + oldpath + " -distort Affine "\
                       + points + " " + newpath
             call([command], shell=True)
-            call(["rm " + tiffpath], shell=True)
-
-        return newpath
+            call(["rm " + oldpath], shell=True)
 
 
 class Sex:
@@ -309,7 +309,11 @@ class Sex:
         self.image = image
         self.sextractor = project.sex
         self.path = project.path
-        self.catname = self.image.imagename + ".cat"
+        self.imagepath = image.getpath("light")
+        self.catname = splitext(self.image.infopath)[0] + ".cat"
+        self.confname = splitext(self.image.infopath)[0] + ".sex"
+
+        self.coord = None
 
         self.config = {
             #-------------------------------- Catalog ------------------------------------
@@ -396,7 +400,7 @@ class Sex:
         """
         Create configuration file for SExtractor.
         """
-        self.confname = self.image.imagename + ".sex"
+
         f = open(self.confname, "w")
         for i in self.config:
             f.write(i + " " + self.config[i] + "\n")
@@ -427,13 +431,13 @@ class Sex:
                 print("DETECT_MINAREA too small. Trying " + self.config["DETECT_MINAREA"])
 
         print("Found " + self.config["DETECT_MINAREA"] + " & " + self.config["DETECT_THRESH"])
-        return (self.config["DETECT_MINAREA"], self.config["DETECT_THRESH"])
+        return self.config["DETECT_MINAREA"], self.config["DETECT_THRESH"]
 
     def execsex(self):
         """ Execute SExtractor with created conf """
         # TODO: try-except here about conf-file and other requirements
-        commandlist = [self.sextractor, splitext(self.image.imagepath[1])[0][:-6] + ".fits", "-c", self.confname]
-        #commandlist = [self.sextractor, self.image.imagepath, "-c", self.confname]
+        print(self.imagepath)
+        commandlist = [self.sextractor, self.imagepath, "-c", self.confname]
 
         call(commandlist, cwd=self.path)  # cwd changes working directory
 
@@ -443,33 +447,47 @@ class Sex:
         """
 
         self.createconf()
-        self.execsex()
+        while True:
+            self.execsex()
 
-        self.coord = []
-        f = open(self.catname, "r")
-        for i in f:
-            if i.split()[0] == "#":
-                pass
+            self.coord = []
+            f = open(self.catname, "r")
+            for i in f:
+                if i.split()[0] == "#":
+                    pass
+                else:
+                    #self.coord.append((float(i.split()[4]), float(i.split()[5])))
+                    self.coord.append([float(i.split()[4]), self.image.y - float(i.split()[5])])
+
+            self.coord = sorted(self.coord)
+
+            if (len(self.coord) < 17) or (len(self.coord) > 26):
+                area, sigma = self.findsensitivity()
+                self.setsensitivity(area, sigma)
             else:
-                #self.coord.append((float(i.split()[4]), float(i.split()[5])))
-                self.coord.append((float(i.split()[4]), self.image.y - float(i.split()[5])))
-        self.coord = sorted(self.coord)
+                break
+
         return self.coord
 
     def maketriangles(self):
         """
         Make all possible triangles from coordinates in self.coord and save it to self.image.tri
+
+        Result: image.tri = [[(x1,y1),(x2,y2),(x3,y3)], ... , ...]
         """
 
         self.image.tri = []
         n = 0
+        #for i in self.coord:
+        #    print(i)
         for i in self.coord:
             for j in self.coord:
                 if i == j:
-                    break
+                    break  # This should be continue for it to be right. For some reason this works well enough
                 for k in self.coord:
                     if (j == k) or (i == k):
                         break
-                    n=n+1
+                    n += 1
                     self.image.tri.append([i, j, k])
-        print("Total number of triangles in image " + self.image.imagename + " is " + str(n) + ".")
+
+        print("Total number of triangles in image " + self.image.path + " is " + str(n) + ".")

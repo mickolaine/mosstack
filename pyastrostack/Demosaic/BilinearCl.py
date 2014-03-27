@@ -14,54 +14,123 @@ class BilinearCl(Demosaic):
     def __init__(self):
         """Prepare everything for running the demosaic-algorithms."""
         self.ctx = cl.create_some_context()
-
         self.queue = cl.CommandQueue(self.ctx)
+        self.mf = cl.mem_flags
+        self.init = False
+
+        self.dest_bufr = None
+        self.dest_bufg = None
+        self.dest_bufb = None
+
+        self.prg_red = None
+        self.prg_green = None
+        self.prg_blue = None
+
+        self.r = None
+        self.g = None
+        self.b = None
+
+        self.x = None
+        self.y = None
+        self.lencfa = None
+
+    def real_init(self):
+        """
+        Do the real initialization. This requires information about the frames, so it has to be called
+        the first time self.demosaic is called
+        """
+
+        self.init = True
+        self.build()
 
     def demosaic(self, image):
-        """ Bilinear interpolation using pyOpenCL.
+        """ LaRoche-Prescott interpolation using pyOpenCL.
 
         Arguments:
         image - a pyAstroStack.Photo
 
         Returns:
-        [red, green, blue] as numpy.array
+        Nothing
 
         Interpolated image will be given to image via image.savergb()
         """
-        mf = cl.mem_flags
 
-        print("Processing image " + image.imagepath)
+        if not self.init:
+            self.x = image.shape[1]
+            self.y = image.shape[0]
+            cfa = np.ravel(np.float32(image, order='C'))
+            self.lencfa = len(cfa)
+            self.real_init()
+        else:
+            cfa = np.ravel(np.float32(image, order='C'))
 
-        cfar = np.ravel(np.float32(image.data), order='C')
-        cfag = np.ravel(np.float32(image.data), order='C')
-        cfab = np.ravel(np.float32(image.data), order='C')
+        self.mf = cl.mem_flags
 
+        cfa_buf = cl.Buffer(self.ctx, self.mf.READ_ONLY | self.mf.COPY_HOST_PTR, hostbuf=cfa)
+        dest_bufr = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, cfa.nbytes)
+        dest_bufg = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, cfa.nbytes)
+        dest_bufb = cl.Buffer(self.ctx, self.mf.WRITE_ONLY, cfa.nbytes)
 
+        self.prg_red.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_bufr)
+        self.prg_green.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_bufg)
+        self.prg_blue.bilinear(self.queue, cfa.shape, None, cfa_buf, dest_bufb)
+
+        self.r = np.empty_like(cfa)
+        self.g = np.empty_like(cfa)
+        self.b = np.empty_like(cfa)
+
+        cl.enqueue_copy(self.queue, self.r, dest_bufr)
+        cl.enqueue_copy(self.queue, self.g, dest_bufg)
+        cl.enqueue_copy(self.queue, self.b, dest_bufb)
+
+        self.r = np.reshape(self.r, (self.y, -1), order='C')
+        self.g = np.reshape(self.g, (self.y, -1), order='C')
+        self.b = np.reshape(self.b, (self.y, -1), order='C')
+
+        return np.array([self.r, self.g, self.b])
+
+    def build(self):
+        """
+        Parse code and build program
+        """
+
+        bayer = "RGGB"      # This goes somewhere outside this file. Now for testing here
+
+        if bayer == "RGGB":
+            r_condition  = "(gid%2 == 0) && (gid/x)%2 == 1"
+            g_nexttored  = "(gid%2 == 0  && (gid/x)%2 == 0)"
+            g_nexttoblue = "(gid%2 == 1  && (gid/x)%2 == 1)"
+            g_condition  = g_nexttored + " || " + g_nexttoblue
+            b_condition  = "(gid%2 == 1) && (gid/x)%2 == 0"
+        elif bayer == "RGBG":
+            pass  # TODO: Implement other bayer filters
+        elif bayer == "GRGB":
+            pass
+        else:
+            print("Unknown Bayer configuration. Please inform the developer.")
 
         codecommon = """
         __kernel void bilinear(__global const float *a, __global float *c)
         {
-          int x = """ + str(image.x) + """;
-          int len = """ + str(len(cfar)) + """;
+          int x = """ + str(self.x) + """;
+          int len = """ + str(self.lencfa) + """;
           int gid = get_global_id(0);
 
         """
 
         codegreen = codecommon + """
                                                                           // conditions explained
-             if (gid < x || gid%x == 0 || gid%x == x-1 || gid > len - x)    // upper border, right, left and lower border
+             if (gid < x || gid%x < 1 || gid%x > x - 1 || gid > len - x)  // upper border, right, left and lower border
              {
                 c[gid] = a[gid];
              }
-             else if ((gid%2 == 0 && (gid/x)%2 == 0) ||                   // Green pixels.
-                      (gid%2 == 1 && (gid/x)%2 == 1))                     // even on even line, odd on odd line.
+             else if (""" + g_condition + """)                     // Green pixels.
              {
                 c[gid] = a[gid];
              }
              else                                                         // Non-green pixels. Should be all the rest
              {
                 c[gid] = (a[gid-1] + a[gid-x] + a[gid+x] + a[gid+1])/4;
-                //c[gid] = 0.0;
              }
         }
 
@@ -74,24 +143,21 @@ class BilinearCl(Demosaic):
              {
                 c[gid] = a[gid];
              }
-             else if ((gid%2 == 1) && (gid/x)%2 == 0)            // Red pixels
+             else if (""" + r_condition + """)            // Red pixels
              {
                 c[gid] = a[gid];
              }
-             else if ((gid%2 == 0) && (gid/x)%2 == 1)            // Blue pixels
+             else if (""" + b_condition + """)            // Blue pixels
              {
                 c[gid] = (a[gid-1-x] + a[gid+1-x] + a[gid-1+x] + a[gid+1+x])/4;
-                //c[gid] = 0.0;
              }
-             else if (gid%2 == 1 && (gid/x)%2 == 1)          // Green pixels, reds on sides
+             else if (""" + g_nexttored + """)          // Green pixels, reds on sides
              {
                 c[gid] = (a[gid-x] + a[gid +x]) /2;
-                //c[gid] = 0.0;
              }
-             else if (gid%2 == 0 && (gid/x)%2 == 0)          // Green pixel, blues on side
+             else if (""" + g_nexttoblue + """)          // Green pixel, blues on side
              {
                 c[gid] = (a[gid-1] + a[gid+1]) /2;
-                //c[gid] = 0.0;
              }
              else                                              // You shouldn't end here. Just in case
              {
@@ -106,59 +172,30 @@ class BilinearCl(Demosaic):
                 c[gid] = a[gid];
                 //c[gid] = 0.0;
              }
-             else if ((gid%2 == 1) && (gid/x)%2 == 0)            // Red pixels
+             else if (""" + r_condition + """)            // Red pixels
              {
                 c[gid] = (a[gid-1-x] + a[gid+1-x] + a[gid-1+x] + a[gid+1+x])/4;
-                //c[gid] = 0.0;
              }
-             else if ((gid%2 == 0) && (gid/x)%2 == 1)            // Blue pixels
+             else if (""" + b_condition + """)            // Blue pixels
              {
                 c[gid] = a[gid];
-                //c[gid] = 0.0;
              }
-             else if (gid%2 == 1 && (gid/x)%2 == 1)          // Green pixels, reds on sides
+             else if (""" + g_nexttored + """)          // Green pixels, reds on sides
              {
                 c[gid] = (a[gid-1] + a[gid+1]) /2;
-                //c[gid] = 0.0;
              }
-             else if (gid%2 == 0 && (gid/x)%2 == 0)          // Green pixel, blues on side
+             else if (""" + g_nexttoblue + """)          // Green pixel, blues on side
              {
                 c[gid] = (a[gid-x] + a[gid +x]) /2;
-                //c[gid] = 0.0;
              }
              else                                              // You shouldn't end here. Just in case
              {
                 c[gid] = a[gid];
-                //c[gid] = 0.0;
              }
         }
         """
 
-        cfa_bufg = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=cfag)
-        dest_bufg = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfag.nbytes)
-        prg_green = cl.Program(self.ctx, codegreen).build()
-        prg_green.bilinear(self.queue, cfag.shape, None, cfa_bufg, dest_bufg)
-        g = np.empty_like(cfag)
-        cl.enqueue_copy(self.queue, g, dest_bufg)
+        self.prg_red = cl.Program(self.ctx, codered).build()
+        self.prg_green = cl.Program(self.ctx, codegreen).build()
+        self.prg_blue = cl.Program(self.ctx, codeblue).build()
 
-        cfa_bufr = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=cfar)
-        dest_bufr = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfar.nbytes)
-        prg_red   = cl.Program(self.ctx, codered).build()
-        prg_red.bilinear(self.queue, cfar.shape, None, cfa_bufr, dest_bufr)
-        r = np.empty_like(cfar)
-        cl.enqueue_copy(self.queue, r, dest_bufr)
-
-        cfa_bufb = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=cfab)
-        dest_bufb = cl.Buffer(self.ctx, mf.WRITE_ONLY, cfab.nbytes)
-        prg_blue  = cl.Program(self.ctx, codeblue).build()
-        prg_blue.bilinear(self.queue, cfab.shape, None, cfa_bufb, dest_bufb)
-        b = np.empty_like(cfab)
-        cl.enqueue_copy(self.queue, b, dest_bufb)
-
-        r = np.int16(np.reshape(r, (image.y, -1), order='C'))
-        g = np.int16(np.reshape(g, (image.y, -1), order='C'))
-        b = np.int16(np.reshape(b, (image.y, -1), order='C'))
-        #print("After reshape: " + str(g.shape))
-        print("...Done")
-        return np.array([r, g, b])
-        #image.savergb(np.array([r, g, b]))

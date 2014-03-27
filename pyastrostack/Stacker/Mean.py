@@ -5,7 +5,6 @@ Class for mean stacking. Used for calibration frames
 __author__ = 'micko'
 
 from .. Stacker.Stacking import Stacking
-#import numpy as np
 from numpy import zeros_like
 
 
@@ -23,11 +22,11 @@ class Mean(Stacking):
         """
 
         n = len(imagelist)
-        imagelist["2"].load_data()
         newdata = zeros_like(imagelist["2"].data)
+        number = 1
         for i in imagelist:
-            imagelist[i].load_data()
+            print("Adding image number " + str(number) + " of " + str(n))
             newdata += imagelist[i].data / n
-            imagelist[i].release_data2()
+            number += 1
 
         return newdata
