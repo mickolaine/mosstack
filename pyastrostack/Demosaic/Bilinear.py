@@ -20,38 +20,36 @@ class Bilinear(Demosaic):
         Give cfa-image, receive rgb-image. Return numpy.array
         """
 
+        cfa = np.float32(image)
         r = np.zeros_like(image)
         g = np.zeros_like(image)
         b = np.zeros_like(image)
-        cfa = np.flipud(image)
-
-        # Green pixels are interpolated first
-        for i in range(len(image)):
-            for j in range(len(image[i])):
-                if i == 0 or i == len(image) - 1 or j == 0 or j == len(image[i]) - 1:
-                    g[i][j] = cfa[i][j]
-                elif ((i % 2 == 0) & (j % 2 == 1)) or ((i % 2 == 1) & (j % 2 == 0)):     # Test, when non-green pixel
-                    g[i][j] = (cfa[i - 1][j] + cfa[i][j - 1] + cfa[i][j + 1] + cfa[i + 1][j]) / 4
-                else:                                                                           # For the green pixels
-                    g[i][j] = cfa[i][j]
 
         for i in range(len(image)):
             for j in range(len(image[i])):
-                if i == 0 or i == len(image) - 1 or j == 0 or j == len(image[i]) - 1:
+                if i == 0 or i == len(image) - 1 or j == 0 or j == len(image[i]) - 1:      # Border
                     r[i][j] = cfa[i][j]
                     b[i][j] = cfa[i][j]
-                elif (i % 2 == 0) & (j % 2 == 0):                                 # At green on red row
+                    g[i][j] = cfa[i][j]
+
+                elif (i % 2 == 1) & (j % 2 == 1):                                 # At green on red row
                     r[i][j] = (cfa[i][j - 1] + cfa[i][j + 1]) / 2
                     b[i][j] = (cfa[i - 1][j] + cfa[i + 1][j]) / 2
-                elif (i % 2 == 1) & (j % 2 == 1):                                 # At green on blue row
+                    g[i][j] = cfa[i][j]
+
+                elif (i % 2 == 0) & (j % 2 == 0):                                 # At green on blue row
                     r[i][j] = (cfa[i - 1][j] + cfa[i + 1][j]) / 2
                     b[i][j] = (cfa[i][j - 1] + cfa[i][j + 1]) / 2
-                elif (i % 2 == 0) & (j % 2 == 1):                                 # At red position
+                    g[i][j] = cfa[i][j]
+                elif (i % 2 == 1) & (j % 2 == 0):                                 # At red position
                     r[i][j] = cfa[i][j]
                     b[i][j] = (cfa[i - 1][j - 1] + cfa[i - 1][j + 1] + cfa[i + 1][j - 1] + cfa[i + 1][j + 1]) / 4
-                elif (i % 2 == 1) & (j % 2 == 0):                                 # At blue position
+                    g[i][j] = (cfa[i - 1][j] + cfa[i][j - 1] + cfa[i][j + 1] + cfa[i + 1][j]) / 4
+
+                elif (i % 2 == 0) & (j % 2 == 1):                                 # At blue position
                     r[i][j] = (cfa[i - 1][j - 1] + cfa[i - 1][j + 1] + cfa[i + 1][j - 1] + cfa[i + 1][j + 1]) / 4
                     b[i][j] = cfa[i][j]
+                    g[i][j] = (cfa[i - 1][j] + cfa[i][j - 1] + cfa[i][j + 1] + cfa[i + 1][j]) / 4
 
         return np.array([r, g, b])
 

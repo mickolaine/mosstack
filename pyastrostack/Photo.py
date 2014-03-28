@@ -455,8 +455,6 @@ class Batch:
         demosaic: a Demosaic-type object
         """
 
-        print(demosaic)
-
         for i in self.list:
             print("Processing image " + self.list[i].path)
             t1 = datetime.datetime.now()
@@ -465,7 +463,7 @@ class Batch:
             print("...Done")
             print("Debayering took " + str(t2-t1) + " seconds.")
             self.list[i].genname = "rgb"
-            self.list[i].write()
+            self.list[i].write(tiff=True)
         self.project.set("Reference images", self.genname, str(self.refnum))
 
     def register(self, register):

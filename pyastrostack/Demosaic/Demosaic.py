@@ -7,9 +7,6 @@ Created on 23.10.2013
 @author: Mikko Laine
 """
 
-import numpy as np
-import pyopencl as cl
-
 
 class Demosaic:
     """

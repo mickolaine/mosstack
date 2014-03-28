@@ -267,7 +267,12 @@ You can use either name or number as operation 'list' shows them.
             print("Invalid entries in project file. Using default")
             return
 
-        self.demosaicwrap = eval("Demosaic." + project.get("Default", "demosaic"))
+        try:
+            self.demosaicwrap = eval("Demosaic." + project.get("Default", "demosaic"))
+        except ImportError:
+            print("Looks like OpenCL isn't working. Refer to manual.")
+            print("Setting demosaic algorithm to pure Python module (slow but working).")
+            self.demosaicwrap = Demosaic.Bilinear
         self.registerwrap = eval("Registering." + project.get("Default", "register"))
         self.stackerwrap = eval("Stacker." + project.get("Default", "stack"))
 

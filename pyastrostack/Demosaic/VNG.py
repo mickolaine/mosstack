@@ -118,9 +118,6 @@ if (gid < 2*x || gid%x < 2 || gid%x > x-3 || gid > len - 2*x)    // Two row bord
     r[gid] = a[gid];
     g[gid] = a[gid];
     b[gid] = a[gid];
-    //r[gid] = 0;
-    //g[gid] = 0;
-    //b[gid] = 0;
 }
 
 // Red pixels

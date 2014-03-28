@@ -137,7 +137,7 @@ class BilinearCl(Demosaic):
 
         """
 
-        codeblue = codecommon + """
+        codered = codecommon + """
 
              if (gid < x || gid%x == 0 || gid%x == x-1 || gid > len - x)  // upper border, right, left and lower border
              {
@@ -166,7 +166,7 @@ class BilinearCl(Demosaic):
         }
         """
 
-        codered = codecommon + """
+        codeblue = codecommon + """
              if (gid < x || gid%x == 0 || gid%x == x-1 || gid > len - x)  // upper border, right, left and lower border
              {
                 c[gid] = a[gid];
