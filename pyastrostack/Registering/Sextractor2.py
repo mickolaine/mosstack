@@ -10,9 +10,9 @@ __author__ = 'Mikko Laine'
 
 from .. Registering.Registering import Registering
 from subprocess import call, check_output
-from .. import Conf
+#from .. import Conf
 from math import sqrt, log, fabs
-from operator import itemgetter
+#from operator import itemgetter
 from os.path import splitext
 from re import sub
 import datetime   # For profiling

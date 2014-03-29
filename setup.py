@@ -36,7 +36,7 @@ setup(
     include_dirs=[numpy.get_include()],
 #   cmdclass = cmdclass,
 #    ext_modules=ext_modules,
-    ext_modules = cythonize("pyastrostack/Registering/_step2.pyx"),
+    ext_modules = cythonize(["pyastrostack/Registering/_step2.pyx", "pyastrostack/Demosaic/_BilinearCython.pyx"]),
     url='https://bitbucket.org/mikko_laine/pyastrostack/',
     license='LICENSE.txt',
     description='Stacking software for astronomical images',
