@@ -1,3 +1,19 @@
+v0.2.1, 2014-03-29 -- Bugfixes, what else?
+- Fixed a bug with Python 2.x in Frame._release_data().
+- Updated CHANGES.txt on versions 0.2.0 and 0.2.1 because I forgot it the last
+  time.
+- Cut 5% off the SExtractor2 registering method
+
+v0.2.0, 2014-03-28 -- Some rewrite of existing classes
+- Replaced class Photo with class Frame. Frame has a lot better design, less
+  redundancy and better support for frame info files. This work is prelude to
+  creating a GUI.
+- Unified demosaicing classes to have similar structure.
+- Altered demosaicing classes to take numpy.array of image as argument instead
+  of full Photo object. This makes them easier to port to other programs.
+  Also fixed the Bilinear and BilinearCl to use proper bayer matrix.
+- Made informational prints to be little more consistent.
+
 v0.1.1, 2014-02-27 -- Bugfixes and adjustable settings
 - Fixed a bug in registering which for some reason had no effect on the result
   and made registering faster. Now it's a bit slower but the algorithm is

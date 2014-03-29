@@ -1,7 +1,7 @@
 #cython: boundscheck=False
 #cython: wraparound=False
 
-#cimport numpy as np
+cimport numpy as np
 from operator import itemgetter
 
 cdef extern from "math.h":
@@ -81,12 +81,13 @@ cdef _step2(tri1, tri2):
     cdef float raba2, tra2, tca2
 
     match = []
-    print(str(len(tri2)))
+    #print(str(len(tri2)))
     #tri2_new = limit(tri1, tri2)
     tri2_new = tri2
-    print(str(len(tri2_new)))
+    #print(str(len(tri2_new)))
 
-    for i in range(0, len(tri1)):
+    for i from 0 <= i < len(tri1):
+        #for i in range(0, len(tri1)):
         temp = []
 
         best = None
@@ -98,7 +99,8 @@ cdef _step2(tri1, tri2):
         tra2 = tRa * tRa
         tca2 = tCa * tCa
 
-        for j in range(0, len(tri2_new)):
+        for j from 0 <= j < len(tri2_new):
+            #for j in range(0, len(tri2_new)):
 
             #if fabsf(tri1[i][0] - tri2[j][0]) > 200:
                 #print("Skip " + str(tri2[j]))

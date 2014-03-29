@@ -338,7 +338,7 @@ class Frame:
         if self.hdu is not None:
             self.hdu.close()
         self.image = None
-        del self.data
+        self.data = None
         self.hdu = None
 
         gc.collect()

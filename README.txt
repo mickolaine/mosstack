@@ -245,3 +245,35 @@ Example:
 
     ``AstroStack stack bias``
     ``AstroStack stack reg``
+
+list
+------------
+List available settings and their options. Prelude to full ui. These can also
+be manually edited in the project file.
+
+Usage
+
+    ``AstroStack.py list <setting>``
+
+Examples:
+
+List of settings to adjust
+    ``AstroStack.py list``
+
+List of options for setting
+    ``AstroStack.py list demosaic``
+
+set
+------------
+Set can also be used to adjust settings. See operation 'list' to see them
+
+Usage
+
+    ``AstroStack.py set <setting> <option>``
+
+Examples:
+
+    ``AstroStack.py set demosaic Bilinear``
+    ``AstroStack.py set demosaic 2``
+
+You can use either name or number as operation 'list' shows them.
