@@ -11,7 +11,7 @@ from __future__ import division
 from astropy.io import fits
 from os.path import splitext, exists, split, basename
 from shutil import copyfile, move
-from subprocess import call
+from subprocess import call, check_output
 from . import Conf
 import numpy as np
 from PIL import Image as Im
@@ -365,6 +365,11 @@ class Frame(object):
         Write self.data to disk as a tiff file
         """
 
+        if check_output(["convert -version | grep Version"], shell=True).split()[2].decode()[2] == "7":
+            im_version = "6.7"
+        else:
+            im_version = "6.8"
+
         if self.data.shape[0] == 1:
             imagedata = np.flipud(np.int16(self.data[0] - 32768))
             image = Im.fromarray(imagedata)
@@ -373,7 +378,10 @@ class Frame(object):
         elif self.data.shape[0] == 3:
             rgbpath = self.rgbpath(fileformat="tiff")
             for i in (0, 1, 2):
-                imagedata = np.flipud(np.int16(self.data[i] - 32768))
+                if im_version == "6.7":
+                    imagedata = np.flipud(np.int16(self.data[i] - 32768))
+                else:
+                    imagedata = np.flipud(np.int16(self.data[i]))
                 image = Im.fromarray(imagedata)
                 image.save(rgbpath[i], format="tiff")
             call(["convert", rgbpath[0], rgbpath[1], rgbpath[2],

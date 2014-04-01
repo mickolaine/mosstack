@@ -38,8 +38,8 @@ class Median(Stacking):
 
         ### Calculating image clip coordinates
 
-        X = imagelist[imagelist.keys()[0]].x
-        Y = imagelist[imagelist.keys()[0]].y
+        X = list(imagelist.values())[0].x
+        Y = list(imagelist.values())[0].y
 
         #print(X)
         #print(n)
