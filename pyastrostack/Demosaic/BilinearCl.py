@@ -83,9 +83,9 @@ class BilinearCl(Demosaic):
         cl.enqueue_copy(self.queue, self.g, dest_bufg)
         cl.enqueue_copy(self.queue, self.b, dest_bufb)
 
-        self.r = np.reshape(self.r, (self.y, -1), order='C')
-        self.g = np.reshape(self.g, (self.y, -1), order='C')
-        self.b = np.reshape(self.b, (self.y, -1), order='C')
+        self.r = np.int16(np.reshape(self.r, (self.y, -1), order='C'))
+        self.g = np.int16(np.reshape(self.g, (self.y, -1), order='C'))
+        self.b = np.int16(np.reshape(self.b, (self.y, -1), order='C'))
 
         return np.array([self.r, self.g, self.b])
 

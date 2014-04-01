@@ -1,6 +1,3 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
 """
 Created on 11.10.2013
 
@@ -8,7 +5,7 @@ Created on 11.10.2013
 
 This file contains everything required for stacking the photos.
 """
-
+from __future__ import division
 import numpy as np
 
 
@@ -52,7 +49,7 @@ class Stacking:
 
         newdata = image.data - calib.data
         newdata = newdata.clip(0)
-        return np.uint16(newdata)
+        return np.int16(newdata)
 
     @staticmethod
     def clip(batch):

@@ -1,3 +1,4 @@
+from __future__ import division
 from .. Demosaic.Demosaic import Demosaic
 import numpy as np
 

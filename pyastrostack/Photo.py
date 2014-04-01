@@ -7,6 +7,7 @@ Created on 2.10.2013
 @author: Mikko Laine
 """
 
+from __future__ import division
 from astropy.io import fits
 from os.path import splitext, exists, split, basename
 from shutil import copyfile, move
@@ -20,7 +21,7 @@ from os import listdir
 import datetime   # For profiling
 
 
-class Frame:
+class Frame(object):
     """
     Frame has all the information of a single photo frame and all the methods to read and write data on disk
     """
@@ -103,7 +104,7 @@ class Frame:
             hdu.append(fits.open(newpath[i]))
             data.append(hdu[i][0].data)
 
-        self.data = np.array(data)
+        self.data = np.array(data) - 32768
         self.write()
 
     def getpath(self, genname):
@@ -225,8 +226,9 @@ class Frame:
         Set genname and take care of info file changes
         """
         self._genname = genname
-        self.path = self.wdir + self.name + "_" + self.number + "_" + self.genname + ".fits"
-        self.frameinfo.set("Paths", self.genname, self.path)
+        print("Changing path to " + self.wdir + self.name + "_" + self.number + "_" + genname + ".fits")
+        self.path = self.wdir + self.name + "_" + self.number + "_" + genname + ".fits"
+        self.frameinfo.set("Paths", genname, self.path)
 
     genname = property(fget=getgenname, fset=setgenname)
 
@@ -330,6 +332,9 @@ class Frame:
                 self._data = self.image.data
             else:
                 self._data = np.array([self.image.data])
+        if np.amin(self._data) >= 32768:
+            self._data -= 32768
+            #print(self._data)
 
     def _release_data(self):
         """
@@ -338,7 +343,7 @@ class Frame:
         if self.hdu is not None:
             self.hdu.close()
         self.image = None
-        self.data = None
+        del self.data
         self.hdu = None
 
         gc.collect()
@@ -353,8 +358,7 @@ class Frame:
         if self._data is None:
             print("No data set! Exiting...")
             exit()
-
-        fits.writeto(self.path, np.int16(self.data), hdu.header, clobber=True)
+        fits.writeto(self.path, np.int16(self._data), hdu.header, clobber=True)
 
     def _write_tiff(self):
         """
@@ -362,14 +366,14 @@ class Frame:
         """
 
         if self.data.shape[0] == 1:
-            imagedata = np.flipud(np.int16(self.data[0].copy()))
+            imagedata = np.flipud(np.int16(self.data[0] - 32768))
             image = Im.fromarray(imagedata)
             image.save(splitext(self.path)[0] + ".tiff", format="tiff")
 
         elif self.data.shape[0] == 3:
             rgbpath = self.rgbpath(fileformat="tiff")
             for i in (0, 1, 2):
-                imagedata = np.flipud(np.int16(self.data[i].copy()))
+                imagedata = np.flipud(np.int16(self.data[i] - 32768))
                 image = Im.fromarray(imagedata)
                 image.save(rgbpath[i], format="tiff")
             call(["convert", rgbpath[0], rgbpath[1], rgbpath[2],
@@ -382,15 +386,16 @@ class Frame:
         Load data from current fits and save it as a tiff. Required because ImageMagick
         doesn't work with fits too well.
         """
-        self._load_data()
+        #self._load_data()
 
         image = []
         rgbpath = self.rgbpath(fileformat="tiff")
+        #data = self.data
         for i in [0, 1, 2]:
-            image.append(Im.fromarray(np.flipud(np.int16(self.data[i])).copy()))
+            image.append(Im.fromarray(np.flipud(np.int16(self.data[i] - 32768))))
             image[i].save(rgbpath[i], format="tiff")
 
-        self._release_data()
+        #self._release_data()
 
     def write(self, tiff=False):
         """

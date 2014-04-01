@@ -252,7 +252,7 @@ You can use either name or number as operation 'list' shows them.
         self.project = project
 
         # Set default values.
-        self.demosaicwrap = Demosaic.VNG
+        self.demosaicwrap = Demosaic.BilinearCython
         self.registerwrap = Registering.Sextractor2
         self.stackerwrap = Stacker.Median
 
@@ -272,7 +272,7 @@ You can use either name or number as operation 'list' shows them.
         except ImportError:
             print("Looks like OpenCL isn't working. Refer to manual.")
             print("Setting demosaic algorithm to pure Python module (slow but working).")
-            self.demosaicwrap = Demosaic.Bilinear
+            self.demosaicwrap = Demosaic.BilinearCython
         self.registerwrap = eval("Registering." + project.get("Default", "register"))
         self.stackerwrap = eval("Stacker." + project.get("Default", "stack"))
 

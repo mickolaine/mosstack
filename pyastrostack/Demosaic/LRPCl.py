@@ -87,9 +87,9 @@ class LRPCl(Demosaic):
         self.b = np.empty_like(cfa)
         cl.enqueue_copy(self.queue, self.b, dest_buf)
 
-        self.r = np.reshape(self.r, (self.y, -1), order='C')
-        self.g = np.reshape(self.g, (self.y, -1), order='C')
-        self.b = np.reshape(self.b, (self.y, -1), order='C')
+        self.r = np.int16(np.reshape(self.r, (self.y, -1), order='C'))
+        self.g = np.int16(np.reshape(self.g, (self.y, -1), order='C'))
+        self.b = np.int16(np.reshape(self.b, (self.y, -1), order='C'))
 
         return np.array([self.r, self.g, self.b])
 

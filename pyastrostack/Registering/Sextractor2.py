@@ -6,8 +6,7 @@ Created on 2.10.2013
 
 """
 
-__author__ = 'Mikko Laine'
-
+from __future__ import division
 from .. Registering.Registering import Registering
 from subprocess import call, check_output
 #from .. import Conf
@@ -58,7 +57,7 @@ class Sextractor2(Registering):
             # Don't match image with itself
             if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
                 oldpath = imagelist[i].path
-                imagelist[i].genname = "reg"
+                imagelist[i].genname = "reg"  # TODO: This is because of problems in Python2. Fix it
                 newpath = imagelist[i].path
                 copyfile(oldpath, newpath)
                 continue
