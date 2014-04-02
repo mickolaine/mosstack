@@ -89,7 +89,7 @@ cdef _step2(np.ndarray[DTYPE_t, ndim=2] tri1, np.ndarray[DTYPE_t, ndim=2] tri2):
     match = []
     #print(str(len(tri2)))
     #tri2_new = limit(tri1, tri2)
-    tri2_new = tri2
+    #tri2_new = tri2
     #print(str(len(tri2_new)))
 
     for i from 0 <= i < len(tri1):
@@ -105,7 +105,7 @@ cdef _step2(np.ndarray[DTYPE_t, ndim=2] tri1, np.ndarray[DTYPE_t, ndim=2] tri2):
         tra2 = tRa * tRa
         tca2 = tCa * tCa
 
-        for j from 0 <= j < len(tri2_new):
+        for j from 0 <= j < len(tri2):
             #for j in range(0, len(tri2_new)):
 
             #if fabsf(tri1[i][0] - tri2[j][0]) > 200:
@@ -124,7 +124,7 @@ cdef _step2(np.ndarray[DTYPE_t, ndim=2] tri1, np.ndarray[DTYPE_t, ndim=2] tri2):
                 if (best is None) or ((Ra-Rb)*(Ra-Rb) < best):
                     #if so, save it for later use
                     best = raba2
-                    temp = [tri1[i], tri2_new[j]]
+                    temp = [tri1[i], tri2[j]]
         if best is not None:
             match.append(temp)
         del temp
