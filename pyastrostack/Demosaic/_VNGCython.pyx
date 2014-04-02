@@ -27,8 +27,6 @@ cdef fmax(float a, float b):
 def _demosaic(np.ndarray[DTYPE_t, ndim=2] cfa, np.ndarray[DTYPE_t, ndim=2] r,
               np.ndarray[DTYPE_t, ndim=2] g, np.ndarray[DTYPE_t, ndim=2] b):
 
-    print(len(cfa))
-    print(len(cfa[0]))
     cdef int maxi = len(cfa)
     cdef int maxj = len(cfa[0])
 

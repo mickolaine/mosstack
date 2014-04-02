@@ -1,3 +1,15 @@
+v0.2.3, 2014-04-02 -- VNG on Cython
+- Variable number of gradients debayering ported to Cython. This is also the
+  new default
+
+v0.2.2, 2014-04-01 -- Cython debayering and Ubuntu support
+- Wrote bilinear debayering on Cython to see how fast it can get. Surprisingly
+  good results on speed, but as a method it's not too good
+- Changed BilinearCython to the default debayering method so OpenCl is not
+  a requirement anymore.
+- Ubuntu 14.04 seems to have ImageMagick 6.7 which didn't work as expected, or
+  as 6.8 did. Now program tests for ImageMagick version and works accordingly.
+
 v0.2.1, 2014-03-29 -- Bugfixes, what else?
 - Fixed a bug with Python 2.x in Frame._release_data().
 - Updated CHANGES.txt on versions 0.2.0 and 0.2.1 because I forgot it the last

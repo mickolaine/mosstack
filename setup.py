@@ -27,7 +27,7 @@ else:
 '''
 setup(
     name='pyAstroStack',
-    version='0.2.1',
+    version='0.2.3',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=['pyastrostack', 'pyastrostack.Demosaic', 'pyastrostack.Registering', 'pyastrostack.Stacker'],
@@ -36,7 +36,9 @@ setup(
     include_dirs=[numpy.get_include()],
 #   cmdclass = cmdclass,
 #    ext_modules=ext_modules,
-    ext_modules = cythonize(["pyastrostack/Registering/_step2.pyx", "pyastrostack/Demosaic/_BilinearCython.pyx"]),
+    ext_modules = cythonize(["pyastrostack/Registering/_step2.pyx",
+                             "pyastrostack/Demosaic/_BilinearCython.pyx",
+                             "pyastrostack/Demosaic/_VNGCython.pyx"]),
     url='https://bitbucket.org/mikko_laine/pyastrostack/',
     license='LICENSE.txt',
     description='Stacking software for astronomical images',

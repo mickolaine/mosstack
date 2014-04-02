@@ -98,7 +98,7 @@ class Sextractor2(Registering):
         """
 
         ep = 0.3
-        xi = 3. * ep
+        #xi = 3. * ep
 
         newtri = []
         for tri in image.tri:      # tri is a list of coordinates. ((x1,y1),(x2,y2),(x3,y3))
@@ -139,7 +139,7 @@ class Sextractor2(Registering):
             temp.append(tR)
             temp.append(tC)
             newtri.append(temp)
-        image.tri = newtri
+        image.tri = np.array(newtri)
 
         print("Step 1 complete for image " + str(image.number) + ". " + str(len(image.tri)) + " triangles found.")
 
