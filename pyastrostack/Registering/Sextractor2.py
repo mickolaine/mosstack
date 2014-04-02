@@ -139,7 +139,8 @@ class Sextractor2(Registering):
             temp.append(tR)
             temp.append(tC)
             newtri.append(temp)
-        image.tri = np.array(newtri)
+        #image.tri = np.array(newtri)
+        image.tri = newtri
 
         print("Step 1 complete for image " + str(image.number) + ". " + str(len(image.tri)) + " triangles found.")
 
