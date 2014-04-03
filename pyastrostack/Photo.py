@@ -106,6 +106,7 @@ class Frame(object):
 
         self.data = np.array(data) - 32768
         self.write()
+        self._release_data()
 
     def getpath(self, genname):
         """
@@ -403,7 +404,7 @@ class Frame(object):
             image.append(Im.fromarray(np.flipud(np.int16(self.data[i] - 32768))))
             image[i].save(rgbpath[i], format="tiff")
 
-        #self._release_data()
+        self._release_data()
 
     def write(self, tiff=False):
         """

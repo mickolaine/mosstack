@@ -71,8 +71,8 @@ def limit(tri1, tri2):
 
 
 
-#cdef _step2(np.ndarray[DTYPE_t, ndim=2] tri1, np.ndarray[DTYPE_t, ndim=2] tri2):
-cdef _step2(tri1, tri2):
+cdef _step2(np.ndarray[DTYPE_t, ndim=2] tri1, np.ndarray[DTYPE_t, ndim=2] tri2):
+#cdef _step2(tri1, tri2):
     """                    0  1  2  3  4  5  6  7   8   9
     tri includes a list [[x1,y1,x2,y2,x3,y3, R, C, tR, tC], ... , ...]
     """
@@ -98,10 +98,10 @@ cdef _step2(tri1, tri2):
         temp = []
 
         best = None
-        Ra  = tri1[i][6]
-        tRa = tri1[i][8]
-        Ca  = tri1[i][7]
-        tCa = tri1[i][9]
+        Ra  = tri1[i,6]
+        tRa = tri1[i,8]
+        Ca  = tri1[i,7]
+        tCa = tri1[i,9]
 
         tra2 = tRa * tRa
         tca2 = tCa * tCa
@@ -113,10 +113,10 @@ cdef _step2(tri1, tri2):
                 #print("Skip " + str(tri2[j]))
             #    continue
 
-            Rb  = tri2[j][6]
-            tRb = tri2[j][8]
-            Cb  = tri2[j][7]
-            tCb = tri2[j][9]
+            Rb  = tri2[j,6]
+            tRb = tri2[j,8]
+            Cb  = tri2[j,7]
+            tCb = tri2[j,9]
 
             raba2 = (Ra - Rb) ** 2
 
