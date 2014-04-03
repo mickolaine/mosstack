@@ -48,6 +48,7 @@ class Frame(object):
         self.clip      = []
         self.tri       = []         # List of triangles
         self.match     = []         # List of matching triangles with reference picture
+        self._points    = None       # String to pass to ImageMagick convert, if star matching is already done.
 
         self.path = None            # Path for image
         self.tiffpath = []          # List for paths to tiff files, required for aligning with imagemagick
@@ -186,6 +187,17 @@ class Frame(object):
         """
 
         self.clip = clip
+
+    def getpoints(self):
+        if (self._points is None) and self.frameinfo.hassection("Registering"):
+            self._points = self.frameinfo.get("Registering", "Points")
+        return self._points
+
+    def setpoints(self, points):
+        self._points = points
+        self.frameinfo.set("Registering", "Points", self._points)
+
+    points = property(getpoints, setpoints)
 
     def getdata(self):
         """

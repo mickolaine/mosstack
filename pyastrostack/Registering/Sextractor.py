@@ -19,286 +19,14 @@ from shutil import copyfile
 import datetime   # For profiling
 
 
-class Sextractor(Registering):
-    """
-    Implementation of Registering interface. This class uses SExtractor to find stars on a picture and ImageMagick
-    to perform affine transform accordingly. Star matching is done with method described by E.J. Groth on article
-    'A pattern-matching algorithm for two-dimensional coordinate' (http://adsabs.harvard.edu/abs/1986AJ.....91.1244G)
-    """
-
-    def __init__(self):
-
-        pass
-
-    def register(self, imagelist, project):
-        """
-        Calls everything required for total registration process.
-        """
-
-        t1 = datetime.datetime.now()
-
-        self.findstars(imagelist, project)
-
-        ref = project.get("Reference images", "light")
-
-        for i in imagelist:
-            self.step1(imagelist[i])                      # Step1 has to be finished before the rest
-
-        for i in imagelist:
-
-            # Don't match image with itself
-            if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
-                oldpath = imagelist[i].path
-                imagelist[i].genname = "reg"
-                newpath = imagelist[i].path
-                copyfile(oldpath, newpath)
-                continue
-
-            imagelist[i].write_tiff()
-            oldpath = imagelist[i].rgbpath(fileformat="tiff")
-            imagelist[i].genname = "reg"
-            newpath = imagelist[i].rgbpath()
-
-            self.match(imagelist[ref], imagelist[i])
-            self.reduce(imagelist[i])
-            self.vote(imagelist[i])
-
-            self.transform_magick(imagelist[i], oldpath, newpath)
-
-            imagelist[i].combine(newpath)
-
-        t2 = datetime.datetime.now()
-        print("Triangle calculations took " + str(t2 - t1) + " seconds.")
-
-    def findstars(self, imagelist, project):
-        """
-        Finds the stars and creates all the triangles from them
-        """
-        S = Sex(imagelist['1'], project)    # TODO: Ref image here
-        sensitivity = S.findsensitivity()
-        del S
-
-        for i in imagelist:
-            S = Sex(imagelist[i], project)
-            S.setsensitivity(sensitivity[0], sensitivity[1])
-            imagelist[i].coordinates = S.getcoordinates()
-            S.maketriangles()
-
-    def step1(self, image):
-        """
-        Calculates R,C,tR and tC for every triangle in image. These quantities are described in article #TODO: Cite the article
-        """
-
-        ep = 0.3
-        xi = 3. * ep
-
-        for tri in image.tri:      # tri is a list of coordinates. ((x1,y1),(x2,y2),(x3,y3))
-            x1 = tri[0][0]
-            y1 = tri[0][1]
-            x2 = tri[1][0]
-            y2 = tri[1][1]
-            x3 = tri[2][0]
-            y3 = tri[2][1]
-
-            r3 = sqrt((x3 - x1) ** 2 + (y3 - y1) ** 2)
-            r2 = sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-            R = r3 / r2
-            C = ((x3 - x1) * (x2 - x1) + (y3 - y1) * (y2 - y1)) / (r3 * r2)     #Cosine of angle at vertex 1
-
-            tR = sqrt(2. * R ** 2. * ep ** 2. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.))
-
-            S = 1. - C ** 2.   #Sine^2 of angle at vertex 1
-            # S should be S**2 and on above line S should be sqrt of 1-C**2,
-            # but this might be faster. I don't know if python optimizes this.
-            tC = sqrt(2. * S * ep ** 2. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.) +
-                      3. * C ** 2. * ep ** 4. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.) ** 2.)
-
-            tri.append(R)
-            tri.append(C)
-            tri.append(tR)
-            tri.append(tC)
-        print("Step 1 complete for image " + str(image.number) + ".")
-
-    def match(self, i1, i2):
-        """
-        Matches triangles in image i1(ref) to triangles in i2. Creates a list of matching triangles and
-        their properties in object i2.
-        #TODO:Cite the article
-
-        """
-
-        print("Starting to match image " + str(i2.number) + " to reference image " + str(i1.number))
-        #ep = 0.001
-        #xi = 3 * ep
-
-        for tri1 in i1.tri:
-            temp = ()
-            best = None        # temporary variable to hold information about the best R-ratio.
-            Ra  = tri1[3]
-            tRa = tri1[5]
-            Ca  = tri1[4]
-            tCa = tri1[6]
-
-            tRa2 = tRa**2      # Hoping this speeds up a little
-            tCa2 = tCa**2
-
-            for tri2 in i2.tri:
-
-                Rb  = tri2[3]
-                tRb = tri2[5]
-                Cb  = tri2[4]
-                tCb = tri2[6]
-
-                raba2 = (Ra - Rb) ** 2  # Hoping this speeds up a little
-
-                # Run the check described in articles equations (7) and (8)
-                if (raba2 < (tRa2 + tRb ** 2)) & ((Ca - Cb) ** 2 < (tCa2 + tCb ** 2)):
-                    #Test if newfound match is better than the previous found with same tri1
-                    if (best is None) or (raba2 < best):
-                        #if so, save it for later use
-                        best = raba2
-                        temp = [tri1, tri2]
-            if best is not None:
-                i2.match.append(temp)
-            del temp
-            del best
-        print("Matching done for image " + str(i2.number) + ".")
-        print("    " + str(len(i2.match)) + " matches found.")
-
-
-    def reduce(self, image):
-        """
-        Reduces number of matched triangles. Essentially removes a portion of false matches. Probably no correct matches are removed.
-        """
-
-        for match in image.match:
-            x1 = match[0][0][0]
-            y1 = match[0][0][1]
-            x2 = match[0][1][0]
-            y2 = match[0][1][1]
-            x3 = match[0][2][0]
-            y3 = match[0][2][1]
-
-            pA = (sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) +
-                  sqrt((x1 - x3) ** 2 + (y1 - y3) ** 2) +
-                  sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2))
-
-            x1 = match[1][0][0]
-            y1 = match[1][0][1]
-            x2 = match[1][1][0]
-            y2 = match[1][1][1]
-            x3 = match[1][2][0]
-            y3 = match[1][2][1]
-
-            pB = (sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) +
-                  sqrt((x1 - x3) ** 2 + (y1 - y3) ** 2) +
-                  sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2))
-            match.append(log(pA) - log(pB))         # Value log(M) as described in equation (10). this will be match[2]
-
-        do_it_again = True
-        print("List has originally lenght of  " + str(len(image.match)))
-
-        times = 0
-
-        while do_it_again:
-            newlist = []
-            mean = 0.
-            variance = 0.
-            for match in image.match:                       # Calculate average value
-                mean += match[2] / len(image.match)
-            for match in image.match:                       # Calculate variance which is sigma**2
-                variance += (fabs(mean - match[2]) ** 2) / len(image.match)
-            sigma = sqrt(variance)
-
-            do_it_again = False
-            for match in image.match:
-                # print(match[2])                            #Debugging
-                if fabs(match[2] - mean) < sigma * 2:
-                    newlist.append(match)
-                else:
-                    do_it_again = True                        # If you end up here, while has to be run again
-            image.match = newlist                           # Save new list and do again if necessary
-            del newlist
-            times += 1
-        print("After reduction the length is " + str(len(image.match)))
-
-    def vote(self, image):
-        """
-        Count probabilities for vertex matches. Choose the most popular one, disregard the rest.
-        Votes mean how many times two vertices have been matched on previous steps. This is required
-        to get rid of false matches. I probably need only few matching vertices so this method suites
-        me well.
-
-        Creates list image.pairs, which has pairs (image.coordinate, reference.coordinate, votes) sorted by votes, biggest first
-        """
-        print("Voting")
-        pairs = {}          # vertex pair as the key and votes as the value
-
-        for m in image.match:
-            for i in range(3):
-                key = (m[1][i], m[0][i])            # This is where source and destination changes places
-                if key in pairs:
-                    pairs[key] += 1
-                else:
-                    pairs[key] = 1
-
-        newpairs = {}
-        for key in pairs:
-            if pairs[key] > 2:                      # Should be >1 but I really don't need that much points.
-                newpairs[key] = pairs[key]          # TODO: Check if this works
-        pairs = newpairs
-
-        final = []
-        for key in pairs:
-            final.append((key[0], key[1], pairs[key]))
-
-        final = sorted(final, key=itemgetter(2), reverse=True)
-        image.pairs = final
-        print("After voting there are " + str(len(image.pairs)) + " pairs found")
-
-    def transform_magick(self, image, oldpath, newpath):
-        """
-        Transforms image according to image.pairs.
-
-        Transformation is done with ImageMagick's "convert -distort Affine" from command line.
-
-        Arguments:
-        oldpath - list of pathnames for files to transform
-        newpath - list of pathnames for resulting files
-        """
-
-        # Preparations
-        points = "'"
-        n = 0
-        for i in image.pairs:
-            if n > 11:          # max number of control points is 12
-                break
-            points = points + "{},{},{},{} ".format(int(i[0][0]), int(i[0][1]), int(i[1][0]), int(i[1][1]))
-            n += 1
-        points += "'"
-
-        # Actual transforming
-        if len(oldpath) == 3:
-            for i in [0, 1, 2]:
-                command = "convert " + oldpath[i] + " -distort Affine " \
-                          + points + " " + newpath[i]
-                call([command], shell=True)
-                call(["rm " + oldpath[i]], shell=True)
-
-        else:
-            command = "convert " + oldpath + " -distort Affine "\
-                      + points + " " + newpath
-            call([command], shell=True)
-            call(["rm " + oldpath], shell=True)
-
-
-class Sex:
+class Sextractor:
     """
     Class Sextractor controls SExtractor, obviously. Shortly, this class will extract xy-positions of stars from a fits.
 
     It creates a suitable configuration file, calls sextractor (or sex, have to check the name of the executable),
     checks and parses the output.
+
+    TODO: Test for SExtractor version: 2.4.4 has a bug
     """
 
     def __init__(self, image, project):
@@ -483,11 +211,288 @@ class Sex:
         for i in self.coord:
             for j in self.coord:
                 if i == j:
-                    break  # This should be continue for it to be right. For some reason this works well enough
+                    continue
                 for k in self.coord:
                     if (j == k) or (i == k):
-                        break
+                        continue
                     n += 1
                     self.image.tri.append([i, j, k])
 
         print("Total number of triangles in image " + self.image.path + " is " + str(n) + ".")
+
+
+# class Sextractor(Registering):
+#     """
+#     Implementation of Registering interface. This class uses SExtractor to find stars on a picture and ImageMagick
+#     to perform affine transform accordingly. Star matching is done with method described by E.J. Groth on article
+#     'A pattern-matching algorithm for two-dimensional coordinate' (http://adsabs.harvard.edu/abs/1986AJ.....91.1244G)
+#     """
+#
+#     def __init__(self):
+#
+#         pass
+#
+#     def register(self, imagelist, project):
+#         """
+#         Calls everything required for total registration process.
+#         """
+#
+#         t1 = datetime.datetime.now()
+#
+#         self.findstars(imagelist, project)
+#
+#         ref = project.get("Reference images", "light")
+#
+#         for i in imagelist:
+#             self.step1(imagelist[i])                      # Step1 has to be finished before the rest
+#
+#         for i in imagelist:
+#
+#             # Don't match image with itself
+#             if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
+#                 oldpath = imagelist[i].path
+#                 imagelist[i].genname = "reg"
+#                 newpath = imagelist[i].path
+#                 copyfile(oldpath, newpath)
+#                 continue
+#
+#             imagelist[i].write_tiff()
+#             oldpath = imagelist[i].rgbpath(fileformat="tiff")
+#             imagelist[i].genname = "reg"
+#             newpath = imagelist[i].rgbpath()
+#
+#             self.match(imagelist[ref], imagelist[i])
+#             self.reduce(imagelist[i])
+#             self.vote(imagelist[i])
+#
+#             self.transform_magick(imagelist[i], oldpath, newpath)
+#
+#             imagelist[i].combine(newpath)
+#
+#         t2 = datetime.datetime.now()
+#         print("Triangle calculations took " + str(t2 - t1) + " seconds.")
+#
+#     def findstars(self, imagelist, project):
+#         """
+#         Finds the stars and creates all the triangles from them
+#         """
+#         S = Sex(imagelist['1'], project)    # TODO: Ref image here
+#         sensitivity = S.findsensitivity()
+#         del S
+#
+#         for i in imagelist:
+#             S = Sex(imagelist[i], project)
+#             S.setsensitivity(sensitivity[0], sensitivity[1])
+#             imagelist[i].coordinates = S.getcoordinates()
+#             S.maketriangles()
+#
+#     def step1(self, image):
+#         """
+#         Calculates R,C,tR and tC for every triangle in image. These quantities are described in article #TODO: Cite the article
+#         """
+#
+#         ep = 0.3
+#         xi = 3. * ep
+#
+#         for tri in image.tri:      # tri is a list of coordinates. ((x1,y1),(x2,y2),(x3,y3))
+#             x1 = tri[0][0]
+#             y1 = tri[0][1]
+#             x2 = tri[1][0]
+#             y2 = tri[1][1]
+#             x3 = tri[2][0]
+#             y3 = tri[2][1]
+#
+#             r3 = sqrt((x3 - x1) ** 2 + (y3 - y1) ** 2)
+#             r2 = sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+#
+#             R = r3 / r2
+#             C = ((x3 - x1) * (x2 - x1) + (y3 - y1) * (y2 - y1)) / (r3 * r2)     #Cosine of angle at vertex 1
+#
+#             tR = sqrt(2. * R ** 2. * ep ** 2. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.))
+#
+#             S = 1. - C ** 2.   #Sine^2 of angle at vertex 1
+#             # S should be S**2 and on above line S should be sqrt of 1-C**2,
+#             # but this might be faster. I don't know if python optimizes this.
+#             tC = sqrt(2. * S * ep ** 2. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.) +
+#                       3. * C ** 2. * ep ** 4. * (1. / r3 ** 2. - C / (r2 * r3) + 1. / r2 ** 2.) ** 2.)
+#
+#             tri.append(R)
+#             tri.append(C)
+#             tri.append(tR)
+#             tri.append(tC)
+#         print("Step 1 complete for image " + str(image.number) + ".")
+#
+#     def match(self, i1, i2):
+#         """
+#         Matches triangles in image i1(ref) to triangles in i2. Creates a list of matching triangles and
+#         their properties in object i2.
+#         #TODO:Cite the article
+#
+#         """
+#
+#         print("Starting to match image " + str(i2.number) + " to reference image " + str(i1.number))
+#         #ep = 0.001
+#         #xi = 3 * ep
+#
+#         for tri1 in i1.tri:
+#             temp = ()
+#             best = None        # temporary variable to hold information about the best R-ratio.
+#             Ra  = tri1[3]
+#             tRa = tri1[5]
+#             Ca  = tri1[4]
+#             tCa = tri1[6]
+#
+#             tRa2 = tRa**2      # Hoping this speeds up a little
+#             tCa2 = tCa**2
+#
+#             for tri2 in i2.tri:
+#
+#                 Rb  = tri2[3]
+#                 tRb = tri2[5]
+#                 Cb  = tri2[4]
+#                 tCb = tri2[6]
+#
+#                 raba2 = (Ra - Rb) ** 2  # Hoping this speeds up a little
+#
+#                 # Run the check described in articles equations (7) and (8)
+#                 if (raba2 < (tRa2 + tRb ** 2)) & ((Ca - Cb) ** 2 < (tCa2 + tCb ** 2)):
+#                     #Test if newfound match is better than the previous found with same tri1
+#                     if (best is None) or (raba2 < best):
+#                         #if so, save it for later use
+#                         best = raba2
+#                         temp = [tri1, tri2]
+#             if best is not None:
+#                 i2.match.append(temp)
+#             del temp
+#             del best
+#         print("Matching done for image " + str(i2.number) + ".")
+#         print("    " + str(len(i2.match)) + " matches found.")
+#
+#
+#     def reduce(self, image):
+#         """
+#         Reduces number of matched triangles. Essentially removes a portion of false matches. Probably no correct matches are removed.
+#         """
+#
+#         for match in image.match:
+#             x1 = match[0][0][0]
+#             y1 = match[0][0][1]
+#             x2 = match[0][1][0]
+#             y2 = match[0][1][1]
+#             x3 = match[0][2][0]
+#             y3 = match[0][2][1]
+#
+#             pA = (sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) +
+#                   sqrt((x1 - x3) ** 2 + (y1 - y3) ** 2) +
+#                   sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2))
+#
+#             x1 = match[1][0][0]
+#             y1 = match[1][0][1]
+#             x2 = match[1][1][0]
+#             y2 = match[1][1][1]
+#             x3 = match[1][2][0]
+#             y3 = match[1][2][1]
+#
+#             pB = (sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2) +
+#                   sqrt((x1 - x3) ** 2 + (y1 - y3) ** 2) +
+#                   sqrt((x3 - x2) ** 2 + (y3 - y2) ** 2))
+#             match.append(log(pA) - log(pB))         # Value log(M) as described in equation (10). this will be match[2]
+#
+#         do_it_again = True
+#         print("List has originally lenght of  " + str(len(image.match)))
+#
+#         times = 0
+#
+#         while do_it_again:
+#             newlist = []
+#             mean = 0.
+#             variance = 0.
+#             for match in image.match:                       # Calculate average value
+#                 mean += match[2] / len(image.match)
+#             for match in image.match:                       # Calculate variance which is sigma**2
+#                 variance += (fabs(mean - match[2]) ** 2) / len(image.match)
+#             sigma = sqrt(variance)
+#
+#             do_it_again = False
+#             for match in image.match:
+#                 # print(match[2])                            #Debugging
+#                 if fabs(match[2] - mean) < sigma * 2:
+#                     newlist.append(match)
+#                 else:
+#                     do_it_again = True                        # If you end up here, while has to be run again
+#             image.match = newlist                           # Save new list and do again if necessary
+#             del newlist
+#             times += 1
+#         print("After reduction the length is " + str(len(image.match)))
+#
+#     def vote(self, image):
+#         """
+#         Count probabilities for vertex matches. Choose the most popular one, disregard the rest.
+#         Votes mean how many times two vertices have been matched on previous steps. This is required
+#         to get rid of false matches. I probably need only few matching vertices so this method suites
+#         me well.
+#
+#         Creates list image.pairs, which has pairs (image.coordinate, reference.coordinate, votes) sorted by votes, biggest first
+#         """
+#         print("Voting")
+#         pairs = {}          # vertex pair as the key and votes as the value
+#
+#         for m in image.match:
+#             for i in range(3):
+#                 key = (m[1][i], m[0][i])            # This is where source and destination changes places
+#                 if key in pairs:
+#                     pairs[key] += 1
+#                 else:
+#                     pairs[key] = 1
+#
+#         newpairs = {}
+#         for key in pairs:
+#             if pairs[key] > 2:                      # Should be >1 but I really don't need that much points.
+#                 newpairs[key] = pairs[key]          # TODO: Check if this works
+#         pairs = newpairs
+#
+#         final = []
+#         for key in pairs:
+#             final.append((key[0], key[1], pairs[key]))
+#
+#         final = sorted(final, key=itemgetter(2), reverse=True)
+#         image.pairs = final
+#         print("After voting there are " + str(len(image.pairs)) + " pairs found")
+#
+#     def transform_magick(self, image, oldpath, newpath):
+#         """
+#         Transforms image according to image.pairs.
+#
+#         Transformation is done with ImageMagick's "convert -distort Affine" from command line.
+#
+#         Arguments:
+#         oldpath - list of pathnames for files to transform
+#         newpath - list of pathnames for resulting files
+#         """
+#
+#         # Preparations
+#         points = "'"
+#         n = 0
+#         for i in image.pairs:
+#             if n > 11:          # max number of control points is 12
+#                 break
+#             points = points + "{},{},{},{} ".format(int(i[0][0]), int(i[0][1]), int(i[1][0]), int(i[1][1]))
+#             n += 1
+#         points += "'"
+#
+#         # Actual transforming
+#         if len(oldpath) == 3:
+#             for i in [0, 1, 2]:
+#                 command = "convert " + oldpath[i] + " -distort Affine " \
+#                           + points + " " + newpath[i]
+#                 call([command], shell=True)
+#                 call(["rm " + oldpath[i]], shell=True)
+#
+#         else:
+#             command = "convert " + oldpath + " -distort Affine "\
+#                       + points + " " + newpath
+#             call([command], shell=True)
+#             call(["rm " + oldpath], shell=True)
+
+
+

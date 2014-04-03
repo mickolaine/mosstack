@@ -1,10 +1,10 @@
-#cython: boundscheck=False
 #cython: wraparound=False
 
 from __future__ import division
 
 import numpy as np
 cimport numpy as np
+cimport cython
 from operator import itemgetter
 
 DTYPE = np.float32
@@ -70,7 +70,7 @@ def limit(tri1, tri2):
     return newlist
 
 
-
+@cython.boundscheck(False)
 cdef _step2(np.ndarray[DTYPE_t, ndim=2] tri1, np.ndarray[DTYPE_t, ndim=2] tri2):
 #cdef _step2(tri1, tri2):
     """                    0  1  2  3  4  5  6  7   8   9

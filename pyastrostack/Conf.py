@@ -471,3 +471,34 @@ class Frame:
         self.conf.read(self.framefile)
         self.conf.save(key, value, section)
         self.conf.write(self.framefile)
+
+    def hassection(self, section):
+        """
+        Check if project file has section
+
+        Arguments:
+        section - string to check
+
+        Returns:
+        Boolean
+        """
+
+        if section in self.conf.conf:
+            return True
+        else:
+            return False
+
+    def haskey(self, section, key):
+        """
+        Check if project file has key in section
+
+        Also check the section first and return False if not
+        """
+
+        if not self.hassection(section):
+            return False
+
+        if key in self.conf.conf[section]:
+            return True
+        else:
+            return False

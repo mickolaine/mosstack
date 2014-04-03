@@ -1,7 +1,7 @@
 __author__ = 'Mikko Laine'
-__all__ = ["Sextractor", "Sextractor2"]
+__all__ = ["Groth", "Sextractor2"]
 
 from . import *
 
-Sextractor = Sextractor.Sextractor
+Groth = Groth.Groth
 Sextractor2 = Sextractor2.Sextractor2

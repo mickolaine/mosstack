@@ -24,6 +24,7 @@
       <w>commandlist</w>
       <w>confname</w>
       <w>createconf</w>
+      <w>cython</w>
       <w>dcraw</w>
       <w>deldata</w>
       <w>demosaic</w>
@@ -42,6 +43,7 @@
       <w>genname</w>
       <w>getcoordinates</w>
       <w>getdata</w>
+      <w>getpoints</w>
       <w>greennewpath</w>
       <w>greenpath</w>
       <w>iformat</w>
@@ -98,11 +100,13 @@
       <w>setclip</w>
       <w>setdata</w>
       <w>setname</w>
+      <w>setpoints</w>
       <w>setproject</w>
       <w>setref</w>
       <w>setsensitivity</w>
       <w>sextractor</w>
       <w>shorthelp</w>
+      <w>sqrt</w>
       <w>srclist</w>
       <w>srcname</w>
       <w>srcpath</w>

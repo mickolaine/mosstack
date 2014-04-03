@@ -1,3 +1,14 @@
+PyAstroStack is licensed with GNU General Public License version 3.
+
+The distribution package includes configuration files for Astromatic
+SExtractor (Bertin, E. & Arnouts, S. 1996: SExtractor: Software for source
+extraction, Astronomy & Astrophysics Supplement 317, 393,
+http://adsabs.harvard.edu/abs/1996A%26AS..117..393B) which are also licensed
+GNU GPL v3.
+
+
+
+
 GNU GENERAL PUBLIC LICENSE
 
 Version 3, 29 June 2007
