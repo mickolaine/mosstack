@@ -1,9 +1,11 @@
-v.0.2.4 XXXX-XX-XX -- Not released
+v.0.2.4 2013-04-04 -- Registering improvements
 - Fixed Cythoning on _step2.pyx. Now many percent faster. Such speed. Wow.
 - Split Sextractor2 into Groth.py, IM_transform.py and Sextractor.py so
   individual parts can be used elsewhere and changing them is easier.
 - Groth does not extract and match stars if it's already done. Information
   stored in frame info file
+- Added prints to operations so user knows names for resulting files
+- Fixed memory leak on Registering operations
 
 v0.2.3, 2014-04-02 -- VNG on Cython
 - Variable number of gradients debayering ported to Cython. This is also the

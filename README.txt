@@ -67,8 +67,9 @@ Supported cameras
 I have a Canon EOS 1100D and I've used that to do all the testings. Most likely
 everything with the same Bayer filter pattern works.
 
-List of tested Camera Model IDs (as printed by exiftool)
+List of tested Camera Model IDs
  - EOS Rebel T3 / 1100D / Kiss X50
+ - Canon 450D
 
 List of tested Bayer filter patterns (as printed by dcraw -i -v)
  - RGGBRGGBRGGBRGGB

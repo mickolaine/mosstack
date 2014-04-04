@@ -491,6 +491,7 @@ class Batch:
             self.list[i].genname = "rgb"
             self.list[i].write(tiff=True)
         self.project.set("Reference images", self.genname, str(self.refnum))
+        print("Debayered images saved with generic name 'rgb'.")
 
     def register(self, register):
         """
@@ -502,6 +503,7 @@ class Batch:
 
         register.register(self.list, self.project)
         self.project.set("Reference images", self.genname, str(self.refnum))
+        print("Registered images saved with generic name 'reg'.")
 
     def stack(self, stacker):
         """
@@ -514,6 +516,8 @@ class Batch:
         new = Frame(self.project, self.genname, number="master")
         new.data = stacker.stack(self.list, self.project)
         new.write(tiff=True)
+        print("Result image saved to " + new.path)
+        print("                  and " + splitext(new.path)[0] + ".tiff")
 
     def subtract(self, calib, stacker):
         """
@@ -530,6 +534,7 @@ class Batch:
             #print(self.list[i].infopath)
             self.list[i].write()
         self.project.set("Reference images", "calib", str(self.refnum))
+        print("Calibrated images saved with generic name 'calib'.")
 
     def divide(self, calib, stacker):
         """
@@ -545,6 +550,7 @@ class Batch:
                 self.list[i].genname = "calib"
             self.list[i].write()
         self.project.set("Reference images", "calib", str(self.refnum))
+        print("Calibrated images saved with generic name 'calib'.")
 
     def directory(self, path, itype):
         """
@@ -577,16 +583,6 @@ class Batch:
             frame.fromraw(i)
             self.project.set(itype, str(n), frame.infopath)
             n += 1
-
-        # Set reference only if not already set
-        #if not self.project.hassection("Reference images"):
-        #    print("Setting first image in list as reference image. This can be altered in project file.")
-        #    ref = "1"
-        #    self.project.set("Reference images", itype, ref)
-        #elif not self.project.haskey("Reference images", itype):
-        #    print("Setting first image in list as reference image. This can be altered in project file.")
-        #    ref = "1"
-        #    self.project.set("Reference images", itype, ref)
 
         self.project.set("Reference images", itype, "1")
         self.project.write()
