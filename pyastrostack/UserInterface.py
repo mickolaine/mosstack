@@ -253,7 +253,7 @@ You can use either name or number as operation 'list' shows them.
 
         # Set default values.
         self.demosaicwrap = Demosaic.BilinearCython
-        self.registerwrap = Registering.Sextractor2
+        self.registerwrap = Registering.Groth_Skimage
         self.stackerwrap = Stacker.Median
 
     def setproject(self, project):

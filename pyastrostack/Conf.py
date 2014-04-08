@@ -233,8 +233,8 @@ class Project:
                 os.unlink(self.projectfile)
         self.conf.save("Project name", pname)
         self.set("Setup", "Path", self.setup.conf.conf["Default"]["Path"])
-        self.set("Default", "demosaic", "BilinearCython")
-        self.set("Default", "register", "Sextractor2")
+        self.set("Default", "demosaic", "VNGCython")
+        self.set("Default", "register", "Groth_Skimage")
         self.set("Default", "stack", "Median")
         self.conf.write(self.projectfile)
 
