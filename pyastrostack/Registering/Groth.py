@@ -2,7 +2,8 @@ from __future__ import division
 
 from .. Registering.Registering import Registering
 from . Sextractor import Sextractor
-from . IM_transform import ImTransform
+from . ImTransform import ImTransform
+from . SkTransform import SkTransform
 import datetime   # For profiling
 from shutil import copyfile
 from re import sub
@@ -24,8 +25,6 @@ class Groth(Registering):
 
     def __init__(self):
         self.timing = False
-        self.transformer = ImTransform()
-        pass
 
     def register(self, imagelist, project):
         """
@@ -40,31 +39,16 @@ class Groth(Registering):
         ref = project.get("Reference images", "light")
 
         for i in imagelist:
-            if imagelist[i].points is None:
-                self.step1(imagelist[i])                      # Step1 has to be finished before the rest
+            #if imagelist[i].points is None:
+            self.step1(imagelist[i])                      # Step1 has to be finished before the rest
+
+        for i in imagelist:
+            if imagelist[i].pairs is None:
+                self.step2(imagelist[ref], imagelist[i])
 
         for i in imagelist:
 
-            # Don't match image with itself
-            if sub("\D", "", imagelist[i].number) == ref:  # For RGB-images i.number holds more than number. Strip that
-                oldpath = imagelist[i].path
-                imagelist[i].genname = "reg"
-                newpath = imagelist[i].path
-                copyfile(oldpath, newpath)
-                continue
-
-            # Write data as tiff for ImageMagick
-            imagelist[i].write_tiff()
-
-            if imagelist[i].points is None:
-                self.step2(imagelist[ref], imagelist[i])
-
-            self.transformer.affine_transform(imagelist[i])
-
-            # Combine r, g and b images to one rgb image
-            # imagelist[i].genname = "reg"   # Not needed because done in transformer
-            newpath = imagelist[i].rgbpath()
-            imagelist[i].combine(newpath)
+            self.transformer.affine_transform(imagelist[i], ref)
 
         if self.timing:
             t2 = datetime.datetime.now()
@@ -79,11 +63,10 @@ class Groth(Registering):
         del sex
 
         for i in imagelist:
-            if imagelist[i].points is None:
-                sex = Sextractor(imagelist[i], project)
-                sex.setsensitivity(sensitivity[0], sensitivity[1])
-                imagelist[i].coordinates = sex.getcoordinates()
-                sex.maketriangles()
+            sex = Sextractor(imagelist[i], project)
+            sex.setsensitivity(sensitivity[0], sensitivity[1])
+            imagelist[i].coordinates = sex.getcoordinates()
+            sex.maketriangles()
 
     def step1(self, image):
         """

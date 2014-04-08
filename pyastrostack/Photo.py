@@ -19,6 +19,7 @@ import gc
 from re import sub
 from os import listdir
 import datetime   # For profiling
+import ast
 
 
 class Frame(object):
@@ -48,7 +49,8 @@ class Frame(object):
         self.clip      = []
         self.tri       = []         # List of triangles
         self.match     = []         # List of matching triangles with reference picture
-        self._points    = None       # String to pass to ImageMagick convert, if star matching is already done.
+        self._pairs    = None
+        self._points   = None       # String to pass to ImageMagick convert, if star matching is already done.
 
         self.path = None            # Path for image
         self.tiffpath = []          # List for paths to tiff files, required for aligning with imagemagick
@@ -105,8 +107,9 @@ class Frame(object):
             hdu.append(fits.open(newpath[i]))
             data.append(hdu[i][0].data)
 
+        print(data)
         self.data = np.array(data) - 32768
-        self.write()
+        self.write(skimage=True)
         self._release_data()
 
     def getpath(self, genname):
@@ -129,6 +132,9 @@ class Frame(object):
         #self.frametype = self.frameinfo.get("Default", "Frametype")
         self.x = int(self.frameinfo.get("Properties", "X"))
         self.y = int(self.frameinfo.get("Properties", "Y"))
+        if self.frameinfo.hassection("Registering"):
+            if self.frameinfo.haskey("Registering", "pairs"):
+                self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
 
     def extractinfo(self):
         """
@@ -269,6 +275,19 @@ class Frame(object):
 
     y = property(fget=get_y, fset=set_y)
 
+    def getpairs(self):
+        if self._pairs is None:
+            if self.frameinfo.hassection("Registering"):
+                if self.frameinfo.haskey("Registering", "pairs"):
+                    self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+        return self._pairs
+
+    def setpairs(self, pairs):
+        self._pairs = pairs
+        self.frameinfo.set("Registering", "pairs", str(pairs))
+
+    pairs = property(fget=getpairs, fset=setpairs)
+
     def _convert(self, srcpath):
         """
         Convert the raw file into FITS via PGM.
@@ -373,7 +392,7 @@ class Frame(object):
             exit()
         fits.writeto(self.path, np.int16(self._data), hdu.header, clobber=True)
 
-    def _write_tiff(self):
+    def _write_tiff(self, skimage=True):
         """
         Write self.data to disk as a tiff file
         """
@@ -391,7 +410,7 @@ class Frame(object):
         elif self.data.shape[0] == 3:
             rgbpath = self.rgbpath(fileformat="tiff")
             for i in (0, 1, 2):
-                if im_version == "6.7":
+                if im_version == "6.7" and not skimage:
                     imagedata = np.flipud(np.int16(self.data[i] - 32768))
                 else:
                     imagedata = np.flipud(np.int16(self.data[i]))
@@ -413,12 +432,12 @@ class Frame(object):
         rgbpath = self.rgbpath(fileformat="tiff")
         #data = self.data
         for i in [0, 1, 2]:
-            image.append(Im.fromarray(np.flipud(np.int16(self.data[i] - 32768))))
+            image.append(Im.fromarray(np.flipud(np.int16(self.data[i]))))
             image[i].save(rgbpath[i], format="tiff")
 
         self._release_data()
 
-    def write(self, tiff=False):
+    def write(self, tiff=False, skimage=True):
         """
         Wrapper function to relay writing of the image on disk. This is remnants of something much more complicated...
 
@@ -428,7 +447,7 @@ class Frame(object):
 
         self._write_fits()
         if tiff:
-            self._write_tiff()
+            self._write_tiff(skimage=skimage)
 
 
 class Batch:
@@ -489,7 +508,7 @@ class Batch:
             print("...Done")
             print("Debayering took " + str(t2-t1) + " seconds.")
             self.list[i].genname = "rgb"
-            self.list[i].write(tiff=True)
+            self.list[i].write()
         self.project.set("Reference images", self.genname, str(self.refnum))
         print("Debayered images saved with generic name 'rgb'.")
 

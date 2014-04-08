@@ -1,3 +1,7 @@
+v.0.2.5 XXXXXXXXXX -- Affine transformation by Scipy
+- Added affine transformation by SciPy. This makes so many things so much
+  easier, because now only one intermediate file format is required.
+
 v.0.2.4 2013-04-04 -- Registering improvements
 - Fixed Cythoning on _step2.pyx. Now many percent faster. Such speed. Wow.
 - Split Sextractor2 into Groth.py, IM_transform.py and Sextractor.py so
