@@ -101,7 +101,7 @@ Activating the project means all the commands will be run using information of
 that project file. User can have many simultaneous projects in his working
 directory.
 
-adddir
+dir
 ------------
 Add all supported raw photos in specified directory into active project. In
 addition to path this also requires type of the frames as an argument.
@@ -110,10 +110,10 @@ files in the project is to separate these types to their own directories.
 
 Example:
 
-    ``AstroStack adddir /media/data/Astro/2013-11-25/Andromeda/ light``
-    ``AstroStack adddir /media/data/Astro/2013-11-25/flat/ flat``
+    ``AstroStack dir /media/data/Astro/2013-11-25/Andromeda/ light``
+    ``AstroStack dir /media/data/Astro/2013-11-25/flat/ flat``
 
-addfile
+file
 ------------
 Add specified raw photo into active project. In addition to file path this also
 requires type of the frame as an argument. Program understands the types light,
@@ -121,7 +121,7 @@ bias, dark and flat.
 
 Example:
 
-    ``AstroStack addfile /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
+    ``AstroStack file /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
 
 subtract
 ------------
