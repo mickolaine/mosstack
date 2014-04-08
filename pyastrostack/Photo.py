@@ -390,6 +390,7 @@ class Frame(object):
             print("No data set! Exiting...")
             exit()
         fits.writeto(self.path, np.uint16(self._data), hdu.header, clobber=True)
+        self._release_data()
 
     def _write_tiff(self, skimage=True):
         """
