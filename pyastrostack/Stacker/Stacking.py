@@ -49,7 +49,7 @@ class Stacking:
 
         newdata = image.data - calib.data
         newdata = newdata.clip(0)
-        return np.int16(newdata)
+        return np.uint16(newdata)
 
     @staticmethod
     def clip(batch):

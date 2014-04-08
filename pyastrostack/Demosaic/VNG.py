@@ -73,9 +73,9 @@ class VNG(Demosaic):
         cl.enqueue_copy(self.queue, self.r, self.dest_bufr)
         cl.enqueue_copy(self.queue, self.g, self.dest_bufg)
         cl.enqueue_copy(self.queue, self.b, self.dest_bufb)
-        self.r = np.int16(np.reshape(self.r, (self.y, -1), order='C'))
-        self.g = np.int16(np.reshape(self.g, (self.y, -1), order='C'))
-        self.b = np.int16(np.reshape(self.b, (self.y, -1), order='C'))
+        self.r = np.uint16(np.reshape(self.r, (self.y, -1), order='C'))
+        self.g = np.uint16(np.reshape(self.g, (self.y, -1), order='C'))
+        self.b = np.uint16(np.reshape(self.b, (self.y, -1), order='C'))
 
         return np.array([self.r, self.g, self.b])
 

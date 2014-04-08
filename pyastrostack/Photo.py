@@ -107,7 +107,6 @@ class Frame(object):
             hdu.append(fits.open(newpath[i]))
             data.append(hdu[i][0].data)
 
-        print(data)
         self.data = np.array(data) - 32768
         self.write(skimage=True)
         self._release_data()
@@ -195,7 +194,7 @@ class Frame(object):
         self.clip = clip
 
     def getpoints(self):
-        if (self._points is None) and self.frameinfo.hassection("Registering"):
+        if (self._points is None) and self.frameinfo.haskey("Registering", "Points"):
             self._points = self.frameinfo.get("Registering", "Points")
         return self._points
 
@@ -390,7 +389,7 @@ class Frame(object):
         if self._data is None:
             print("No data set! Exiting...")
             exit()
-        fits.writeto(self.path, np.int16(self._data), hdu.header, clobber=True)
+        fits.writeto(self.path, np.uint16(self._data), hdu.header, clobber=True)
 
     def _write_tiff(self, skimage=True):
         """
