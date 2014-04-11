@@ -456,7 +456,8 @@ class Batch:
     It also checks compatibility for each photo loaded
     """
 
-    extensions = (".CR2", ".cr2")   # TODO: Add here all supported extensions, and move this to a better place
+    extensions = (".CR2", ".cr2", ".NEF", ".nef")   # TODO: Add here all supported extensions,
+                                                    # and move this to a better place
 
     def __init__(self, project, genname):
         """

@@ -5,7 +5,7 @@ PyAstroStack is an open source registering and stacking software for
 astronomical images. Original (and current) design is made for photos taken
 with DSLR camera.
 
-With version 0.2 the program is still quite incomplete; only the core modules
+With version 0.3.0 the program is still quite incomplete; only the core modules
 regarding image registration and stacking are working. Full list of working
 features:
 

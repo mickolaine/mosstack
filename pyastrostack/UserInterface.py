@@ -25,7 +25,7 @@ class UserInterface:
     pyAstroStack is run with:
     AstroStack.py <operation> <arguments>
 
-    <operation>   - init, adddir, addfile, ... Try AstroStack help for full list
+    <operation>   - init, dir, file, ... Try AstroStack help for full list
     <arguments>   - Depends on <operation>
     """
     """
@@ -240,7 +240,7 @@ You can use either name or number as operation 'list' shows them.
     """
 
     """
-    String to print when program run with 'help' parameter. Includes short explanations on every
+    String to print when program is run with 'help' parameter. Includes short explanations on every
     command line argument available.
 
     """

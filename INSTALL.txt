@@ -20,14 +20,19 @@ this works on Python2 as well.
 Ubuntu
 -------------
 
-Most dependencies can be installed straight from package manager. Here's an Apt-get one-liner for that
+Starting from Ubuntu 14.04 all the dependencies can be installed straight from package-manager. This apt-get one-liner
+should install everything necessary
 
-    ``sudo apt-get install python-pip cython dcraw python-pyopencl imagemagick sextractor python-imaging python-astropy python-numpy python-configparser``
+    ``sudo apt-get install cython dcraw imagemagick sextractor python-imaging python-astropy python-skimage python-configparser``
+
+Or if you intend to use Python 3
+
+    ``sudo apt-get install cython3 dcraw imagemagick sextractor python3-imaging python3-astropy python3-skimage python-configparser``
 
 This assumes you have the newest full Ubuntu desktop installed. If you have customized your installation, other packages
 might be required as well.
 
-Newer versions of Python packages can be installed via pip. For example
+Newer versions of Python packages can be installed via pip (python-pip in package manager). For example
 
     ``pip install --upgrade --user numpy
 
@@ -36,7 +41,7 @@ of that command.
 
 
 
-Debian (Under construction. Instructions probably doesn't work)
+Debian (Under construction. Instructions probably doesn't work. Refer to Ubuntu instructions)
 -------------
 
 This oneliner ought install most of the required software

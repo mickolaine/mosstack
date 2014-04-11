@@ -34,6 +34,8 @@ a complete list:
 
 * NumPy - <http://www.numpy.org/>
 
+* Scikit-image - <http://scikit-image.org/>
+
 * Cython - <http://www.cython.org/>
 
 * PyOpenCL - <http://mathema.tician.de/software/pyopencl>
@@ -45,22 +47,23 @@ Features
 Ultimate plan is to have functionality similar to DeepSkyStacker or IRIS, but
 for now the program is limited to basic functionality.
 
-List of features
- - CFA to RGB conversion (see below for supported cameras)
-  - Bilinear (python, only for testing)
-  - Bilinear (OpenCL)
-  - LaRoche-Prescott (OpenCL)
-  - Variable Number of Gradients (OpenCL)
+- CFA to RGB conversion (see below for supported cameras)
+    - Bilinear (python, only for testing)
+    - Bilinear (OpenCL, Cython)
+    - LaRoche-Prescott (OpenCL) - This will probably be dropped out since
+      there's no use for it
+    - Variable Number of Gradients (OpenCL, Cython)
 
- - Registering
-  - SExtractor and http://adsabs.harvard.edu/abs/1986AJ.....91.1244G
+- Registering
+    - SExtractor and http://adsabs.harvard.edu/abs/1986AJ.....91.1244G
 
- - Aligning
-  - Affine transformations by ImageMagick
+- Aligning
+    - ImageMagick
+    - Scikit-image
 
- - Stacking
-  - Mean value
-  - Median value
+- Stacking
+    - Mean value
+    - Median value
 
 Supported cameras
 ------------
