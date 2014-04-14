@@ -27,6 +27,7 @@ RDEPEND=">=dev-python/pillow-2.3.0[${PYTHON_USEDEP}]
 	sci-astronomy/sextractor
 	media-gfx/dcraw
 	media-libs/exiftool
+	>=sci-libs/cfitsio-3.350
 	dev-python/astropy
 	opencl? ( >=dev-python/pyopencl-2013.1[${PYTHON_USEDEP}] )"
 
