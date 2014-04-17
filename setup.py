@@ -27,7 +27,7 @@ else:
 '''
 setup(
     name='pyAstroStack',
-    version='0.3.0',
+    version='0.4dev',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=['pyastrostack', 'pyastrostack.Demosaic', 'pyastrostack.Registering', 'pyastrostack.Stacker'],
