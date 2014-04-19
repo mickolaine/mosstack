@@ -109,7 +109,12 @@ class SigmaMedian(Stacking):
                 templist = []
                 for i in imagelist:
                     imagelist[i].setclip(clip)
-                    templist.append(imagelist[i].data)
+                    #templist.append(imagelist[i].data)
+                    if len(templist) == 0:
+                        templist = imagelist[i].data[np.newaxis, :, :]
+                    else:
+                        templist = np.vstack((templist, imagelist[i].data[np.newaxis, :, :]))
+
                 t.append(datetime.datetime.now())
                 templist = np.array(templist)
                 t.append(datetime.datetime.now())

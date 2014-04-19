@@ -109,15 +109,20 @@ class SigmaClip(Stacking):
                 templist = []
                 for i in imagelist:
                     imagelist[i].setclip(clip)
-                    templist.append(imagelist[i].data)
-                t.append(datetime.datetime.now())
-                templist = np.array(templist)
-                t.append(datetime.datetime.now())
+                    #templist.append(imagelist[i].data)
+                    if len(templist) == 0:
+                        templist = imagelist[i].data[np.newaxis, :, :]
+                    else:
+                        templist = np.vstack((templist, imagelist[i].data[np.newaxis, :, :]))
 
-                print(templist.shape)
+                t.append(datetime.datetime.now())
+                #templist = np.array(templist)
+                #t.append(datetime.datetime.now())
+
+                #print(templist.shape)
                 temp = _sigmaClip(templist, np.std(templist, axis=0), np.median(templist, axis=0), 3.0)
                 t.append(datetime.datetime.now())
-                print(temp.shape)
+                #print(temp.shape)
 
                 del templist
                 gc.collect()

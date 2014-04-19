@@ -27,9 +27,50 @@ class Ui(Ui_MainWindow):
         self.fileDialog = QFileDialog()
 
         self.framearray = []
-        tablemodel = FrameTableModel([["1","2","3"],["4","5","6"],["7","8","9"]])
 
-        self.tableView.setModel(tablemodel)
+    def setDefaultValues(self):
+
+        self.checkBoxDarkBias.setCheckState(Qt.Unchecked)
+        self.checkBoxFlatBias.setCheckState(Qt.Checked)
+        self.checkBoxFlatDark.setCheckState(Qt.Unchecked)
+        self.checkBoxLightBias.setCheckState(Qt.Checked)
+        self.checkBoxLightDark.setCheckState(Qt.Unchecked)
+        self.checkBoxLightFlat.setCheckState(Qt.Checked)
+
+        self.checkBoxCalib.setCheckState(Qt.Checked)
+        self.checkBoxDebayer.setCheckState(Qt.Checked)
+        self.checkBoxReg.setCheckState(Qt.Checked)
+        self.checkBoxStack.setCheckState(Qt.Checked)
+
+    def setValues(self, values):
+
+        if values["darkbias"]:
+            self.checkBoxDarkBias.setCheckState(Qt.Checked)
+        else:
+            self.checkBoxDarkBias.setCheckState(Qt.Unchecked)
+        if values["flatbias"]:
+            self.checkBoxFlatBias.setCheckState(Qt.Checked)
+        else:
+            self.checkBoxFlatBias.setCheckState(Qt.Unchecked)
+        if values["flatdark"]:
+            self.checkBoxFlatDark.setCheckState(Qt.Checked)
+        else:
+            self.checkBoxFlatDark.setCheckState(Qt.Unchecked)
+        if values["lightbias"]:
+            self.checkBoxLightBias.setCheckState(Qt.Checked)
+        else:
+            self.checkBoxLightBias.setCheckState(Qt.Unchecked)
+        if values["lightdark"]:
+            self.checkBoxLightDark.setCheckState(Qt.Checked)
+        else:
+            self.checkBoxLightDark.setCheckState(Qt.Unchecked)
+        if values["lightflat"]:
+            self.checkBoxLightFlat.setCheckState(Qt.Checked)
+        else:
+            self.checkBoxLightFlat.setCheckState(Qt.Unchecked)
+
+
+
 
     def addLight(self):
         files = QFileDialog.getOpenFileNames()
