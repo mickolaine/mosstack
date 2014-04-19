@@ -1,3 +1,8 @@
+v0.4.0
+- Added sigma clipping and sigma median stacking methods where values that
+  differ more than 3 times the standard deviation from the median are either
+  ignored (clipped) or replaced with the median value
+
 v0.3.0 2014-04-08 -- Some more fixes and a bigger bump
 - Fixed a lot of bugs caused by all the previous changes
 - Realized there are so many new features that a bigger version bump is
