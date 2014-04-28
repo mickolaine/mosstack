@@ -22,11 +22,9 @@ class ConfigAbstractor:
     calls from system and project configuration classes.
     """
 
-    def __init__(self, conftype="configparser"):
+    def __init__(self):
         """
         Argument type defines what kind of configuration system is used.
-
-        I'll try configparser first. If it suits me, no need to try other
         """
 
         self.conf = configparser.ConfigParser()
@@ -170,7 +168,7 @@ class Setup:
         self.conf.write(self.file)
 
 
-class Project:
+class Project_old:
     """
     Class to control project information
 
@@ -386,7 +384,7 @@ class Project:
         self.conf.save(key, value, section)
 
 
-class Frame:
+class Frame_old:
     """
     Class to save frame information.
 
@@ -502,3 +500,299 @@ class Frame:
             return True
         else:
             return False
+
+
+class Config:
+    """
+    Configuration keeper object.
+    """
+
+    def __init__(self, conffile):
+        """
+        Create a new configuration file or open an existing one.
+
+        Arguments
+        conffile - file to hold the configurations
+        """
+        self.conffile = conffile
+        self.conf = configparser.ConfigParser()
+
+        if os.path.exists(self.conffile):
+            return
+
+        self.write(self.conffile)
+
+    def get(self, section, key=None):
+        """
+        Return frame information under defined section
+
+        Arguments:
+        section = string to look for in configuration
+        key     = key to look for in section, not needed
+
+        Returns:
+        dict {key: value}
+        string value, if key defined
+
+        If key or section is not found, KeyError is raised
+        """
+
+        self.conf.read(self.conffile)
+
+        if section not in self.conf:
+            raise KeyError("Section not found!")
+        if key:
+            if key not in self.conf[section]:
+                raise KeyError("Key not found!")
+            return self.conf[section][key]
+        else:
+            return dict(self.conf._sections[section])
+
+    def set(self, section, key, value):
+        """
+        Set key: value under section in frame info
+
+        Arguments:
+        section
+        key
+        value
+
+        Returns:
+        Nothing
+        """
+
+        self.conf.read(self.conffile)
+
+        if section not in self.conf:
+            self.conf[section] = {}
+        self.conf[section][key] = value
+
+        self.write(self.conffile)
+
+    def write(self, file):
+        """
+        Write values in file
+        """
+        with open(file, 'w') as configfile:
+            self.conf.write(configfile)
+
+
+class Frame(Config):
+
+    pass
+
+
+class Project(Config):
+    """
+    A configurator object for project information. Inherits Config but adds some project specific stuff.
+    This is something I probably should get rid off and do all the specific stuff elsewhere. Now for legacy reasons.
+    """
+
+    def __init__(self, pfile):
+        """
+        Initialize project
+
+        Arguments:
+        pfile - frame info file to use
+        """
+
+        super().__init__(pfile)
+
+        self.projectfile = pfile
+        self.setup = Setup()
+        self.sex   = self.setup.get("Programs", "SExtractor")
+        self.path  = self.setup.get("Default", "path")
+
+    @staticmethod
+    def input(string):
+        """
+        Wrapper for input - raw_input differences between Python 2 and 3
+        """
+
+        version = version_info[0]
+
+        if version == 2:
+            return raw_input(string)
+        elif version == 3:
+            return input(string)
+        else:
+            print(version)
+            print("It appears there's a new version of Python...")
+
+    def readproject(self):
+        """
+        Read project settings from specified project file
+        """
+        if self.projectfile is None:
+            # TODO: Change this error to a better one
+            raise NameError("Project file not set, yet trying to access one. This shouldn't happen.")
+        if os.path.exists(self.projectfile):
+            self.conf.read(self.projectfile)
+
+    def initproject(self, pname):
+        """
+        Initialize a project and project file
+        """
+        if os.path.exists(self.projectfile):
+            print("Trying to initialize a new project, but the file already exists.")
+            if self.input("Type y to rewrite: ") != "y":
+                print("Try again using a file not already in use.")
+                exit()
+            else:
+                print("Using project file " + self.projectfile)
+                os.unlink(self.projectfile)
+        self.set("Default", "Project name", pname)
+        self.set("Setup", "Path", self.setup.conf.conf["Default"]["Path"])
+        self.set("Default", "demosaic", "VNGCython")
+        self.set("Default", "register", "Groth_Skimage")
+        self.set("Default", "stack", "Median")
+        self.write(self.projectfile)
+
+    '''
+    def adddir(self, directory, imagetype):
+        """
+        Adds all suitable files in requested directory to project
+
+        Arguments:
+        path = directory to add
+        imagetype is in (light, dark, bias, flat)
+        """
+        self.readproject()
+        print("Looking for RAW-files in specified directory...")
+
+        # Make sure path ends in /
+        if directory[-1] != "/":
+            directory += "/"
+
+        temp = os.listdir(directory)
+        filelist = []
+        string = ""
+        tempstr = ""
+        for i in temp:
+            tempstr += i + ", "
+            if os.path.splitext(i)[1] in self.extensions:
+                filelist.append(i)
+                string += i + ", "
+
+        if len(filelist) != 0:
+            print("Found files " + string)
+        else:
+            print("None found. All files found are listed here: " + tempstr)
+            ext = self.input("Please specify the extension for your files: ")
+            for i in temp:
+                if os.path.splitext(i)[1] == ext:
+                    filelist.append(i)
+                    string += i + ", "
+        if len(filelist) == 0:
+            print("No files found. Doing nothing.")
+
+        # Check how many images are already in the list.
+        if imagetype in self.conf.conf:
+            print(max(self.conf.conf[imagetype]))
+            n = int(max(self.conf.conf[imagetype])) + 1
+        else:
+            n = 1
+
+        for i in filelist:
+            print(directory + i)
+            self.conf.save(str(n), directory + i, imagetype)
+            n += 1
+
+        # Set reference only if not already set
+        if "Reference" not in self.conf.conf:
+            print("Setting first image in list as reference image.")
+            ref = "1"
+            if self.input("Type y to change the reference image (anything else to continue): ") == "y":
+                pass  # TODO: Implementation
+            self.conf.save(imagetype, ref, "Reference images")
+
+        self.conf.write(self.projectfile)
+
+    def hassection(self, section):
+        """
+        Check if project file has section
+
+        Arguments:
+        section - string to check
+
+        Returns:
+        Boolean
+        """
+
+        if section in self.conf.conf:
+            return True
+        else:
+            return False
+
+    def haskey(self, section, key):
+        """
+        Check if project file has key in section
+
+        Also check the section first and return False if not
+        """
+
+        if not self.hassection(section):
+            return False
+
+        if key in self.conf.conf[section]:
+            return True
+        else:
+            return False
+
+    def addfile(self, rawpath, imagetype):
+        """
+        Adds a single file to project
+
+        """
+        self.readproject()
+        print("Adding file " + rawpath)
+
+        # Check how many images are already in the list.
+        if imagetype in self.conf.conf:
+            n = int(max(self.conf.conf[imagetype])) + 1
+        else:
+            n = 1
+
+        self.conf.save(str(n), rawpath, imagetype)
+        self.conf.write(self.projectfile)
+
+    def write(self):
+        self.conf.write(self.projectfile)
+
+    def get(self, section, key=None):
+        """
+        Return project information under defined section
+
+        Arguments:
+        section = string to look for in configuration
+        key     = key to look for in section, not needed
+
+        Returns:
+        dict {key: value}
+        string value, if key defined
+        """
+
+        self.conf.read(self.projectfile)
+
+        if key:
+            return self.conf.conf[section][key]
+        else:
+            return dict(self.conf.conf._sections[section])
+
+    def set(self, section, key, value):
+        """
+        Set key: value under section in project settings
+
+        Arguments:
+        section
+        key
+        value
+
+        Returns:
+        Nothing
+        """
+
+        self.conf.read(self.projectfile)
+
+        self.conf.save(key, value, section)
+    '''

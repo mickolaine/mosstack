@@ -12,7 +12,7 @@ from astropy.io import fits
 from os.path import splitext, exists, split, basename
 from shutil import copyfile, move
 from subprocess import call, check_output
-from . import Conf
+from . import Config
 import numpy as np
 from PIL import Image as Im
 import gc
@@ -66,7 +66,7 @@ class Frame(object):
         self._data = None   # Image data as an numpy.array
 
         if infopath:
-            self.frameinfo = Conf.Frame(infopath, self.project)
+            self.frameinfo = Config.Frame(infopath)
             self.infopath = infopath
             self.readinfo()
         else:
@@ -131,9 +131,14 @@ class Frame(object):
         #self.frametype = self.frameinfo.get("Default", "Frametype")
         self.x = int(self.frameinfo.get("Properties", "X"))
         self.y = int(self.frameinfo.get("Properties", "Y"))
-        if self.frameinfo.hassection("Registering"):
-            if self.frameinfo.haskey("Registering", "pairs"):
-                self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+
+        try:
+            self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+        except KeyError:
+            pass
+        #if self.frameinfo.hassection("Registering"):
+        #    if self.frameinfo.haskey("Registering", "pairs"):
+        #        self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
 
     def extractinfo(self):
         """
@@ -162,7 +167,7 @@ class Frame(object):
         Write frame info to specified file
         """
 
-        self.frameinfo = Conf.Frame(self.infopath, self.project)
+        self.frameinfo = Config.Frame(self.infopath)
 
         self.frameinfo.set("Default", "Number", str(self.number))
         self.frameinfo.set("Paths", self.genname, self.path)
@@ -194,9 +199,13 @@ class Frame(object):
         self.clip = clip
 
     def getpoints(self):
-        if (self._points is None) and self.frameinfo.haskey("Registering", "Points"):
-            self._points = self.frameinfo.get("Registering", "Points")
-        return self._points
+        if (self._points is None):  # and self.frameinfo.haskey("Registering", "Points"):
+            try:
+                return self.frameinfo.get("Registering", "Points")
+            except KeyError:
+                return None
+            #self._points = self.frameinfo.get("Registering", "Points")
+        #return self._points
 
     def setpoints(self, points):
         self._points = points
@@ -276,9 +285,13 @@ class Frame(object):
 
     def getpairs(self):
         if self._pairs is None:
-            if self.frameinfo.hassection("Registering"):
-                if self.frameinfo.haskey("Registering", "pairs"):
-                    self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+            try:
+                self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+            except KeyError:
+                pass
+            #if self.frameinfo.hassection("Registering"):
+            #    if self.frameinfo.haskey("Registering", "pairs"):
+            #        self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
         return self._pairs
 
     def setpairs(self, pairs):
@@ -480,18 +493,28 @@ class Batch:
         else:
             self.category = "light"
 
-        if self.project.hassection("Reference images"):
-            if self.project.haskey("Reference images", self.genname):
-                self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
-            else:
-                self.refnum = 1
-        else:
+        try:
+            self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
+        except KeyError:
             self.refnum = 1
+        #if self.project.hassection("Reference images"):
+        #    if self.project.haskey("Reference images", self.genname):
+        #        self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
+        #    else:
+        #        self.refnum = 1
+        #else:
+        #    self.refnum = 1
 
-        if self.project.hassection(self.category):
+        try:
             files = self.project.get(self.category)                       # Paths for the frame info files
             for key in files:
                 self.list[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
+        except KeyError:
+            pass
+        #if self.project.hassection(self.category):
+        #    files = self.project.get(self.category)                       # Paths for the frame info files
+        #    for key in files:
+        #        self.list[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
 
     def demosaic(self, demosaic):
         """
@@ -605,4 +628,3 @@ class Batch:
             n += 1
 
         self.project.set("Reference images", itype, "1")
-        self.project.write()

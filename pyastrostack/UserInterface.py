@@ -3,7 +3,7 @@ Classes related to user interface. Main program "AstroStack.py" parses the input
 this file controls all the actions after that.
 """
 
-from . import Conf
+from . import Config
 from . Photo import Batch
 from . import Registering
 from . import Demosaic
@@ -15,15 +15,15 @@ __author__ = 'Mikko Laine'
 
 class UserInterface:
     """
-    Command line user interface for pyAstroStack. The script AstroStack.py parses the arguments
+    Command line user interface for pyAstroStack. The script AstroStack parses the arguments
     but this class holds all the functionality
     """
 
-    setup = Conf.Setup()
+    setup = Config.Setup()
 
     shorthelp = """
     pyAstroStack is run with:
-    AstroStack.py <operation> <arguments>
+    AstroStack <operation> <arguments>
 
     <operation>   - init, dir, file, ... Try AstroStack help for full list
     <arguments>   - Depends on <operation>
@@ -212,15 +212,15 @@ be manually edited in the project file.
 
 Usage
 
-    ``AstroStack.py list <setting>``
+    ``AstroStack list <setting>``
 
 Examples:
 
 List of settings to adjust
-    ``AstroStack.py list``
+    ``AstroStack list``
 
 List of options for setting
-    ``AstroStack.py list demosaic``
+    ``AstroStack list demosaic``
 
 set
 ------------
@@ -228,12 +228,12 @@ Set can also be used to adjust settings. See operation 'list' to see them
 
 Usage
 
-    ``AstroStack.py set <setting> <option>``
+    ``AstroStack set <setting> <option>``
 
 Examples:
 
-    ``AstroStack.py set demosaic Bilinear``
-    ``AstroStack.py set demosaic 2``
+    ``AstroStack set demosaic Bilinear``
+    ``AstroStack set demosaic 2``
 
 You can use either name or number as operation 'list' shows them.
 
@@ -340,7 +340,7 @@ You can use either name or number as operation 'list' shows them.
 
     def set(self, setting, options, value):
         """
-        Save settings with command line AstroStack.py set operation
+        Save settings with command line AstroStack set operation
 
         Arguments:
         setting - setting to alter
