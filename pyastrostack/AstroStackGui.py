@@ -1,6 +1,10 @@
+"""
+Graphical user interface for pyAstroStack. This file holds all the functionality for GUI drafted in Qt Designer.
+"""
+
 from PyQt4.QtCore import QAbstractTableModel, Qt
 from PyQt4.QtGui import QFileDialog, qApp, QInputDialog
-from UiDesign import Ui_MainWindow
+from . UiDesign import Ui_MainWindow
 try:
     from PyQt4.QtCore import Qstring
     _fromUtf8 = QString.fromUtf8
