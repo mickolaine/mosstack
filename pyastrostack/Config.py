@@ -588,7 +588,43 @@ class Project(Config):
     This is something I probably should get rid off and do all the specific stuff elsewhere. Now for legacy reasons.
     """
 
-    def __init__(self, pfile):
+    def __init__(self, pname):
+        """
+        Initialize project
+
+        Arguments:
+        pname - project name
+        """
+
+        self.setup = Setup()
+        self.path  = self.setup.get("Default", "path")
+        pfile = self.path + "/" + pname + ".project"
+
+        super().__init__(pfile)
+        self.projectfile = pfile
+
+        self.sex   = self.setup.get("Programs", "SExtractor")
+
+        try:
+            self.get("Default", "Initialized")
+            print("Trying to initialize a new project, but the file already exists.")
+            if self.input("Type y to rewrite: ") != "y":
+                print("Try again using a file not already in use.")
+                exit()
+            else:
+                print("Using project file " + self.projectfile)
+                os.unlink(self.projectfile)
+        except KeyError:
+            pass
+        self.set("Default", "Project name", pname)
+        self.set("Setup", "Path", self.path)
+        self.set("Default", "demosaic", "VNGCython")
+        self.set("Default", "register", "Groth_Skimage")
+        self.set("Default", "stack", "Median")
+        self.set("Default", "Initialized", "True")
+        self.write(self.projectfile)
+
+    def __init__old(self, pfile):
         """
         Initialize project
 
@@ -647,6 +683,7 @@ class Project(Config):
         self.set("Default", "register", "Groth_Skimage")
         self.set("Default", "stack", "Median")
         self.write(self.projectfile)
+
 
     '''
     def adddir(self, directory, imagetype):

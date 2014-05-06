@@ -628,3 +628,31 @@ class Batch:
             n += 1
 
         self.project.set("Reference images", itype, "1")
+
+    def addfiles(self, allfiles, itype):
+        """
+        Add list of files to Batch
+        """
+
+        rawfiles = []
+        for i in allfiles:
+            if splitext(i)[1] in self.extensions:
+                rawfiles.append(i)
+
+        if len(rawfiles) != 0:
+            print("Found files :")
+            for i in rawfiles:
+                print(i)
+        else:
+            print("No supported RAW files found. All files found are listed here: " + str(allfiles))
+            exit()
+
+        n = len(self.list)
+
+        for i in rawfiles:
+            frame = Frame(self.project, self.genname, number=n)
+            frame.fromraw(i)
+            self.project.set(itype, str(n), frame.infopath)
+            n += 1
+
+        self.project.set("Reference images", itype, "1")
