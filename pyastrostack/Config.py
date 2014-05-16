@@ -49,6 +49,7 @@ class ConfigAbstractor:
         Write values in file
         """
         with open(file, 'w') as configfile:
+            print("Config written to " + file)
             self.conf.write(configfile)
 
 
@@ -233,7 +234,7 @@ class Project_old:
         self.set("Setup", "Path", self.setup.conf.conf["Default"]["Path"])
         self.set("Default", "demosaic", "VNGCython")
         self.set("Default", "register", "Groth_Skimage")
-        self.set("Default", "stack", "Median")
+        self.set("Default", "stack", "SigmaMedian")
         self.conf.write(self.projectfile)
 
     def adddir(self, directory, imagetype):
@@ -566,7 +567,7 @@ class Config:
         if section not in self.conf:
             self.conf[section] = {}
         self.conf[section][key] = value
-
+        #print("Setting " + key + " in section " + section + " changed to " + value)
         self.write(self.conffile)
 
     def write(self, file):
@@ -574,6 +575,7 @@ class Config:
         Write values in file
         """
         with open(file, 'w') as configfile:
+            #print("Config written to " + file)
             self.conf.write(configfile)
 
 
@@ -588,7 +590,7 @@ class Project(Config):
     This is something I probably should get rid off and do all the specific stuff elsewhere. Now for legacy reasons.
     """
 
-    def __init__(self, pname):
+    def __init__(self, pname=None):
         """
         Initialize project
 
@@ -597,32 +599,59 @@ class Project(Config):
         """
 
         self.setup = Setup()
-        self.path  = self.setup.get("Default", "path")
-        pfile = self.path + "/" + pname + ".project"
-
-        super().__init__(pfile)
-        self.projectfile = pfile
-
         self.sex   = self.setup.get("Programs", "SExtractor")
+        self.path  = self.setup.get("Default", "path")
+
+        if pname is not None:
+
+            pfile = self.path + "/" + pname + ".project"
+
+            self.projectfile = pfile
+
+            super().__init__(pfile)
+
+            #try:
+            #    self.get("Default", "Initialized")
+            #    print("Trying to initialize a new project, but the file already exists.")
+            #    if self.input("Type y to rewrite: ") != "y":
+            #        print("Try again using a file not already in use.")
+            #        exit()
+            #    else:
+            #        print("Using project file " + self.projectfile)
+            #        os.unlink(self.projectfile)
+            #except KeyError:
+            #    pass
+
+            try:
+                self.get("Default", "Initialized")
+            except KeyError:
+                self.set("Default", "Project name", pname)
+                self.set("Setup", "Path", self.path)
+                self.set("Default", "demosaic", "VNGCython")
+                self.set("Default", "register", "Groth_Skimage")
+                self.set("Default", "stack", "Median")
+                self.set("Default", "Initialized", "True")
+            #self.conf.write(self.projectfile)
+
+    @staticmethod
+    def load(pfile):
+        """
+        Load project from disc
+        """
+        setup = Setup()
+        path  = setup.get("Default", "path")
+
+        project = Project()
+        project.conf = configparser.ConfigParser()
+        project.conffile = pfile
+        project.projectfile = project.conffile
 
         try:
-            self.get("Default", "Initialized")
-            print("Trying to initialize a new project, but the file already exists.")
-            if self.input("Type y to rewrite: ") != "y":
-                print("Try again using a file not already in use.")
-                exit()
-            else:
-                print("Using project file " + self.projectfile)
-                os.unlink(self.projectfile)
-        except KeyError:
-            pass
-        self.set("Default", "Project name", pname)
-        self.set("Setup", "Path", self.path)
-        self.set("Default", "demosaic", "VNGCython")
-        self.set("Default", "register", "Groth_Skimage")
-        self.set("Default", "stack", "Median")
-        self.set("Default", "Initialized", "True")
-        self.write(self.projectfile)
+            project.readproject()
+        except:
+            print("Project not found. This shouldn't happen.")
+
+        return project
 
     def __init__old(self, pfile):
         """
@@ -670,6 +699,7 @@ class Project(Config):
         Initialize a project and project file
         """
         if os.path.exists(self.projectfile):
+
             print("Trying to initialize a new project, but the file already exists.")
             if self.input("Type y to rewrite: ") != "y":
                 print("Try again using a file not already in use.")

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'AstroStack.ui'
 #
-# Created: Mon Apr 28 14:49:45 2014
+# Created: Thu May 15 14:35:16 2014
 #      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -72,7 +72,7 @@ class Ui_MainWindow(object):
         self.pushFlat.setObjectName(_fromUtf8("pushFlat"))
         self.toolBox.addItem(self.pageFrames, _fromUtf8(""))
         self.pageCalib = QtGui.QWidget()
-        self.pageCalib.setGeometry(QtCore.QRect(0, 0, 213, 545))
+        self.pageCalib.setGeometry(QtCore.QRect(0, 0, 174, 389))
         self.pageCalib.setObjectName(_fromUtf8("pageCalib"))
         self.layoutWidget = QtGui.QWidget(self.pageCalib)
         self.layoutWidget.setGeometry(QtCore.QRect(10, 0, 141, 241))
@@ -109,7 +109,7 @@ class Ui_MainWindow(object):
         self.verticalLayoutCalibrate.addWidget(self.checkBoxLightFlat)
         self.toolBox.addItem(self.pageCalib, _fromUtf8(""))
         self.pageDebayer = QtGui.QWidget()
-        self.pageDebayer.setGeometry(QtCore.QRect(0, 0, 213, 545))
+        self.pageDebayer.setGeometry(QtCore.QRect(0, 0, 174, 389))
         self.pageDebayer.setObjectName(_fromUtf8("pageDebayer"))
         self.layoutWidget1 = QtGui.QWidget(self.pageDebayer)
         self.layoutWidget1.setGeometry(QtCore.QRect(0, 0, 161, 111))
@@ -137,7 +137,7 @@ class Ui_MainWindow(object):
         self.verticalLayoutDebayer.addWidget(self.radioButtonVNGCL)
         self.toolBox.addItem(self.pageDebayer, _fromUtf8(""))
         self.pageReg = QtGui.QWidget()
-        self.pageReg.setGeometry(QtCore.QRect(0, 0, 213, 545))
+        self.pageReg.setGeometry(QtCore.QRect(0, 0, 174, 389))
         self.pageReg.setObjectName(_fromUtf8("pageReg"))
         self.layoutWidget2 = QtGui.QWidget(self.pageReg)
         self.layoutWidget2.setGeometry(QtCore.QRect(0, 10, 161, 73))
@@ -161,7 +161,7 @@ class Ui_MainWindow(object):
         self.verticalLayoutRegister.addWidget(self.radioButtonLegacy)
         self.toolBox.addItem(self.pageReg, _fromUtf8(""))
         self.pageStack = QtGui.QWidget()
-        self.pageStack.setGeometry(QtCore.QRect(0, 0, 213, 545))
+        self.pageStack.setGeometry(QtCore.QRect(0, 0, 174, 389))
         self.pageStack.setObjectName(_fromUtf8("pageStack"))
         self.layoutWidget3 = QtGui.QWidget(self.pageStack)
         self.layoutWidget3.setGeometry(QtCore.QRect(10, 10, 117, 111))
@@ -187,7 +187,7 @@ class Ui_MainWindow(object):
         self.verticalLayoutStack.addWidget(self.radioButtonSMedian)
         self.toolBox.addItem(self.pageStack, _fromUtf8(""))
         self.pageRun = QtGui.QWidget()
-        self.pageRun.setGeometry(QtCore.QRect(0, 0, 213, 545))
+        self.pageRun.setGeometry(QtCore.QRect(0, 0, 174, 389))
         self.pageRun.setObjectName(_fromUtf8("pageRun"))
         self.label_2 = QtGui.QLabel(self.pageRun)
         self.label_2.setGeometry(QtCore.QRect(0, 0, 91, 16))
@@ -275,7 +275,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow", None))
+        MainWindow.setWindowTitle(_translate("MainWindow", "PyAstroStack", None))
         self.label.setText(_translate("MainWindow", "Project settings", None))
         self.label_6.setText(_translate("MainWindow", "Add", None))
         self.pushLight.setText(_translate("MainWindow", "Light", None))
@@ -315,7 +315,7 @@ class Ui_MainWindow(object):
         self.checkBoxStack.setText(_translate("MainWindow", "Stack", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.pageRun), _translate("MainWindow", "Run", None))
         self.label_7.setText(_translate("MainWindow", "Project name:", None))
-        self.projectName.setText(_translate("MainWindow", "foo", None))
+        self.projectName.setText(_translate("MainWindow", "Not Set! Choose File -> New project", None))
         self.menuFile.setTitle(_translate("MainWindow", "File", None))
         self.actionOpen_project.setText(_translate("MainWindow", "Open project", None))
         self.actionSave_project.setText(_translate("MainWindow", "Save project", None))

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>PyAstroStack</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="sizePolicy">
@@ -139,8 +139,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>213</width>
-           <height>545</height>
+           <width>174</width>
+           <height>389</height>
           </rect>
          </property>
          <attribute name="label">
@@ -221,16 +221,14 @@
            </item>
           </layout>
          </widget>
-         <zorder>layoutWidget</zorder>
-         <zorder>tableView</zorder>
         </widget>
         <widget class="QWidget" name="pageDebayer">
          <property name="geometry">
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>213</width>
-           <height>545</height>
+           <width>174</width>
+           <height>389</height>
           </rect>
          </property>
          <attribute name="label">
@@ -294,8 +292,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>213</width>
-           <height>545</height>
+           <width>174</width>
+           <height>389</height>
           </rect>
          </property>
          <attribute name="label">
@@ -349,8 +347,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>213</width>
-           <height>545</height>
+           <width>174</width>
+           <height>389</height>
           </rect>
          </property>
          <attribute name="label">
@@ -408,8 +406,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>213</width>
-           <height>545</height>
+           <width>174</width>
+           <height>389</height>
           </rect>
          </property>
          <attribute name="label">
@@ -504,7 +502,7 @@
          <item row="0" column="1">
           <widget class="QLabel" name="projectName">
            <property name="text">
-            <string>foo</string>
+            <string>Not Set! Choose File -&gt; New project</string>
            </property>
           </widget>
          </item>
@@ -524,18 +522,10 @@
      </layout>
     </item>
     <item row="1" column="0">
-     <widget class="QWidget" name="widget_2" native="true">
-      <zorder></zorder>
-      <zorder></zorder>
-     </widget>
+     <widget class="QWidget" name="widget_2" native="true"/>
     </item>
    </layout>
-   <zorder>toolBox</zorder>
-   <zorder>label</zorder>
-   <zorder>tableView</zorder>
    <zorder></zorder>
-   <zorder>label</zorder>
-   <zorder>widget</zorder>
    <zorder></zorder>
    <zorder>widget_2</zorder>
   </widget>

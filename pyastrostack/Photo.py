@@ -169,6 +169,7 @@ class Frame(object):
 
         self.frameinfo = Config.Frame(self.infopath)
 
+        self.frameinfo.set("Paths", "Raw", self.rawpath)
         self.frameinfo.set("Default", "Number", str(self.number))
         self.frameinfo.set("Paths", self.genname, self.path)
         #self.frameinfo.set("Default", "Frametype", self.frametype)
@@ -189,6 +190,7 @@ class Frame(object):
 
         self._convert(path)
         self.extractinfo()
+        self.rawpath = path
         self.writeinfo()
 
     def setclip(self, clip):
@@ -497,13 +499,6 @@ class Batch:
             self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
         except KeyError:
             self.refnum = 1
-        #if self.project.hassection("Reference images"):
-        #    if self.project.haskey("Reference images", self.genname):
-        #        self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
-        #    else:
-        #        self.refnum = 1
-        #else:
-        #    self.refnum = 1
 
         try:
             files = self.project.get(self.category)                       # Paths for the frame info files
@@ -511,10 +506,6 @@ class Batch:
                 self.list[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
         except KeyError:
             pass
-        #if self.project.hassection(self.category):
-        #    files = self.project.get(self.category)                       # Paths for the frame info files
-        #    for key in files:
-        #        self.list[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
 
     def demosaic(self, demosaic):
         """
@@ -530,7 +521,7 @@ class Batch:
             self.list[i].data = demosaic.demosaic(self.list[i].data[0])
             t2 = datetime.datetime.now()
             print("...Done")
-            print("Debayering took " + str(t2-t1) + " seconds.")
+            print("Debayering took " + str(t2 - t1) + " seconds.")
             self.list[i].genname = "rgb"
             self.list[i].write()
         self.project.set("Reference images", self.genname, str(self.refnum))
@@ -574,7 +565,6 @@ class Batch:
             self.list[i].data = stacker.subtract(self.list[i], cframe)
             if self.list[i].genname not in ("bias", "dark", "flat"):
                 self.list[i].genname = "calib"
-            #print(self.list[i].infopath)
             self.list[i].write()
         self.project.set("Reference images", "calib", str(self.refnum))
         print("Calibrated images saved with generic name 'calib'.")
@@ -617,7 +607,7 @@ class Batch:
                 print(i)
         else:
             print("No supported RAW files found. All files found are listed here: " + str(allfiles))
-            exit()
+            return
 
         n = len(self.list)
 
@@ -645,7 +635,7 @@ class Batch:
                 print(i)
         else:
             print("No supported RAW files found. All files found are listed here: " + str(allfiles))
-            exit()
+            return
 
         n = len(self.list)
 
@@ -653,6 +643,28 @@ class Batch:
             frame = Frame(self.project, self.genname, number=n)
             frame.fromraw(i)
             self.project.set(itype, str(n), frame.infopath)
+            self.list[n] = Frame(self.project, itype, infopath=frame.infopath, number=n)
             n += 1
+
+        self.project.set("Reference images", itype, "1")
+
+    def addfile(self, file, itype):
+        """
+        Add a single file. Internal use only
+        """
+
+        if splitext(file)[1] not in self.extensions:
+            return
+
+        try:
+            n = len(self.project.get(itype).keys())
+        except KeyError:
+            n = 0
+
+        frame = Frame(self.project, self.genname, number=n)
+        frame.fromraw(file)
+        self.project.set(itype, str(n), frame.infopath)
+
+        self.list[n] = Frame(self.project, itype, infopath=frame.infopath, number=n)
 
         self.project.set("Reference images", itype, "1")

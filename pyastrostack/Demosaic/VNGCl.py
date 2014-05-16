@@ -4,7 +4,7 @@ import numpy as np
 import pyopencl as cl
 
 
-class VNG(Demosaic):
+class VNGCl(Demosaic):
     """
     Variable Number of Gradients algorithm for demosaicing
 

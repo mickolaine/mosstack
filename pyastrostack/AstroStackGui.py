@@ -3,7 +3,8 @@ Graphical user interface for pyAstroStack. This file holds all the functionality
 """
 
 from PyQt4.QtCore import QAbstractTableModel, Qt
-from PyQt4.QtGui import QFileDialog, qApp, QInputDialog
+from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QProgressDialog
+from ast import literal_eval
 from . UiDesign import Ui_MainWindow
 from . Config import Project, Setup
 from . Photo import Batch
@@ -51,6 +52,7 @@ class Ui(Ui_MainWindow):
         self.inputDialog = QInputDialog()
 
         self.framearray = []
+        self.batch = {}
 
     def setValues(self, values=None):
         """
@@ -62,51 +64,107 @@ class Ui(Ui_MainWindow):
         Note to self: 0 is unchecked, 2 is checked. 1 is partially checked which is not needed
         """
         if values is None:
-            values = {"DB": 0,
-                      "FB": 2,
-                      "FD": 0,
-                      "LB": 2,
-                      "LD": 0,
-                      "LF": 2,
-                      "calib": 2,
-                      "debayer": 2,
-                      "reg": 2,
-                      "stack": 2,
-                      "VC": 2,
-                      "GSK": 2,
-                      "SM": 2
+            values = {"CalibDarkBias": 0,
+                      "CalibFlatBias": 2,
+                      "CalibFlatDark": 0,
+                      "CalibLightBias": 2,
+                      "CalibLightDark": 0,
+                      "CalibLightFlat": 2,
+                      "Calibrate": 2,
+                      "Debayer": 2,
+                      "Register": 2,
+                      "Stack": 2,
+                      "BilinearCython": 0,
+                      "VNGCython": 2,
+                      "BilinearCL": 0,
+                      "VNGCL": 0,
+                      "GrothIM": 0,
+                      "GrothSK": 2,
+                      "Legacy": 0,
+                      "Mean": 0,
+                      "Median": 0,
+                      "SigmaMedian": 2,
+                      "SigmaClip": 0
             }
 
-        self.checkBoxDarkBias.setCheckState(values["DB"])
-        self.checkBoxFlatBias.setCheckState(values["FB"])
-        self.checkBoxFlatDark.setCheckState(values["FD"])
-        self.checkBoxLightBias.setCheckState(values["LB"])
-        self.checkBoxLightDark.setCheckState(values["LD"])
-        self.checkBoxLightFlat.setCheckState(values["LF"])
+        self.checkBoxDarkBias.setCheckState(values["CalibDarkBias"])
+        self.checkBoxFlatBias.setCheckState(values["CalibFlatBias"])
+        self.checkBoxFlatDark.setCheckState(values["CalibFlatDark"])
+        self.checkBoxLightBias.setCheckState(values["CalibLightBias"])
+        self.checkBoxLightDark.setCheckState(values["CalibLightDark"])
+        self.checkBoxLightFlat.setCheckState(values["CalibLightFlat"])
 
-        self.checkBoxCalib.setCheckState(values["calib"])
-        self.checkBoxDebayer.setCheckState(values["debayer"])
-        self.checkBoxReg.setCheckState(values["reg"])
-        self.checkBoxStack.setCheckState(values["stack"])
+        self.checkBoxCalib.setCheckState(values["Calibrate"])
+        self.checkBoxDebayer.setCheckState(values["Debayer"])
+        self.checkBoxReg.setCheckState(values["Register"])
+        self.checkBoxStack.setCheckState(values["Stack"])
 
-        self.radioButtonVNGCyt.setChecked(values["VC"])
-        self.radioButtonGrothSK.setChecked(values["GSK"])
-        self.radioButtonSMedian.setChecked(values["SM"])
+        self.radioButtonBilinearCyt.setChecked(values["BilinearCython"])
+        self.radioButtonVNGCyt.setChecked(values["VNGCython"])
+        self.radioButtonBilinearCL.setChecked(values["BilinearCL"])
+        self.radioButtonVNGCL.setChecked(values["VNGCL"])
+
+        self.radioButtonGrothIM.setChecked(values["GrothIM"])
+        self.radioButtonGrothSK.setChecked(values["GrothSK"])
+        self.radioButtonLegacy.setChecked(values["Legacy"])
+
+        self.radioButtonMean.setChecked(values["Mean"])
+        self.radioButtonMedian.setChecked(values["Median"])
+        self.radioButtonSMedian.setChecked(values["SigmaMedian"])
+        self.radioButtonSClip.setChecked(values["SigmaClip"])
+
+    def getValues(self):
+        """
+        Return dict of values according to checkboxes and radio buttons
+        """
+        values = {"CalibDarkBias": self.checkBoxDarkBias.checkState(),
+                  "CalibFlatBias": self.checkBoxFlatBias.checkState(),
+                  "CalibFlatDark": self.checkBoxFlatDark.checkState(),
+                  "CalibLightBias": self.checkBoxLightBias.checkState(),
+                  "CalibLightDark": self.checkBoxLightDark.checkState(),
+                  "CalibLightFlat": self.checkBoxLightFlat.checkState(),
+                  "Calibrate": self.checkBoxCalib.checkState(),
+                  "Debayer": self.checkBoxDebayer.checkState(),
+                  "Register": self.checkBoxReg.checkState(),
+                  "Stack": self.checkBoxStack.checkState(),
+                  "BilinearCython": self.radioButtonBilinearCyt.isChecked(),
+                  "VNGCython": self.radioButtonVNGCyt.isChecked(),
+                  "BilinearCL": self.radioButtonBilinearCL.isChecked(),
+                  "VNGCL": self.radioButtonVNGCL.isChecked(),
+                  "GrothIM": self.radioButtonGrothIM.isChecked(),
+                  "GrothSK": self.radioButtonGrothSK.isChecked(),
+                  "Legacy": self.radioButtonLegacy.isChecked(),
+                  "Mean": self.radioButtonMean.isChecked(),
+                  "Median": self.radioButtonMedian.isChecked(),
+                  "SigmaMedian": self.radioButtonSMedian.isChecked(),
+                  "SigmaClip": self.radioButtonSClip.isChecked()
+                  }
+        return values
 
     def loadProject(self):
         self.pfile = self.fileDialog.getOpenFileName(caption="Open project",
                                                      directory=self.setup.get("Default", "Path"),
                                                      filter="Project files (*.project)")
-        self.project = Project(self.pfile)
+        self.project = Project.load(self.pfile)
         self.setProjectName(self.project.get("Default", "Project name"))
 
         try:
-            self.setValues(self.project.get("GUI", "Values"))
+            self.setValues(literal_eval(self.project.get("GUI", "Values")))
         except KeyError:
             self.setValues()
 
+        for i in ("light", "dark", "bias", "flat"):
+            try:
+                files = self.project.get(i)
+                files = list(files.values())
+                self.batch[i] = Batch(self.project, i)
+                self.batch[i].addfiles(files, i)
+                self.addFrame(files, i)
+            except:
+                pass
+
     def saveProject(self):
-        pass
+        self.project.set("GUI", "Values", str(self.getValues()))
 
     def newProject(self):
         self.pname, ok = self.inputDialog.getText(self.inputDialog, "New project", "Type name for the new project:")
@@ -127,42 +185,77 @@ class Ui(Ui_MainWindow):
         self.projectName.setText(_fromUtf8(pname))
 
     def addLight(self):
+        """
+        Wrapper to add light files. TODO: better solution
+        """
         files = QFileDialog.getOpenFileNames(caption="Select files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.lightfiles = files
         self.addFrame(files, "light")
 
     def addDark(self):
+        """
+        Wrapper to add dark files. TODO: better solution
+        """
         files = QFileDialog.getOpenFileNames(caption="Select files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.darkfiles = files
         self.addFrame(files, "dark")
 
     def addFlat(self):
+        """
+        Wrapper to add flat files. TODO: better solution
+        """
         files = QFileDialog.getOpenFileNames(caption="Select files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.flatfiles = files
         self.addFrame(files, "flat")
 
     def addBias(self):
+        """
+        Wrapper to add bias files. TODO: better solution
+        """
         files = QFileDialog.getOpenFileNames(caption="Select files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.biasfiles = files
         self.addFrame(files, "bias")
 
     def addFrame(self, files, itype):
+        """
+        Add files to frame list and batches. Create batches if they don't already exist.
+        """
 
+        progress = QProgressDialog()
+        progress.show()
+        progress.setMinimum(0)
+        progress.setMaximum(len(files))
+        n = 0
         for i in files:
+            progress.setValue(n)
+            # If batch does not exist, create one
+            if itype not in self.batch:
+                self.batch[itype] = Batch(self.project, itype)
+
+            # Add files
+            self.batch[itype].addfile(i, itype)
+
+            # Add files to framearray
             self.framearray.append([i, itype])
+            n += 1
+            progress.update()
+
         tablemodel = FrameTableModel(self.framearray)
         self.tableView.setModel(tablemodel)
+        self.tableView.resizeColumnsToContents()
+        self.tableView.resizeRowsToContents()
+        #progress.hide()
 
     def runProgram(self):
         """
 
         """
-        self.light = Batch(self.project, "light")
-        self.light.addfiles(self.lightfiles, "light")
+        #self.light = Batch(self.project, "light")
+        #self.light.addfiles(self.lightfiles, "light")
 
         if self.checkBoxCalib.isChecked():
             self.runCalib()
@@ -176,68 +269,73 @@ class Ui(Ui_MainWindow):
     def runCalib(self):
 
         if self.checkBoxDarkBias.isChecked() or self.checkBoxFlatBias.isChecked():
-            self.bias = Batch(self.project, "bias")
-            self.bias.addfiles(self.biasfiles, "bias")
-            self.bias.stack(self.stackingwrap)
+            #self.bias = Batch(self.project, "bias")
+            #self.bias.addfiles(self.biasfiles, "bias")
+            self.batch["bias"].stack(Stacker.Mean())
 
         if self.checkBoxDarkBias.isChecked():
-            self.dark = Batch(self.project, "dark")
-            self.dark.addfiles(self.biasfiles, "dark")
-            self.dark.subtract("bias", self.stackingwrap)
-            self.dark.stack(self.stackingwrap)
+            #self.dark = Batch(self.project, "dark")
+            #self.batch["dark"].addfiles(self.darkfiles, "dark")
+            self.batch["dark"].subtract("bias", Stacker.Mean())
+            self.batch["dark"].stack(Stacker.Mean())
 
         if self.checkBoxFlatBias.isChecked() or self.checkBoxFlatDark.isChecked():
-            self.flat = Batch(self.project, "flat")
-            self.flat.addfiles(self.biasfiles, "flat")
+            #self.flat = Batch(self.project, "flat")
+            #self.flat.addfiles(self.flatfiles, "flat")
+            self.batch["flat"].stack(Stacker.Mean())
             if self.checkBoxFlatBias.isChecked():
-                self.flat.subtract("bias", self.stackingwrap)
+                self.batch["flat"].subtract("bias", Stacker.Mean())
             if self.checkBoxFlatDark.isChecked():
-                self.flat.subtract("dark", self.stackingwrap)
+                self.batch["flat"].subtract("dark", Stacker.Mean())
 
         if self.checkBoxLightBias.isChecked():
-            self.light.subtract("bias", self.stackingwrap)
+            self.batch["light"].subtract("bias", Stacker.Mean())
         if self.checkBoxLightDark.isChecked():
-            self.light.subtract("dark", self.stackingwrap)
+            self.batch["light"].subtract("dark", Stacker.Mean())
         if self.checkBoxLightFlat.isChecked():
-            self.light.divide("flat", self.stackingwrap)
+            self.batch["light"].divide("flat", Stacker.Mean())
 
     def runDebayer(self):
 
         if self.buttonDebayer.checkedButton().text() == "VNG Cython":
-            self.demosaicwrap = Demosaic.VNGCython
+            self.demosaicwrap = Demosaic.VNGCython()
         elif self.buttonDebayer.checkedButton().text() == "Bilinear Cython":
-            self.demosaicwrap = Demosaic.BilinearCython
+            self.demosaicwrap = Demosaic.BilinearCython()
         elif self.buttonDebayer.checkedButton().text() == "VNG OpenCL":
-            self.demosaicwrap = Demosaic.VNG
+            self.demosaicwrap = Demosaic.VNG()
         elif self.buttonDebayer.checkedButton().text() == "Bilinear OpenCL":
-            self.demosaicwrap = Demosaic.BilinearCl
+            self.demosaicwrap = Demosaic.BilinearCl()
 
-        self.light.demosaic(self.demosaicwrap)
+        self.batch["light"].demosaic(self.demosaicwrap)
 
     def runRegister(self):
         if self.buttonRegister.checkedButton().text() == self.radioButtonGrothIM.text():
-            self.registerwrap = Registering.Groth_ImageMagick
+            self.registerwrap = Registering.Groth_ImageMagick()
         elif self.buttonRegister.checkedButton().text() == self.radioButtonGrothSK.text():
-            self.registerwrap = Registering.Groth_Skimage
+            self.registerwrap = Registering.Groth_Skimage()
         elif self.buttonRegister.checkedButton().text() == self.radioButtonLegacy.text():
-            self.registerwrap = Registering.Sextractor2
+            self.registerwrap = Registering.Sextractor2()
 
-        self.light.register(self.registerwrap)
+        self.batch["light"].register(self.registerwrap)
 
     def runStack(self):
-        if self.buttonStack.checkedButton().text() == self.radioButtonMean.text():
-            self.stackingwrap = Stacker.Mean
-        elif self.buttonStack.checkedButton().text() == self.radioButtonMedian.text():
-            self.stackingwrap = Stacker.Median
-        elif self.buttonStack.checkedButton().text() == self.radioButtonSMedian.text():
-            self.stackingwrap = Stacker.SigmaMedian
-        elif self.buttonStack.checkedButton().text() == self.radioButtonSClip.text():
-            self.stackingwrap = Stacker.SigmaClip
+        print(self.buttonStack.checkedButton())
+        if self.radioButtonMean.isChecked():
+            self.stackingwrap = Stacker.Mean()
+        elif self.radioButtonMedian.isChecked():
+            self.stackingwrap = Stacker.Median()
+        elif self.radioButtonSMedian.isChecked():
+            self.stackingwrap = Stacker.SigmaMedian()
+        elif self.radioButtonSClip.isChecked():
+            self.stackingwrap = Stacker.SigmaClip()
 
-        self.light.stack(self.stackingwrap)
+        self.batch["light"].stack(self.stackingwrap)
 
 
 class FrameTableModel(QAbstractTableModel):
+
+    header_labels = ['File path', 'Type', 'Column 3', 'Column 4']
+
     def __init__(self, datain, parent=None, *args):
         QAbstractTableModel.__init__(self, parent, *args)
         self.arraydata = datain
@@ -256,6 +354,11 @@ class FrameTableModel(QAbstractTableModel):
         elif role != Qt.DisplayRole:
             return None
         return self.arraydata[index.row()][index.column()]
+
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role == Qt.DisplayRole and orientation == Qt.Horizontal:
+            return self.header_labels[section]
+        return QAbstractTableModel.headerData(self, section, orientation, role)
 
 
 class Configurator():

@@ -50,7 +50,7 @@ def main(argv):
         pname = setup.get("Default", "Project")
         ppath = setup.get("Default", "Path") + pname + ".project"
         print("Current project is " + ppath + "\n")
-        project = Config.Project(ppath)
+        project = Config.Project(pname)
         project.readproject()
         ui.setproject(project)
 
@@ -71,7 +71,7 @@ def main(argv):
                 pname = argv[2]
                 setup.set("Default", "Project", pname)
                 ppath = setup.get("Default", "Path") + pname + ".project"
-                project = Config.Project(ppath)
+                project = Config.Project(pname)
             else:
                 print("No project name specified. Available projects are: Implement this")
                 print("Try AstroStack set project <project name>, without extension.")

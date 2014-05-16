@@ -361,7 +361,8 @@ You can use either name or number as operation 'list' shows them.
         if number <= len(options):
             print("Setting \"" + setting + "\" changed to value \"" + value + "\"")
             self.project.set("Default", setting, value)
-            self.project.write()
+            print("Setting " + setting + " set to " + value)
+            #self.project.write()
         else:
             print("Invalid value")
 

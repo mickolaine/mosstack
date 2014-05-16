@@ -28,6 +28,7 @@
       <w>createconf</w>
       <w>cython</w>
       <w>dcraw</w>
+      <w>debayer</w>
       <w>deldata</w>
       <w>demosaic</w>
       <w>demosaiced</w>
