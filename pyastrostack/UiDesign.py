@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'AstroStack.ui'
 #
-# Created: Thu May 15 14:35:16 2014
+# Created: Fri May 16 14:54:00 2014
 #      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -155,10 +155,6 @@ class Ui_MainWindow(object):
         self.radioButtonGrothSK.setObjectName(_fromUtf8("radioButtonGrothSK"))
         self.buttonRegister.addButton(self.radioButtonGrothSK)
         self.verticalLayoutRegister.addWidget(self.radioButtonGrothSK)
-        self.radioButtonLegacy = QtGui.QRadioButton(self.layoutWidget2)
-        self.radioButtonLegacy.setObjectName(_fromUtf8("radioButtonLegacy"))
-        self.buttonRegister.addButton(self.radioButtonLegacy)
-        self.verticalLayoutRegister.addWidget(self.radioButtonLegacy)
         self.toolBox.addItem(self.pageReg, _fromUtf8(""))
         self.pageStack = QtGui.QWidget()
         self.pageStack.setGeometry(QtCore.QRect(0, 0, 174, 389))
@@ -271,7 +267,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuFile.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.toolBox.setCurrentIndex(0)
+        self.toolBox.setCurrentIndex(3)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -300,7 +296,6 @@ class Ui_MainWindow(object):
         self.toolBox.setItemText(self.toolBox.indexOf(self.pageDebayer), _translate("MainWindow", "Debayering", None))
         self.radioButtonGrothIM.setText(_translate("MainWindow", "Groth + ImageMagick", None))
         self.radioButtonGrothSK.setText(_translate("MainWindow", "Groth + Scikit", None))
-        self.radioButtonLegacy.setText(_translate("MainWindow", "Legacy", None))
         self.toolBox.setItemText(self.toolBox.indexOf(self.pageReg), _translate("MainWindow", "Registering", None))
         self.radioButtonMean.setText(_translate("MainWindow", "Mean", None))
         self.radioButtonMedian.setText(_translate("MainWindow", "Median", None))

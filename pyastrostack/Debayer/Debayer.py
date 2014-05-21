@@ -8,19 +8,19 @@ Created on 23.10.2013
 """
 
 
-class Demosaic:
+class Debayer:
     """
-    Interface for Demosaicing classes. They must inherit this class
+    Interface for debayering classes. They must inherit this class
 
     """
     
     def __init__(self):
-        """Prepare everything for running the demosaic-algorithms."""
+        """Prepare everything for running the debayer-algorithms."""
         pass
 
-    def demosaic(self, image):
+    def debayer(self, image):
         """
-        Demosaic CFA data and return RGB data
+        Debayer CFA data and return RGB data
 
         Arguments:
         image - 2D numpy.array holding the data

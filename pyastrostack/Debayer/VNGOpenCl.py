@@ -1,17 +1,17 @@
 from __future__ import division
-from .. Demosaic.Demosaic import Demosaic
+from .. Debayer.Debayer import Debayer
 import numpy as np
 import pyopencl as cl
 
 
-class VNGCl(Demosaic):
+class VNGOpenCl(Debayer):
     """
-    Variable Number of Gradients algorithm for demosaicing
+    Variable Number of Gradients algorithm for debayering
 
     """
 
     def __init__(self):
-        """Prepare everything for running the demosaic-algorithms."""
+        """Prepare everything for running the debayer-algorithms."""
 
         self.ctx = cl.create_some_context()
         self.queue = cl.CommandQueue(self.ctx)
@@ -35,17 +35,17 @@ class VNGCl(Demosaic):
     def real_init(self):
         """
         Do the real initialization. This requires information about the frames, so it has to be called
-        the first time self.demosaic is called
+        the first time self.debayer is called
         """
 
         self.init = True
         self.build()
 
-    def demosaic(self, image):
+    def debayer(self, image):
         """ VNG interpolation using pyOpenCL.
 
         Arguments:
-        image = numpy.array to demosaic
+        image = numpy.array to debayer
 
         Returns:
         [red, green, blue] as numpy.array

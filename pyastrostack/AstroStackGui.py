@@ -3,13 +3,13 @@ Graphical user interface for pyAstroStack. This file holds all the functionality
 """
 
 from PyQt4.QtCore import QAbstractTableModel, Qt
-from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QProgressDialog
+from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QProgressDialog, QMessageBox
 from ast import literal_eval
 from . UiDesign import Ui_MainWindow
 from . Config import Project, Setup
 from . Photo import Batch
 from . import Registering
-from . import Demosaic
+from . import Debayer
 from . import Stacker
 try:
     from PyQt4.QtCore import Qstring
@@ -50,9 +50,11 @@ class Ui(Ui_MainWindow):
         self.setValues()
         self.fileDialog = QFileDialog()
         self.inputDialog = QInputDialog()
+        self.messageBox = QMessageBox()
 
         self.framearray = []
         self.batch = {}
+        self.pname = None
 
     def setValues(self, values=None):
         """
@@ -76,11 +78,11 @@ class Ui(Ui_MainWindow):
                       "Stack": 2,
                       "BilinearCython": 0,
                       "VNGCython": 2,
-                      "BilinearCL": 0,
-                      "VNGCL": 0,
+                      "BilinearOpenCl": 0,
+                      "VNGOPENCL": 0,
                       "GrothIM": 0,
                       "GrothSK": 2,
-                      "Legacy": 0,
+                      #"Legacy": 0,
                       "Mean": 0,
                       "Median": 0,
                       "SigmaMedian": 2,
@@ -101,12 +103,12 @@ class Ui(Ui_MainWindow):
 
         self.radioButtonBilinearCyt.setChecked(values["BilinearCython"])
         self.radioButtonVNGCyt.setChecked(values["VNGCython"])
-        self.radioButtonBilinearCL.setChecked(values["BilinearCL"])
-        self.radioButtonVNGCL.setChecked(values["VNGCL"])
+        self.radioButtonBilinearCL.setChecked(values["BilinearOpenCl"])
+        self.radioButtonVNGCL.setChecked(values["VNGOPENCL"])
 
         self.radioButtonGrothIM.setChecked(values["GrothIM"])
         self.radioButtonGrothSK.setChecked(values["GrothSK"])
-        self.radioButtonLegacy.setChecked(values["Legacy"])
+        #self.radioButtonLegacy.setChecked(values["Legacy"])
 
         self.radioButtonMean.setChecked(values["Mean"])
         self.radioButtonMedian.setChecked(values["Median"])
@@ -129,11 +131,11 @@ class Ui(Ui_MainWindow):
                   "Stack": self.checkBoxStack.checkState(),
                   "BilinearCython": self.radioButtonBilinearCyt.isChecked(),
                   "VNGCython": self.radioButtonVNGCyt.isChecked(),
-                  "BilinearCL": self.radioButtonBilinearCL.isChecked(),
-                  "VNGCL": self.radioButtonVNGCL.isChecked(),
+                  "BilinearOpenCl": self.radioButtonBilinearCL.isChecked(),
+                  "VNGOPENCL": self.radioButtonVNGCL.isChecked(),
                   "GrothIM": self.radioButtonGrothIM.isChecked(),
                   "GrothSK": self.radioButtonGrothSK.isChecked(),
-                  "Legacy": self.radioButtonLegacy.isChecked(),
+                  #"Legacy": self.radioButtonLegacy.isChecked(),
                   "Mean": self.radioButtonMean.isChecked(),
                   "Median": self.radioButtonMedian.isChecked(),
                   "SigmaMedian": self.radioButtonSMedian.isChecked(),
@@ -142,6 +144,9 @@ class Ui(Ui_MainWindow):
         return values
 
     def loadProject(self):
+        """
+        Load a project. Settings and filelists
+        """
         self.pfile = self.fileDialog.getOpenFileName(caption="Open project",
                                                      directory=self.setup.get("Default", "Path"),
                                                      filter="Project files (*.project)")
@@ -164,9 +169,17 @@ class Ui(Ui_MainWindow):
                 pass
 
     def saveProject(self):
+        """
+        Save project settings. All the files are automatically written in project file, but this writes the settings
+        as well.
+        """
         self.project.set("GUI", "Values", str(self.getValues()))
 
     def newProject(self):
+        """
+        Initiate a new project. Project name is required for almost everything so this needs to be done first.
+        """
+
         self.pname, ok = self.inputDialog.getText(self.inputDialog, "New project", "Type name for the new project:")
 
         if not ok:
@@ -188,7 +201,10 @@ class Ui(Ui_MainWindow):
         """
         Wrapper to add light files. TODO: better solution
         """
-        files = QFileDialog.getOpenFileNames(caption="Select files",
+        if self.pname is None:
+            self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
+            return
+        files = QFileDialog.getOpenFileNames(caption="Select light files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.lightfiles = files
         self.addFrame(files, "light")
@@ -197,7 +213,10 @@ class Ui(Ui_MainWindow):
         """
         Wrapper to add dark files. TODO: better solution
         """
-        files = QFileDialog.getOpenFileNames(caption="Select files",
+        if self.pname is None:
+            self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
+            return
+        files = QFileDialog.getOpenFileNames(caption="Select dark files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.darkfiles = files
         self.addFrame(files, "dark")
@@ -206,7 +225,10 @@ class Ui(Ui_MainWindow):
         """
         Wrapper to add flat files. TODO: better solution
         """
-        files = QFileDialog.getOpenFileNames(caption="Select files",
+        if self.pname is None:
+            self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
+            return
+        files = QFileDialog.getOpenFileNames(caption="Select flat files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.flatfiles = files
         self.addFrame(files, "flat")
@@ -215,7 +237,10 @@ class Ui(Ui_MainWindow):
         """
         Wrapper to add bias files. TODO: better solution
         """
-        files = QFileDialog.getOpenFileNames(caption="Select files",
+        if self.pname is None:
+            self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
+            return
+        files = QFileDialog.getOpenFileNames(caption="Select bias files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.biasfiles = files
         self.addFrame(files, "bias")
@@ -227,7 +252,7 @@ class Ui(Ui_MainWindow):
 
         progress = QProgressDialog()
         progress.show()
-        progress.setMinimum(0)
+        progress.setMinimum(1)
         progress.setMaximum(len(files))
         n = 0
         for i in files:
@@ -252,10 +277,14 @@ class Ui(Ui_MainWindow):
 
     def runProgram(self):
         """
-
+        Check what needs to be done and call everything necessary
         """
         #self.light = Batch(self.project, "light")
         #self.light.addfiles(self.lightfiles, "light")
+
+        self.messageBox.information(self.messageBox, 'Starting the process...',
+                                    'Press Ok and the process will start. Program will be unresponsive and all the ' +
+                                    'output goes to terminal.')
 
         if self.checkBoxCalib.isChecked():
             self.runCalib()
@@ -267,6 +296,9 @@ class Ui(Ui_MainWindow):
             self.runStack()
 
     def runCalib(self):
+        """
+        Run everything related to calibrating
+        """
 
         if self.checkBoxDarkBias.isChecked() or self.checkBoxFlatBias.isChecked():
             #self.bias = Batch(self.project, "bias")
@@ -296,30 +328,39 @@ class Ui(Ui_MainWindow):
             self.batch["light"].divide("flat", Stacker.Mean())
 
     def runDebayer(self):
+        """
+        Run everything related to debayering
+        """
 
         if self.buttonDebayer.checkedButton().text() == "VNG Cython":
-            self.demosaicwrap = Demosaic.VNGCython()
+            self.debayerwrap = Debayer.VNGCython()
         elif self.buttonDebayer.checkedButton().text() == "Bilinear Cython":
-            self.demosaicwrap = Demosaic.BilinearCython()
+            self.debayerwrap = Debayer.BilinearCython()
         elif self.buttonDebayer.checkedButton().text() == "VNG OpenCL":
-            self.demosaicwrap = Demosaic.VNG()
+            self.debayerwrap = Debayer.VNG()
         elif self.buttonDebayer.checkedButton().text() == "Bilinear OpenCL":
-            self.demosaicwrap = Demosaic.BilinearCl()
+            self.debayerwrap = Debayer.BilinearOpenCl()
 
-        self.batch["light"].demosaic(self.demosaicwrap)
+        self.batch["light"].debayer(self.debayerwrap)
 
     def runRegister(self):
+        """
+        Run everything related to registering
+        """
         if self.buttonRegister.checkedButton().text() == self.radioButtonGrothIM.text():
             self.registerwrap = Registering.Groth_ImageMagick()
         elif self.buttonRegister.checkedButton().text() == self.radioButtonGrothSK.text():
             self.registerwrap = Registering.Groth_Skimage()
-        elif self.buttonRegister.checkedButton().text() == self.radioButtonLegacy.text():
-            self.registerwrap = Registering.Sextractor2()
+        #elif self.buttonRegister.checkedButton().text() == self.radioButtonLegacy.text():
+        #    self.registerwrap = Registering.Sextractor2()
 
         self.batch["light"].register(self.registerwrap)
 
     def runStack(self):
-        print(self.buttonStack.checkedButton())
+        """
+        Run everything related to stacking
+        """
+
         if self.radioButtonMean.isChecked():
             self.stackingwrap = Stacker.Mean()
         elif self.radioButtonMedian.isChecked():
@@ -333,6 +374,9 @@ class Ui(Ui_MainWindow):
 
 
 class FrameTableModel(QAbstractTableModel):
+    """
+    Model for file list table.
+    """
 
     header_labels = ['File path', 'Type', 'Column 3', 'Column 4']
 
@@ -359,25 +403,3 @@ class FrameTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self.header_labels[section]
         return QAbstractTableModel.headerData(self, section, orientation, role)
-
-
-class Configurator():
-    """
-    This class handles saved projects and relaying configurations and parameters from Gui to core.
-    """
-
-    def __init__(self, pfile=None):
-        self.project = Project(pfile)
-        pass
-
-    @staticmethod
-    def loadConfig(pfile):
-        return Configurator(pfile=pfile)
-
-    def get(self, section, key):
-        return self.project.get(section, key)
-
-    def runProgram(self):
-        """
-        Parse settings and run the program
-        """

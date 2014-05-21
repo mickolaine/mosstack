@@ -9,7 +9,7 @@ cimport numpy as np
 DTYPE = np.float32
 ctypedef np.float32_t DTYPE_t
 
-def _demosaic(np.ndarray[DTYPE_t, ndim=2] cfa, np.ndarray[DTYPE_t, ndim=2] r,
+def _debayer(np.ndarray[DTYPE_t, ndim=2] cfa, np.ndarray[DTYPE_t, ndim=2] r,
               np.ndarray[DTYPE_t, ndim=2] g, np.ndarray[DTYPE_t, ndim=2] b):
 
     maxi = len(cfa)

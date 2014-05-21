@@ -6,7 +6,7 @@ this file controls all the actions after that.
 from . import Config
 from . Photo import Batch
 from . import Registering
-from . import Demosaic
+from . import Debayer
 from . import Stacker
 from sys import version_info
 
@@ -37,9 +37,9 @@ Using pyAstroStack
 =========
 
 The program does nothing automatically. It's designed by the process
-calibrate -> demosaic -> align -> stack and user has to call each of these
+calibrate -> debayer -> align -> stack and user has to call each of these
 individually. User can also skip any of these steps, if for example no
-demosaicing is required or images are already aligned.
+debayering is required or images are already aligned.
 
 UI is a command line one. User calls AstroStack with proper arguments and the
 program does that step. Most commands work with pattern
@@ -55,7 +55,7 @@ init        | <project name>
 set         | <project name>
 adddir      | <path to dir> <image type>
 addfile     | <path to file> <image type>
-demosaic    | <generic name>
+debayer    | <generic name>
 register    | <generic name>
 stack       | <generic name>
 subtract    | <generic name> <master>
@@ -160,20 +160,20 @@ dark from them one by one. After operation there are images identified by name
 "calib" in the work directory. Note that if you subtract or divide batch named
 calib, the images will be overwritten.
 
-demosaic
+Debayer
 ------------
-Demosaic CFA-images into RGB. At this moment program supports only images taken
+Debayer CFA-images into RGB. At this moment program supports only images taken
 with Canon 1100D or a camera with similar Bayer matrix. Output files will be
 separate files and identified by "rgb" followed by one letter to tell the
 channel.
 
 Usage:
 
-    ``AstroStack demosaic <batch>``
+    ``AstroStack debayer <batch>``
 
 Example:
 
-    ``AstroStack demosaic calib``
+    ``AstroStack debayer calib``
 
 register
 ------------
@@ -220,7 +220,7 @@ List of settings to adjust
     ``AstroStack list``
 
 List of options for setting
-    ``AstroStack list demosaic``
+    ``AstroStack list debayer``
 
 set
 ------------
@@ -232,8 +232,8 @@ Usage
 
 Examples:
 
-    ``AstroStack set demosaic Bilinear``
-    ``AstroStack set demosaic 2``
+    ``AstroStack set debayer Bilinear``
+    ``AstroStack set debayer 2``
 
 You can use either name or number as operation 'list' shows them.
 
@@ -252,7 +252,7 @@ You can use either name or number as operation 'list' shows them.
         self.project = project
 
         # Set default values.
-        self.demosaicwrap = Demosaic.BilinearCython
+        self.debayerwrap = Debayer.BilinearCython
         self.registerwrap = Registering.Groth_Skimage
         self.stackerwrap = Stacker.Median
 
@@ -261,18 +261,18 @@ You can use either name or number as operation 'list' shows them.
         Set project name
         """
         self.project = project
-        if project.get("Default", "demosaic") not in Demosaic.__all__ or \
+        if project.get("Default", "debayer") not in Debayer.__all__ or \
            project.get("Default", "register") not in Registering.__all__ or \
            project.get("Default", "stack") not in Stacker.__all__:
             print("Invalid entries in project file. Using default")
             return
 
         try:
-            self.demosaicwrap = eval("Demosaic." + project.get("Default", "demosaic"))
+            self.debayerwrap = eval("Debayer." + project.get("Default", "Debayer"))
         except ImportError:
             print("Looks like OpenCL isn't working. Refer to manual.")
-            print("Setting demosaic algorithm to pure Python module (slow but working).")
-            self.demosaicwrap = Demosaic.BilinearCython
+            print("Setting debayer algorithm to pure Python module (slow but working).")
+            self.debayerwrap = Debayer.BilinearCython
         self.registerwrap = eval("Registering." + project.get("Default", "register"))
         self.stackerwrap = eval("Stacker." + project.get("Default", "stack"))
 
@@ -284,13 +284,13 @@ You can use either name or number as operation 'list' shows them.
         batch = Batch(self.project, genname)
         batch.register(self.registerwrap())
 
-    def demosaic(self, genname):
+    def debayer(self, genname):
         """
-        Demosaic project files under specified section. Use demosaicing algorithm TODO:
+        Debayer project files under specified section. Use debayering algorithm TODO:
         """
 
         batch = Batch(self.project, genname)
-        batch.demosaic(self.demosaicwrap())
+        batch.debayer(self.debayerwrap())
 
     def stack(self, genname):
         """

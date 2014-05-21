@@ -1,11 +1,11 @@
 __author__ = 'Mikko Laine'
-__all__ = ["BilinearCl", "LRPCl", "Bilinear", "VNGCl", "BilinearCython", "VNGCython"]
+__all__ = ["BilinearOpenCl", "LRPCl", "Bilinear", "VNGOpenCl", "BilinearCython", "VNGCython"]
 
 try:
     from . import *
-    BilinearCl = BilinearCl.BilinearCl
+    BilinearOpenCl = BilinearOpenCl.BilinearOpenCl
 #    LRPCl = LRPCl.LRPCl
-    VNGCl = VNGCl.VNGCl
+    VNGOpenCl = VNGOpenCl.VNGOpenCl
 except ImportError:
 #    from . import Bilinear
     from . import BilinearCython

@@ -1,23 +1,22 @@
 from __future__ import division
-from .. Demosaic.Demosaic import Demosaic
+from .. Debayer.Debayer import Debayer
 import numpy as np
 import pyximport
 pyximport.install(setup_args={'include_dirs': [np.get_include()]})
-from . _VNGCython import _demosaic
+from . _BilinearCython import _debayer
 
-
-class VNGCython(Demosaic):
+class BilinearCython(Debayer):
     """
-    Demosaicing class. I'll start with regular bilinear interpolation but more will come if necessary
+    Debayering class. I'll start with regular bilinear interpolation but more will come if necessary
 
     """
 
     def __init__(self):
-        """Prepare everything for running the demosaic-algorithms."""
+        """Prepare everything for running the debayer-algorithms."""
 
-    def demosaic(self, image):
+    def debayer(self, image):
         """
-        Bilinear interpolation for demosaicing CFA
+        Bilinear interpolation for debayering CFA
         Now assumes order of GR
                              BG
 
@@ -30,6 +29,6 @@ class VNGCython(Demosaic):
         g = np.zeros_like(cfa)
         b = np.zeros_like(cfa)
 
-        result = np.array(_demosaic(cfa, r, g, b))
+        result = np.array(_debayer(cfa, r, g, b))
         #print(result)
         return result

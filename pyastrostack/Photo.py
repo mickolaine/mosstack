@@ -498,7 +498,7 @@ class Batch:
         try:
             self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
         except KeyError:
-            self.refnum = 1
+            self.refnum = "1"
 
         try:
             files = self.project.get(self.category)                       # Paths for the frame info files
@@ -507,18 +507,18 @@ class Batch:
         except KeyError:
             pass
 
-    def demosaic(self, demosaic):
+    def debayer(self, debayer):
         """
-        Demosaic CFA-image into RGB.
+        Debayer CFA-image into RGB.
 
         Arguments
-        demosaic: a Demosaic-type object
+        debayer: a Debayer-type object
         """
 
         for i in self.list:
             print("Processing image " + self.list[i].path)
             t1 = datetime.datetime.now()
-            self.list[i].data = demosaic.demosaic(self.list[i].data[0])
+            self.list[i].data = debayer.debayer(self.list[i].data[0])
             t2 = datetime.datetime.now()
             print("...Done")
             print("Debayering took " + str(t2 - t1) + " seconds.")
@@ -665,6 +665,6 @@ class Batch:
         frame.fromraw(file)
         self.project.set(itype, str(n), frame.infopath)
 
-        self.list[n] = Frame(self.project, itype, infopath=frame.infopath, number=n)
+        self.list[str(n)] = Frame(self.project, itype, infopath=frame.infopath, number=str(n))
 
         self.project.set("Reference images", itype, "1")

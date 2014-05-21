@@ -49,7 +49,7 @@ class ConfigAbstractor:
         Write values in file
         """
         with open(file, 'w') as configfile:
-            print("Config written to " + file)
+            #print("Config written to " + file)
             self.conf.write(configfile)
 
 
@@ -232,7 +232,7 @@ class Project_old:
                 os.unlink(self.projectfile)
         self.conf.save("Project name", pname)
         self.set("Setup", "Path", self.setup.conf.conf["Default"]["Path"])
-        self.set("Default", "demosaic", "VNGCython")
+        self.set("Default", "debayer", "VNGCython")
         self.set("Default", "register", "Groth_Skimage")
         self.set("Default", "stack", "SigmaMedian")
         self.conf.write(self.projectfile)
@@ -627,7 +627,7 @@ class Project(Config):
             except KeyError:
                 self.set("Default", "Project name", pname)
                 self.set("Setup", "Path", self.path)
-                self.set("Default", "demosaic", "VNGCython")
+                self.set("Default", "debayer", "VNGCython")
                 self.set("Default", "register", "Groth_Skimage")
                 self.set("Default", "stack", "Median")
                 self.set("Default", "Initialized", "True")
@@ -698,6 +698,11 @@ class Project(Config):
         """
         Initialize a project and project file
         """
+        pfile = self.path + "/" + pname + ".project"
+
+        self.projectfile = pfile
+        self.conffile = pfile
+        self.conf = configparser.ConfigParser()
         if os.path.exists(self.projectfile):
 
             print("Trying to initialize a new project, but the file already exists.")
@@ -709,7 +714,7 @@ class Project(Config):
                 os.unlink(self.projectfile)
         self.set("Default", "Project name", pname)
         self.set("Setup", "Path", self.setup.conf.conf["Default"]["Path"])
-        self.set("Default", "demosaic", "VNGCython")
+        self.set("Default", "debayer", "VNGCython")
         self.set("Default", "register", "Groth_Skimage")
         self.set("Default", "stack", "Median")
         self.write(self.projectfile)
