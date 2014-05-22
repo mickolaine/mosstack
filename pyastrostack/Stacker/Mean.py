@@ -22,6 +22,7 @@ class Mean(Stacking):
         n = len(imagelist)
         newdata = zeros_like(list(imagelist.values())[0].data)
         number = 1
+        print("Starting mean stack for " + str(n) + " images.")
         for i in imagelist:
             print("Adding image number " + str(number) + " of " + str(n))
             newdata += imagelist[i].data / n

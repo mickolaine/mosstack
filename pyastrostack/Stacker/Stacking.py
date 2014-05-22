@@ -50,6 +50,7 @@ class Stacking:
 
         n = math.ceil(math.sqrt(images)) - 1  # n^2 will be the nearest square < number of images
                                               # at most there will be two image worth of data in memory
+        print("Starting " + self.name + " stack for " + str(images) + " images.")
 
         ### Calculating image clip coordinates
 

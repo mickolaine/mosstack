@@ -17,6 +17,7 @@ class SigmaMedian(Stacking):
 
     def __init__(self):
         #super().__init__()
+        self.name = "sigma median"
         pass
 
     @staticmethod

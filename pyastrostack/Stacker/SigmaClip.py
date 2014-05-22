@@ -16,6 +16,7 @@ class SigmaClip(Stacking):
 
     def __init__(self):
         #super().__init__()
+        self.name = "sigma clipping"
         pass
 
     @staticmethod

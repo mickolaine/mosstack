@@ -52,10 +52,10 @@ where <operation> and <arguments> are something from following list.
 -------------------------
 help        |
 init        | <project name>
-set         | <project name>
-adddir      | <path to dir> <image type>
-addfile     | <path to file> <image type>
-debayer    | <generic name>
+set         | <setting> <option>
+dir         | <path to dir> <image type>
+file        | <path to file> <image type>
+debayer     | <generic name>
 register    | <generic name>
 stack       | <generic name>
 subtract    | <generic name> <master>
@@ -88,14 +88,14 @@ how to proceed.
 Initialization also sets the project active. Active project name is stored in
 $HOME/.config/pyAstroStack/settings.
 
-set
+set project
 ------------
 Set the specified project name as the active project. Active project name is
 stored in $HOME/.config/pyAstroStack/settings.
 
 Example:
 
-    ``AstroStack set Andromeda``
+    ``AstroStack set project Andromeda``
 
 Activating the project means all the commands will be run using information of
 that project file. User can have many simultaneous projects in his working

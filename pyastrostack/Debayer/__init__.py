@@ -1,5 +1,5 @@
 __author__ = 'Mikko Laine'
-__all__ = ["BilinearOpenCl", "LRPCl", "Bilinear", "VNGOpenCl", "BilinearCython", "VNGCython"]
+__all__ = ["BilinearOpenCl", "VNGOpenCl", "BilinearCython", "VNGCython"]
 
 try:
     from . import *
