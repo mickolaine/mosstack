@@ -5,6 +5,7 @@
       <w>addrgb</w>
       <w>astro</w>
       <w>astropy's</w>
+      <w>astuple</w>
       <w>bilinear</w>
       <w>bluenewpath</w>
       <w>bluepath</w>
@@ -27,6 +28,7 @@
       <w>createconf</w>
       <w>cython</w>
       <w>dcraw</w>
+      <w>debayer</w>
       <w>deldata</w>
       <w>demosaic</w>
       <w>demosaiced</w>
@@ -36,8 +38,10 @@
       <w>execsex</w>
       <w>exiftool</w>
       <w>extractinfo</w>
+      <w>fargs</w>
       <w>findsensitivity</w>
       <w>fitspath</w>
+      <w>fkwargs</w>
       <w>frameinfo</w>
       <w>fromarray</w>
       <w>fromraw</w>
@@ -70,6 +74,7 @@
       <w>magick's</w>
       <w>maketriangles</w>
       <w>newdata</w>
+      <w>newfunc</w>
       <w>newlist</w>
       <w>newname</w>
       <w>newpairs</w>
@@ -79,6 +84,7 @@
       <w>origtiff</w>
       <w>pathlist</w>
       <w>pfile</w>
+      <w>picklable</w>
       <w>pname</w>
       <w>ppath</w>
       <w>projectfile</w>
@@ -113,6 +119,7 @@
       <w>srcname</w>
       <w>srcpath</w>
       <w>subpixel</w>
+      <w>thru</w>
       <w>wdir</w>
     </words>
   </dictionary>

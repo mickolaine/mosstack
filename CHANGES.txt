@@ -1,3 +1,18 @@
+v0.4.0
+- Added sigma clipping and sigma median stacking methods where values that
+  differ more than 3 times the standard deviation from the median are either
+  ignored (clipped) or replaced with the median value
+- Deactivated "Legacy" stacking method which is identical to Groth_ImageMagick,
+  but a monolithic file. Code still exists.
+- Deactivated debayering methods written in pure Python. They were slow and
+  written only for testing purposes. Code still exists.
+- Unified naming scheme of everything related to debayering. Every "demosaic"
+  word has been replaced with "debayer". Also the methods now have used
+  language as suffix, eg. BilinearOpenCl or VNGCython.
+- Changed names of executable scripts to have no .py suffix. This complies with
+  Debian standards and indeed is a better practise
+- Added first version of graphical user interface written in PyQt4
+
 v0.3.0 2014-04-08 -- Some more fixes and a bigger bump
 - Fixed a lot of bugs caused by all the previous changes
 - Realized there are so many new features that a bigger version bump is
@@ -39,8 +54,8 @@ v0.2.0, 2014-03-28 -- Some rewrite of existing classes
 - Replaced class Photo with class Frame. Frame has a lot better design, less
   redundancy and better support for frame info files. This work is prelude to
   creating a GUI.
-- Unified demosaicing classes to have similar structure.
-- Altered demosaicing classes to take numpy.array of image as argument instead
+- Unified Debayering classes to have similar structure.
+- Altered Debayering classes to take numpy.array of image as argument instead
   of full Photo object. This makes them easier to port to other programs.
   Also fixed the Bilinear and BilinearCl to use proper bayer matrix.
 - Made informational prints to be little more consistent.
@@ -53,7 +68,7 @@ v0.1.1, 2014-02-27 -- Bugfixes and adjustable settings
 - Altered stellar extraction algorithms so that they find 20-25 stars for every
   frame, not just the reference. This speeds up registering because now there
   won't be >40 star frames
-- Algorithms for registering, demosaicing, and stacking can now be chosen with
+- Algorithms for registering, Debayering, and stacking can now be chosen with
   commands list and set
 
 v0.1.0, 2014-02-22 -- First public version.

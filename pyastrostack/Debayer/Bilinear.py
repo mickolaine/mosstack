@@ -1,20 +1,20 @@
 from __future__ import division
-from .. Demosaic.Demosaic import Demosaic
+from .. Debayer.Debayer import Debayer
 import numpy as np
 
 
-class Bilinear(Demosaic):
+class Bilinear(Debayer):
     """
-    Demosaicing class. I'll start with regular bilinear interpolation but more will come if necessary
+    Debayering class. I'll start with regular bilinear interpolation but more will come if necessary
 
     """
 
     def __init__(self):
-        """Prepare everything for running the demosaic-algorithms."""
+        """Prepare everything for running the debayer-algorithms."""
 
-    def demosaic(self, image):
+    def debayer(self, image):
         """
-        Bilinear interpolation for demosaicing CFA
+        Bilinear interpolation for debayering CFA
         Now assumes order of GR
                              BG
 

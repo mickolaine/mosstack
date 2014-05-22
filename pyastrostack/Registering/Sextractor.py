@@ -10,7 +10,7 @@ __author__ = 'Mikko Laine'
 
 from .. Registering.Registering import Registering
 from subprocess import call, check_output
-from .. import Conf
+from .. import Config
 from math import sqrt, log, fabs
 from operator import itemgetter
 from os.path import splitext, isfile
@@ -118,11 +118,14 @@ class Sextractor:
 
         Returns boolean
         """
-
-        if self.image.frameinfo.haskey("Paths", "catalog"):
-            if isfile(self.image.frameinfo.get("Paths", "catalog")):
-                return True
-        return False
+        try:
+            return isfile(self.image.frameinfo.get("Paths", "catalog"))
+        except KeyError:
+            return False
+        #if self.image.frameinfo.haskey("Paths", "catalog"):
+        #    if isfile(self.image.frameinfo.get("Paths", "catalog")):
+        #        return True
+        #return False
 
 
     def setsensitivity(self, area, sigma):

@@ -2,19 +2,19 @@
 
 __author__ = 'micko'
 
-from .. Demosaic.Demosaic import Demosaic
+from .. Debayer.Debayer import Debayer
 import numpy as np
 import pyopencl as cl
 
 
-class LRPCl(Demosaic):
+class LRPCl(Debayer):
     """
     LaRoche-Prescott interpolation using pyOpenCL.
 
     """
 
     def __init__(self):
-        """Prepare everything for running the demosaic-algorithms."""
+        """Prepare everything for running the debayer-algorithms."""
         self.ctx = cl.create_some_context()
         self.queue = cl.CommandQueue(self.ctx)
         self.mf = cl.mem_flags
@@ -39,13 +39,13 @@ class LRPCl(Demosaic):
     def real_init(self):
         """
         Do the real initialization. This requires information about the frames, so it has to be called
-        the first time self.demosaic is called
+        the first time self.debayer is called
         """
 
         self.init = True
         self.build()
 
-    def demosaic(self, image):
+    def debayer(self, image):
         """ LaRoche-Prescott interpolation using pyOpenCL.
 
         Arguments:

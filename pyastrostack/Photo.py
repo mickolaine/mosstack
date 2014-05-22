@@ -12,7 +12,7 @@ from astropy.io import fits
 from os.path import splitext, exists, split, basename
 from shutil import copyfile, move
 from subprocess import call, check_output
-from . import Conf
+from . import Config
 import numpy as np
 from PIL import Image as Im
 import gc
@@ -66,7 +66,7 @@ class Frame(object):
         self._data = None   # Image data as an numpy.array
 
         if infopath:
-            self.frameinfo = Conf.Frame(infopath, self.project)
+            self.frameinfo = Config.Frame(infopath)
             self.infopath = infopath
             self.readinfo()
         else:
@@ -131,9 +131,14 @@ class Frame(object):
         #self.frametype = self.frameinfo.get("Default", "Frametype")
         self.x = int(self.frameinfo.get("Properties", "X"))
         self.y = int(self.frameinfo.get("Properties", "Y"))
-        if self.frameinfo.hassection("Registering"):
-            if self.frameinfo.haskey("Registering", "pairs"):
-                self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+
+        try:
+            self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+        except KeyError:
+            pass
+        #if self.frameinfo.hassection("Registering"):
+        #    if self.frameinfo.haskey("Registering", "pairs"):
+        #        self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
 
     def extractinfo(self):
         """
@@ -162,8 +167,9 @@ class Frame(object):
         Write frame info to specified file
         """
 
-        self.frameinfo = Conf.Frame(self.infopath, self.project)
+        self.frameinfo = Config.Frame(self.infopath)
 
+        self.frameinfo.set("Paths", "Raw", self.rawpath)
         self.frameinfo.set("Default", "Number", str(self.number))
         self.frameinfo.set("Paths", self.genname, self.path)
         #self.frameinfo.set("Default", "Frametype", self.frametype)
@@ -184,6 +190,7 @@ class Frame(object):
 
         self._convert(path)
         self.extractinfo()
+        self.rawpath = path
         self.writeinfo()
 
     def setclip(self, clip):
@@ -194,9 +201,13 @@ class Frame(object):
         self.clip = clip
 
     def getpoints(self):
-        if (self._points is None) and self.frameinfo.haskey("Registering", "Points"):
-            self._points = self.frameinfo.get("Registering", "Points")
-        return self._points
+        if (self._points is None):  # and self.frameinfo.haskey("Registering", "Points"):
+            try:
+                return self.frameinfo.get("Registering", "Points")
+            except KeyError:
+                return None
+            #self._points = self.frameinfo.get("Registering", "Points")
+        #return self._points
 
     def setpoints(self, points):
         self._points = points
@@ -276,9 +287,13 @@ class Frame(object):
 
     def getpairs(self):
         if self._pairs is None:
-            if self.frameinfo.hassection("Registering"):
-                if self.frameinfo.haskey("Registering", "pairs"):
-                    self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+            try:
+                self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+            except KeyError:
+                pass
+            #if self.frameinfo.hassection("Registering"):
+            #    if self.frameinfo.haskey("Registering", "pairs"):
+            #        self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
         return self._pairs
 
     def setpairs(self, pairs):
@@ -480,34 +495,33 @@ class Batch:
         else:
             self.category = "light"
 
-        if self.project.hassection("Reference images"):
-            if self.project.haskey("Reference images", self.genname):
-                self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
-            else:
-                self.refnum = 1
-        else:
-            self.refnum = 1
+        try:
+            self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
+        except KeyError:
+            self.refnum = "1"
 
-        if self.project.hassection(self.category):
+        try:
             files = self.project.get(self.category)                       # Paths for the frame info files
             for key in files:
                 self.list[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
+        except KeyError:
+            pass
 
-    def demosaic(self, demosaic):
+    def debayer(self, debayer):
         """
-        Demosaic CFA-image into RGB.
+        Debayer CFA-image into RGB.
 
         Arguments
-        demosaic: a Demosaic-type object
+        debayer: a Debayer-type object
         """
 
         for i in self.list:
             print("Processing image " + self.list[i].path)
             t1 = datetime.datetime.now()
-            self.list[i].data = demosaic.demosaic(self.list[i].data[0])
+            self.list[i].data = debayer.debayer(self.list[i].data[0])
             t2 = datetime.datetime.now()
             print("...Done")
-            print("Debayering took " + str(t2-t1) + " seconds.")
+            print("Debayering took " + str(t2 - t1) + " seconds.")
             self.list[i].genname = "rgb"
             self.list[i].write()
         self.project.set("Reference images", self.genname, str(self.refnum))
@@ -551,7 +565,6 @@ class Batch:
             self.list[i].data = stacker.subtract(self.list[i], cframe)
             if self.list[i].genname not in ("bias", "dark", "flat"):
                 self.list[i].genname = "calib"
-            #print(self.list[i].infopath)
             self.list[i].write()
         self.project.set("Reference images", "calib", str(self.refnum))
         print("Calibrated images saved with generic name 'calib'.")
@@ -594,7 +607,7 @@ class Batch:
                 print(i)
         else:
             print("No supported RAW files found. All files found are listed here: " + str(allfiles))
-            exit()
+            return
 
         n = len(self.list)
 
@@ -605,4 +618,53 @@ class Batch:
             n += 1
 
         self.project.set("Reference images", itype, "1")
-        self.project.write()
+
+    def addfiles(self, allfiles, itype):
+        """
+        Add list of files to Batch
+        """
+
+        rawfiles = []
+        for i in allfiles:
+            if splitext(i)[1] in self.extensions:
+                rawfiles.append(i)
+
+        if len(rawfiles) != 0:
+            print("Found files :")
+            for i in rawfiles:
+                print(i)
+        else:
+            print("No supported RAW files found. All files found are listed here: " + str(allfiles))
+            return
+
+        n = len(self.list)
+
+        for i in rawfiles:
+            frame = Frame(self.project, self.genname, number=n)
+            frame.fromraw(i)
+            self.project.set(itype, str(n), frame.infopath)
+            self.list[n] = Frame(self.project, itype, infopath=frame.infopath, number=n)
+            n += 1
+
+        self.project.set("Reference images", itype, "1")
+
+    def addfile(self, file, itype):
+        """
+        Add a single file. Internal use only
+        """
+
+        if splitext(file)[1] not in self.extensions:
+            return
+
+        try:
+            n = len(self.project.get(itype).keys())
+        except KeyError:
+            n = 0
+
+        frame = Frame(self.project, self.genname, number=n)
+        frame.fromraw(file)
+        self.project.set(itype, str(n), frame.infopath)
+
+        self.list[str(n)] = Frame(self.project, itype, infopath=frame.infopath, number=str(n))
+
+        self.project.set("Reference images", itype, "1")

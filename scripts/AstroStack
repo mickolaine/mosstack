@@ -14,7 +14,7 @@ to run different stacking operations according to the project file.
 """
 
 import sys
-from pyastrostack import Conf, Demosaic, Registering, Stacker
+from pyastrostack import Config, Debayer, Registering, Stacker
 import os
 from pyastrostack.UserInterface import UserInterface
 #import cProfile
@@ -28,7 +28,7 @@ def main(argv):
 
     ui = UserInterface()
 
-    setup = Conf.Setup()
+    setup = Config.Setup()
 
     shorthelp = ui.shorthelp
 
@@ -42,20 +42,23 @@ def main(argv):
         exit()
 
     if argv[0] == "init":
-        project = Conf.Project(setup.get("Default", "Path") + argv[1] + ".project")
+        project = Config.Project()
         project.initproject(argv[1])
         setup.set("Default", "Project", argv[1])
 
     try:
         pname = setup.get("Default", "Project")
         ppath = setup.get("Default", "Path") + pname + ".project"
-        print("Current project is " + ppath + "\n")
-        project = Conf.Project(ppath)
+        if argv[0] == "set" and argv[1] == "project":
+            pass
+        else:
+            print("Current project is " + ppath + "\n")
+        project = Config.Project(pname)
         project.readproject()
         ui.setproject(project)
 
     except IndexError:
-        print("No project name specified")
+        print("Something went wrong. Check your input. Refer to \"AstroStack help\" if needed.")
         exit()
 
     if argv[0] == "help":
@@ -71,13 +74,14 @@ def main(argv):
                 pname = argv[2]
                 setup.set("Default", "Project", pname)
                 ppath = setup.get("Default", "Path") + pname + ".project"
-                project = Conf.Project(ppath)
+                project = Config.Project(pname)
+                print("Project set to " + ppath)
             else:
                 print("No project name specified. Available projects are: Implement this")
                 print("Try AstroStack set project <project name>, without extension.")
-        elif argv[1] == "demosaic":
-            options = Demosaic.__all__
-            ui.set("Demosaic", options, argv[2])
+        elif argv[1] == "debayer":
+            options = Debayer.__all__
+            ui.set("Debayer", options, argv[2])
         elif argv[1] == "register":
             options = Registering.__all__
             ui.set("Register", options, argv[2])
@@ -87,22 +91,22 @@ def main(argv):
 
         else:
             print("Don't know how to set " + argv[1])
-            print("Possible options to set are \n project\n demosaic\n register\n stack")
+            print("Possible options to set are \n project\n Debayer\n register\n stack")
 
     elif argv[0] == "list":
 
         if len(argv) == 1:
-            print("Settings to list are \n demosaic\n register\n stack")
+            print("Settings to list are \n debayer\n register\n stack")
         else:
-            if argv[1] == "demosaic":
-                options = Demosaic.__all__
+            if argv[1] == "debayer":
+                options = Debayer.__all__
             elif argv[1] == "register":
                 options = Registering.__all__
             elif argv[1] == "stack":
                 options = Stacker.__all__
             else:
                 print("No such setting " + argv[1])
-                print("Possible settings are \n demosaic\n register\n stack")
+                print("Possible settings are \n debayer\n register\n stack")
             ui.list(argv[1], options)
 
     elif argv[0] == "dir":
@@ -132,8 +136,8 @@ def main(argv):
 
         ui.stack(section)
 
-    elif argv[0] == "demosaic":
-        # AstroStack demosaic <srcname>
+    elif argv[0] == "debayer":
+        # AstroStack debayer <srcname>
 
         if argv[1]:
             genname = argv[1]
@@ -141,7 +145,7 @@ def main(argv):
             print("Srcname not defined. Exiting...")
             exit()
 
-        ui.demosaic(genname)
+        ui.debayer(genname)
 
     elif argv[0] == "register":
         # AstroStack register <srcname>

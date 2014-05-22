@@ -24,7 +24,7 @@ cdef fmax(float a, float b):
     else:
         return b
 
-def _demosaic(np.ndarray[DTYPE_t, ndim=2] cfa, np.ndarray[DTYPE_t, ndim=2] r,
+def _debayer(np.ndarray[DTYPE_t, ndim=2] cfa, np.ndarray[DTYPE_t, ndim=2] r,
               np.ndarray[DTYPE_t, ndim=2] g, np.ndarray[DTYPE_t, ndim=2] b):
 
     cdef int maxi = len(cfa)
