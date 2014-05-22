@@ -11,7 +11,10 @@ Graphical user interface for pyAstroStack.
 """
 
 import sys
-from PyQt4.QtGui import QApplication, QMainWindow
+try:
+    from PyQt4.QtGui import QApplication, QMainWindow
+except ImportError:
+    print("No PyQt4 found. Check your installation.")
 from pyastrostack import AstroStackGui
 try:
     from PyQt4.QtCore import Qstring

@@ -40,6 +40,8 @@ a complete list:
 
 * PyOpenCL - <http://mathema.tician.de/software/pyopencl>
 
+* PyQt4 - <http://qt-project.org>
+
 
 Features
 =========
@@ -48,10 +50,7 @@ Ultimate plan is to have functionality similar to DeepSkyStacker or IRIS, but
 for now the program is limited to basic functionality.
 
 - CFA to RGB conversion (see below for supported cameras)
-    - Bilinear (python, only for testing)
     - Bilinear (OpenCL, Cython)
-    - LaRoche-Prescott (OpenCL) - This will probably be dropped out since
-      there's no use for it
     - Variable Number of Gradients (OpenCL, Cython)
 
 - Registering
@@ -64,6 +63,11 @@ for now the program is limited to basic functionality.
 - Stacking
     - Mean value
     - Median value
+    - Sigma Median
+    - Sigma Clipping
+
+- A somewhat working GUI
+    - PyQt4
 
 Supported cameras
 ------------
@@ -82,9 +86,9 @@ Using pyAstroStack
 =========
 
 The program does nothing automatically. It's designed by the process
-calibrate -> demosaic -> align -> stack and user has to call each of these
+calibrate -> debayer -> align -> stack and user has to call each of these
 individually. User can also skip any of these steps, if for example no
-demosaicing is required or images are already aligned.
+debayering is required or images are already aligned.
 
 UI is a command line one. User calls AstroStack with proper arguments and the
 program does that step. Most commands work with pattern
@@ -97,10 +101,10 @@ where <operation> and <arguments> are something from following list.
 -------------------------
 help        |
 init        | <project name>
-set         | <project name>
-adddir      | <path to dir> <image type>
-addfile     | <path to file> <image type>
-demosaic    | <generic name>
+set         | <setting> <option>
+dir         | <path to dir> <image type>
+file        | <path to file> <image type>
+debayer     | <generic name>
 register    | <generic name>
 stack       | <generic name>
 subtract    | <generic name> <master>
@@ -133,20 +137,20 @@ how to proceed.
 Initialization also sets the project active. Active project name is stored in
 $HOME/.config/pyAstroStack/settings.
 
-set
+set project
 ------------
 Set the specified project name as the active project. Active project name is
 stored in $HOME/.config/pyAstroStack/settings.
 
 Example:
 
-    ``AstroStack set Andromeda``
+    ``AstroStack set project Andromeda``
 
 Activating the project means all the commands will be run using information of
 that project file. User can have many simultaneous projects in his working
 directory.
 
-adddir
+dir
 ------------
 Add all supported raw photos in specified directory into active project. In
 addition to path this also requires type of the frames as an argument.
@@ -155,10 +159,10 @@ files in the project is to separate these types to their own directories.
 
 Example:
 
-    ``AstroStack adddir /media/data/Astro/2013-11-25/Andromeda/ light``
-    ``AstroStack adddir /media/data/Astro/2013-11-25/flat/ flat``
+    ``AstroStack dir /media/data/Astro/2013-11-25/Andromeda/ light``
+    ``AstroStack dir /media/data/Astro/2013-11-25/flat/ flat``
 
-addfile
+file
 ------------
 Add specified raw photo into active project. In addition to file path this also
 requires type of the frame as an argument. Program understands the types light,
@@ -166,7 +170,7 @@ bias, dark and flat.
 
 Example:
 
-    ``AstroStack addfile /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
+    ``AstroStack file /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
 
 subtract
 ------------
@@ -205,20 +209,20 @@ dark from them one by one. After operation there are images identified by name
 "calib" in the work directory. Note that if you subtract or divide batch named
 calib, the images will be overwritten.
 
-demosaic
+Debayer
 ------------
-Demosaic CFA-images into RGB. At this moment program supports only images taken
+Debayer CFA-images into RGB. At this moment program supports only images taken
 with Canon 1100D or a camera with similar Bayer matrix. Output files will be
 separate files and identified by "rgb" followed by one letter to tell the
 channel.
 
 Usage:
 
-    ``AstroStack demosaic <batch>``
+    ``AstroStack debayer <batch>``
 
 Example:
 
-    ``AstroStack demosaic calib``
+    ``AstroStack debayer calib``
 
 register
 ------------
@@ -257,15 +261,15 @@ be manually edited in the project file.
 
 Usage
 
-    ``AstroStack.py list <setting>``
+    ``AstroStack list <setting>``
 
 Examples:
 
 List of settings to adjust
-    ``AstroStack.py list``
+    ``AstroStack list``
 
 List of options for setting
-    ``AstroStack.py list demosaic``
+    ``AstroStack list debayer``
 
 set
 ------------
@@ -273,11 +277,11 @@ Set can also be used to adjust settings. See operation 'list' to see them
 
 Usage
 
-    ``AstroStack.py set <setting> <option>``
+    ``AstroStack set <setting> <option>``
 
 Examples:
 
-    ``AstroStack.py set demosaic Bilinear``
-    ``AstroStack.py set demosaic 2``
+    ``AstroStack set debayer Bilinear``
+    ``AstroStack set debayer 2``
 
 You can use either name or number as operation 'list' shows them.
