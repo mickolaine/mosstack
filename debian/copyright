@@ -1,0 +1,8 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: PyAstroStack
+Upstream-Contact: Mikko Laine <mikko.laine@gmail.com>
+Source: https://bitbucket.org/mikko_laine/pyastrostack
+
+Files: *
+Copyright: 2013-2014 Mikko Laine
+License: GPL-3

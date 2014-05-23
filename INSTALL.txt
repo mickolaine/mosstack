@@ -20,6 +20,23 @@ this works on Python2 as well.
 Ubuntu
 -------------
 
+If you're using Ubuntu 14.04 you can use my PPA. Just open terminal and type
+
+    ``sudo add-apt-repository ppa:mikko-laine/pyastrostack``
+
+You might receive an error regarding GPG fingerprint. You can ignore until I find out how to fix that.
+
+After adding the repository just
+
+    ``sudo apt-get install pyastrostack``
+
+And apt will install everything necessary.
+
+
+
+Ubuntu manual install
+--------------
+
 Starting from Ubuntu 14.04 all the dependencies can be installed straight from package-manager. This apt-get one-liner
 should install everything necessary
 
