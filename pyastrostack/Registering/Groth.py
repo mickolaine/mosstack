@@ -25,6 +25,8 @@ class Groth(Registering):
 
     def __init__(self):
         self.timing = False
+        self.sensitivity = None
+        self.ref = None
 
     def register(self, imagelist, project):
         """
@@ -44,7 +46,7 @@ class Groth(Registering):
 
         for i in imagelist:
             if imagelist[i].pairs is None:
-                self.step2(imagelist[ref], imagelist[i])
+                self.step2(imagelist[i], imagelist[ref])
 
         for i in imagelist:
 
@@ -53,6 +55,26 @@ class Groth(Registering):
         if self.timing:
             t2 = datetime.datetime.now()
             print("Triangle calculations took " + str(t2 - t1) + " seconds.")
+
+    def register_single(self, frame):
+        """
+        Call everything required for frame's registration
+        """
+
+        if frame.isref:
+            self.ref = frame
+
+        if self.ref is None:
+            raise Exception("Reference frame must be registered first!")
+
+        self.findstars_single(frame)
+
+        self.step1(frame)
+
+        if frame.pairs is None:
+            self.step2(frame, self.ref)
+
+        self.transformer.affine_transform(frame, self.ref)
 
     def findstars(self, imagelist, project):
         """
@@ -66,7 +88,20 @@ class Groth(Registering):
             sex = Sextractor(imagelist[i], project)
             sex.setsensitivity(sensitivity[0], sensitivity[1])
             imagelist[i].coordinates = sex.getcoordinates()
-            sex.maketriangles()
+            imagelist[i].tri = sex.gettriangles()
+
+    def findstars_single(self, frame):
+        """
+        Find stars from frame and write them in frame's variables
+        """
+
+        sex = Sextractor(frame)
+        if self.sensitivity is None:
+            self.sensitivity = sex.findsensitivity()    # This also sets sensitivity so no need to do it again
+        else:
+            sex.setsensitivity(self.sensitivity[0], self.sensitivity[1])
+        frame.coordinates = sex.getcoordinates()
+        frame.tri = sex.gettriangles()
 
     def step1(self, image):
         """
@@ -125,8 +160,8 @@ class Groth(Registering):
         i1 and i2 have a list tri = [[(x1,y1),(x2,y2),(x3,y3), R, C, tR, tC], ... , ...]
         """
 
-        print("Matching image " + str(i2.number) + " to reference image " + str(i1.number) + "...")
+        print("Matching image " + str(i1.number) + " to reference image " + str(i2.number) + "...")
 
-        i2.pairs = _step2(i1.tri, i2.tri)
+        i1.pairs = _step2(i2.tri, i1.tri)
 
         print("Done.")

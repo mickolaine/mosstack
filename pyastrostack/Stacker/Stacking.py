@@ -148,14 +148,14 @@ class Stacking:
         Calculates image - calib. Required for calibrating lights and flats
 
         Arguments:
-        image - Photo to calibrate
-        calib - Masterframe Photo to calibrate with
+        image - Frame.data to calibrate
+        calib - Masterframe.data to calibrate with
 
         Return:
         calibrated data as an array
         """
 
-        newdata = image.data - calib.data
+        newdata = image - calib
         newdata = newdata.clip(0)
         return np.uint16(newdata)
 
@@ -187,9 +187,9 @@ class Stacking:
         Calculates image / calib. Calibration frame is normalized automatically.
 
         Arguments:
-        image - Photo to calibrate
-        calib - Masterframe Photo to calibrate with
+        image - Frame.data to calibrate
+        calib - Masterframe.data to calibrate with
         """
-        maxim = np.amax(calib.data)
-        newdata = image.data / calib.data * maxim
+        maxim = np.amax(calib)
+        newdata = image / calib * maxim
         return newdata

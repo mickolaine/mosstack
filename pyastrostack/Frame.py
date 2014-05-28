@@ -1,21 +1,12 @@
-"""
-Created on 2.10.2013
-
-@author: Mikko Laine
-"""
-
 from __future__ import division
 from astropy.io import fits
-from os.path import splitext, exists, split, basename
-from shutil import copyfile, move
+from os.path import splitext, exists
+from shutil import move
 from subprocess import call, check_output
 from . import Config
 import numpy as np
 from PIL import Image as Im
 import gc
-from re import sub
-from os import listdir
-import datetime   # For profiling
 import ast
 
 
@@ -24,22 +15,26 @@ class Frame(object):
     Frame has all the information of a single photo frame and all the methods to read and write data on disk
     """
 
-    def __init__(self, project, genname, infopath=None, number=None):
+    def __init__(self, project=None, rawpath=None, infopath=None, ftype="light", number=None, fphase="orig"):
         """
-        Create a Frame object from frameinfo file or create an empty Frame object.
+        Create a Frame object from rawpath or frame info file
 
         Arguments
-        project = Project settings object
-        genname = Generic name for image to load (light, calib, rgb, reg...)
-        infopath = frame info file
+        rawpath = Unix path to raw file
+        infopath = Unix path to frame info file
+        ftype = frame type: light, bias, dark or flat
+        fphase = process phase: orig, calib#, rgb, reg, master
         """
 
-        # Common variables for any case
-        self.project   = project
-        self.name      = self.project.get("Default", "Project name")  # Name of project. Used to give name to temp files
-        self.wdir      = self.project.get("Setup", "Path")  # Working directory
-        self._genname  = genname
-        self.format    = ".fits"
+        self.status = {}        # Dict to hold information about process status
+
+        self.rawpath = rawpath
+        self.infopath = infopath
+        self.ftype = ftype
+        self.fphase = fphase
+        self.project = project
+
+        self.wdir = self.project.get("Default", "Path")
 
         # Instance variables required later
         self.rgb       = False      # Is image rgb or monochrome (Boolean)
@@ -48,31 +43,139 @@ class Frame(object):
         self.match     = []         # List of matching triangles with reference picture
         self._pairs    = None
         self._points   = None       # String to pass to ImageMagick convert, if star matching is already done.
-
-        self.path = None            # Path for image
-        self.tiffpath = []          # List for paths to tiff files, required for aligning with imagemagick
-        self.bayer = None
-        self._x = None
-        self._y = None               # Dimensions for image
+        self._x        = None
+        self._y        = None       # Dimensions for image
 
         self.number = number
 
         # The following objects are lists because colour channels are separate
-        self.hdu = None             # HDU-object for loading fits. Not required for tiff
-        self.image = None           # Image object. Required for Tiff and Fits
-        self._data = None   # Image data as an numpy.array
+        self.hdu   = None      # HDU-object for loading fits. Not required for tiff
+        self.image = None      # Image object. Required for Tiff and Fits
+        self._data = None      # Image data as an numpy.array
 
-        if infopath:
+        if self.infopath is not None:
             self.frameinfo = Config.Frame(infopath)
-            self.infopath = infopath
-            self.readinfo()
         else:
             self.frameinfo = None
-            self.infopath = self.wdir + self.name + "_" + str(self.number) + "_" + self.genname + ".info"
-            if self.number or self.number == 0:
-                self.path = self.wdir + self.name + "_" + str(self.number) + "_" + self.genname + ".fits"
-            else:
-                self.path = self.wdir + self.name + "_" + self.genname + ".fits"
+
+        if (self.rawpath is not None) or (self.infopath is not None):
+            self.prepare()
+
+    def prepare(self):
+        """
+        Prepare the frame.
+
+        Returns signal or something where Gui knows to update itself
+
+        1. Check if there already is an .info file
+            1.1. Check if everything .info file says is really done and found
+            1.2. Update all variables to match .info's state
+            1.3. Inform Gui to update itself
+        2. Decode raw to FITS
+        3. Read raw's properties (dimensions, bayer filter...)
+        4. Write everything to .info
+        5. Inform Gui that status has changed
+        """
+        self.status["prepare"] = 1
+
+        if self.frameinfo is not None:
+            self.readinfo()                     # 1.1. -- 1.2.
+            # 1.3.
+            return
+
+        if not Frame.checkraw(self.rawpath):
+            self.status["prepare"] = -1
+            # TODO: Tell UI the file's not good
+            return
+
+        self._decode()                          # 2.
+        self.extractinfo()                      # 3.
+        self.writeinfo()                        # 4.
+
+        # 5.
+        self.status["prepare"] = 2
+
+        return
+
+    def calibrate(self, stacker, bias=None, dark=None, flat=None):
+        """
+        Calibrate the frame. Project tells how.
+
+        All stages are optional except the last one
+        1. Subtract master bias
+        2. Subtract master dark
+        3. Divide with master flat
+        4. Inform Gui that status has changed
+        """
+
+        self.status["calibrate"] = 1
+
+        data = self.data
+
+        if bias is not None:
+            data = stacker.subtract(data, bias.data)
+
+        if dark is not None:
+            data = stacker.subtract(data, dark.data)
+
+        if flat is not None:
+            data = stacker.divide(data, flat.data)
+
+        self.data = data
+        self.fphase = "calib"
+        self.write()
+        self.status["calibrate"] = 2
+
+        # 4.
+        return
+
+    def debayer(self, debayer):
+        """
+        Debayer the frame. Project tells how.
+
+        1. Check what Debayer function to use
+        2. Do the thing
+        3. Inform Gui that status has changed
+        """
+
+        self.status["debayer"] = 1
+
+        self.data = debayer.debayer(self.data)
+        self.fphase = "rgb"
+        self.write()
+        self.status["debayer"] = 2
+
+        # 3.
+        return
+
+    def register(self):
+        """
+        Register the frame. Project tells how.
+
+        1. Step 1
+        2. Check if reference frame.
+            2.(If)   Copy file
+            2.(Else) Step 2
+        3. Inform Gui that status has changed
+        """
+
+        self.status["register"] = 1
+
+        pass
+
+        self.status["register"] = 2
+
+        return
+
+    def path(self, fformat="fits"):
+        """
+        Return path, which is constructed on the fly
+        """
+        if self.number is None:
+            return self.wdir + "/" + self.name + "_" + self.ftype + "_" + self.fphase + "." + fformat
+        else:
+            return self.wdir + "/" + self.name + "_" + self.ftype \
+                             + "_" + self.number + "_" + self.fphase + "." + fformat
 
     def rgbpath(self, fileformat=None):
         """
@@ -85,7 +188,7 @@ class Frame(object):
         format = if specified, change the extension to this
         """
 
-        base, ext = splitext(self.path)
+        base, ext = splitext(self.path())
         if fileformat:
             ext = "." + fileformat
         pathlist = []
@@ -124,8 +227,16 @@ class Frame(object):
         """
 
         self.number = self.frameinfo.get("Default", "Number")
-        self.path = self.frameinfo.get("Paths", self.genname)
-        #self.frametype = self.frameinfo.get("Default", "Frametype")
+
+        self.bayer = self.frameinfo.get("Properties", "Filter pattern")
+        self.timestamp = self.frameinfo.get("Properties", "Timestamp")
+        self.camera = self.frameinfo.get("Properties", "Camera")
+        self.isospeed = self.frameinfo.get("Properties", "ISO speed")
+        self.shutter = self.frameinfo.get("Properties", "Shutter")
+        self.aperture = self.frameinfo.get("Properties", "Aperture")
+        self.focallength = self.frameinfo.get("Properties", "Focal length")
+        self.dlmulti = self.frameinfo.get("Properties", "Daylight multipliers")
+
         self.x = int(self.frameinfo.get("Properties", "X"))
         self.y = int(self.frameinfo.get("Properties", "Y"))
 
@@ -133,17 +244,53 @@ class Frame(object):
             self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
         except KeyError:
             pass
-        #if self.frameinfo.hassection("Registering"):
-        #    if self.frameinfo.haskey("Registering", "pairs"):
-        #        self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+
+    @staticmethod
+    def checkraw(rawpath):
+        """
+        Check if source file is something dcraw can decode
+
+        Arguments:
+        rawpath - Unix path to raw file
+
+        Returns:
+        Boolean
+        """
+
+        try:
+            if exists(rawpath):
+                if call(["dcraw", "-i", rawpath]):
+                    return False
+                else:
+                    return True
+        except:
+            return 0
 
     def extractinfo(self):
         """
-        Read the file into memory and extract all required information
+        Read the file into memory and extract all required information.
         """
 
-        # TODO: Bayer matrix from cfa-images
-        self.bayer = None
+        output = str.split(check_output(["dcraw", "-i", "-v", self.rawpath]), "\n")
+
+        for i in output:                        # Some of these are extracted for possible future use
+            line = str.split(i, ": ")
+            if line[0] == "Timestamp":
+                self.timestamp = line[1]
+            elif line[0] == "Camera":
+                self.camera = line[1]
+            elif line[0] == "ISO speed":
+                self.isospeed = line[1]
+            elif line[0] == "Shutter":
+                self.shutter = line[1]
+            elif line[0] == "Aperture":
+                self.aperture = line[1]
+            elif line[0] == "Focal length":
+                self.focallenght = line[1]
+            elif line[0] == "Filter pattern":
+                self.bayer = line[1][:4]
+            elif line[0] == "Daylight multipliers":
+                self.dlmulti = line[1]
 
         self._load_data()
 
@@ -164,13 +311,22 @@ class Frame(object):
         Write frame info to specified file
         """
 
+        if self.infopath is None:
+            self.infopath = self.wdir + "/" + self.name + "_" + self.ftype + "_" + self.number + ".info"
         self.frameinfo = Config.Frame(self.infopath)
 
         self.frameinfo.set("Paths", "Raw", self.rawpath)
         self.frameinfo.set("Default", "Number", str(self.number))
-        self.frameinfo.set("Paths", self.genname, self.path)
-        #self.frameinfo.set("Default", "Frametype", self.frametype)
-        self.frameinfo.set("Properties", "Bayer filter", str(self.bayer))
+        self.frameinfo.set("Paths", self.fphase, self.path())
+        self.frameinfo.set("Properties", "Filter pattern", self.bayer)
+        self.frameinfo.set("Properties", "Timestamp", self.timestamp)
+        self.frameinfo.set("Properties", "Camera", self.camera)
+        self.frameinfo.set("Properties", "ISO speed", self.isospeed)
+        self.frameinfo.set("Properties", "Shutter", self.shutter)
+        self.frameinfo.set("Properties", "Aperture", self.aperture)
+        self.frameinfo.set("Properties", "Focal length", self.focallength)
+        self.frameinfo.set("Properties", "Daylight multipliers", self.dlmulti)
+
         self.frameinfo.set("Properties", "X", str(self.x))
         self.frameinfo.set("Properties", "Y", str(self.y))
 
@@ -198,13 +354,11 @@ class Frame(object):
         self.clip = clip
 
     def getpoints(self):
-        if (self._points is None):  # and self.frameinfo.haskey("Registering", "Points"):
+        if self._points is None:
             try:
                 return self.frameinfo.get("Registering", "Points")
             except KeyError:
                 return None
-            #self._points = self.frameinfo.get("Registering", "Points")
-        #return self._points
 
     def setpoints(self, points):
         self._points = points
@@ -245,16 +399,15 @@ class Frame(object):
     data = property(getdata, setdata, deldata)
 
     def getgenname(self):
-        return self._genname
+        return self.fphase
 
     def setgenname(self, genname):
         """
         Set genname and take care of info file changes
         """
-        self._genname = genname
+        self._fphase = genname
         print("Changing path to " + self.wdir + self.name + "_" + self.number + "_" + genname + ".fits")
-        self.path = self.wdir + self.name + "_" + self.number + "_" + genname + ".fits"
-        self.frameinfo.set("Paths", genname, self.path)
+        self.frameinfo.set("Paths", genname, self.path())
 
     genname = property(fget=getgenname, fset=setgenname)
 
@@ -288,9 +441,7 @@ class Frame(object):
                 self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
             except KeyError:
                 pass
-            #if self.frameinfo.hassection("Registering"):
-            #    if self.frameinfo.haskey("Registering", "pairs"):
-            #        self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
+
         return self._pairs
 
     def setpairs(self, pairs):
@@ -298,6 +449,27 @@ class Frame(object):
         self.frameinfo.set("Registering", "pairs", str(pairs))
 
     pairs = property(fget=getpairs, fset=setpairs)
+
+    def _decode(self):
+        """
+        Convert the raw file into FITS via PGM.
+        """
+
+        if exists(self.path()):
+            print("Image already converted.")
+            return
+
+        print("Converting RAW image...")
+        if call(["dcraw -v -4 -t 0 -D " + self.rawpath], shell=True):
+            print("Something went wrong... There might be helpful output from Rawtran above this line.")
+            if exists(self.path()):
+                print("File " + self.path() + " was created but dcraw returned an error.")
+            else:
+                print("Unable to continue.")
+        else:
+            move(self.rawpath[:-3] + "pgm", self.path(fformat="pgm"))
+            call(["convert", self.path(fformat="pgm"), self.path()])
+            print("Conversion successful!")
 
     def _convert(self, srcpath):
         """
@@ -314,20 +486,20 @@ class Frame(object):
 
         if exists(srcpath):
 
-            if exists(self.path):
+            if exists(self.path()):
                 print("Image already converted.")
                 return
 
             print("Converting RAW image...")
             if call(["dcraw -v -4 -t 0 -D " + srcpath], shell=True):
                 print("Something went wrong... There might be helpful output from Rawtran above this line.")
-                if exists(self.path):
-                    print("File " + self.path + " was created but dcraw returned an error.")
+                if exists(self.path()):
+                    print("File " + self.path() + " was created but dcraw returned an error.")
                 else:
                     print("Unable to continue.")
             else:
-                move(srcpath[:-3] + "pgm", self.path[:-4] + "pgm")
-                call(["convert", self.path[:-4] + "pgm", self.path])
+                move(srcpath[:-3] + "pgm", self.path(fformat="pgm"))
+                call(["convert", self.path(fformat="pgm"), self.path()])
                 print("Conversion successful!")
         else:
             print("Unable to find file in given path: " + srcpath + ". Find out what's wrong and try again.")
@@ -343,7 +515,7 @@ class Frame(object):
         number - number of file
         """
 
-        self.hdu = fits.open(self.path, memmap=True)
+        self.hdu = fits.open(self.path(), memmap=True)
         self.image = self.hdu[0]
 
     def _load_data(self):
@@ -401,7 +573,7 @@ class Frame(object):
         if self._data is None:
             print("No data set! Exiting...")
             exit()
-        fits.writeto(self.path, np.uint16(self._data), hdu.header, clobber=True)
+        fits.writeto(self.path(), np.uint16(self._data), hdu.header, clobber=True)
         self._release_data()
 
     def _write_tiff(self, skimage=True):
@@ -417,7 +589,7 @@ class Frame(object):
         if self.data.shape[0] == 1:
             imagedata = np.flipud(np.int16(self.data[0] - 32768))
             image = Im.fromarray(imagedata)
-            image.save(splitext(self.path)[0] + ".tiff", format="tiff")
+            image.save(self.path(fformat="tiff"), format="tiff")
 
         elif self.data.shape[0] == 3:
             rgbpath = self.rgbpath(fileformat="tiff")
@@ -429,8 +601,7 @@ class Frame(object):
                 image = Im.fromarray(imagedata)
                 image.save(rgbpath[i], format="tiff")
             call(["convert", rgbpath[0], rgbpath[1], rgbpath[2],
-                  "-channel", "RGB", "-depth", "16", "-combine",
-                  splitext(self.path)[0] + ".tiff"])
+                  "-channel", "RGB", "-depth", "16", "-combine", self.path(fformat="tiff")])
             call(["rm", rgbpath[0], rgbpath[1], rgbpath[2]])
 
     def write_tiff(self):
@@ -461,207 +632,3 @@ class Frame(object):
         if tiff:
             self._write_tiff(skimage=skimage)
 
-
-class Batch(object):
-    """
-    Batch holds a list of photos loaded with astropy's fits.open
-    It also checks compatibility for each photo loaded
-    """
-
-    extensions = (".CR2", ".cr2", ".NEF", ".nef")   # TODO: Add here all supported extensions,
-                                                    # and move this to a better place
-
-    def __init__(self, project, genname):
-        """
-        Constructor loads Frames according to arguments.
-
-        Arguments:
-        project = Configuration object for the project
-        genname = Generic name of the files
-        """
-
-        self.project = project
-        self.genname = genname
-
-        self.name    = self.project.get("Default", key="project name")    # Name for the resulting image
-
-        self.list    = {}                                                 # Empty dict for Photos
-
-        if genname in ("flat", "dark", "bias"):
-            self.category = genname
-        else:
-            self.category = "light"
-
-        try:
-            self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
-        except KeyError:
-            self.refnum = "1"
-
-        try:
-            files = self.project.get(self.category)                       # Paths for the frame info files
-            for key in files:
-                self.list[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
-        except KeyError:
-            pass
-
-    def debayer(self, debayer):
-        """
-        Debayer CFA-image into RGB.
-
-        Arguments
-        debayer: a Debayer-type object
-        """
-
-        for i in self.list:
-            print("Processing image " + self.list[i].path)
-            t1 = datetime.datetime.now()
-            self.list[i].data = debayer.debayer(self.list[i].data[0])
-            t2 = datetime.datetime.now()
-            print("...Done")
-            print("Debayering took " + str(t2 - t1) + " seconds.")
-            self.list[i].genname = "rgb"
-            self.list[i].write()
-        self.project.set("Reference images", self.genname, str(self.refnum))
-        print("Debayered images saved with generic name 'rgb'.")
-
-    def register(self, register):
-        """
-        Register and transform images.
-
-        Arguments
-        register: a Registering-type object
-        """
-
-        register.register(self.list, self.project)
-        self.project.set("Reference images", self.genname, str(self.refnum))
-        print("Registered images saved with generic name 'reg'.")
-
-    def stack(self, stacker):
-        """
-        Stack images using given stacker
-
-        Arguments:
-        stacker = Stacking type object
-        """
-
-        new = Frame(self.project, self.genname, number="master")
-        new.data = stacker.stack(self.list, self.project)
-        new.write(tiff=True)
-        print("Result image saved to " + new.path)
-        print("                  and " + splitext(new.path)[0] + ".tiff")
-
-    def subtract(self, calib, stacker):
-        """
-        Subtract calib from images in imagelist
-        """
-
-        cframe = Frame(self.project, calib, number="master")
-
-        for i in self.list:
-            print("Subtracting " + calib + " from image " + str(self.list[i].number))
-            self.list[i].data = stacker.subtract(self.list[i], cframe)
-            if self.list[i].genname not in ("bias", "dark", "flat"):
-                self.list[i].genname = "calib"
-            self.list[i].write()
-        self.project.set("Reference images", "calib", str(self.refnum))
-        print("Calibrated images saved with generic name 'calib'.")
-
-    def divide(self, calib, stacker):
-        """
-        Divide images in imagelist with calib
-        """
-
-        cframe = Frame(self.project, calib, number="master")
-
-        for i in self.list:
-            print("Dividing image " + str(self.list[i].number) + " with " + calib)
-            self.list[i].data = stacker.divide(self.list[i], cframe)
-            if self.list[i].genname not in ("bias", "dark", "flat"):
-                self.list[i].genname = "calib"
-            self.list[i].write()
-        self.project.set("Reference images", "calib", str(self.refnum))
-        print("Calibrated images saved with generic name 'calib'.")
-
-    def directory(self, path, itype):
-        """
-        Add directory to Batch
-
-        Arguments:
-        path - Unix path where the photos are (Must end in "/")
-        type - Type of photo frames (light, dark, bias, flat)
-        """
-
-        allfiles = listdir(path)
-        rawfiles = []
-
-        for i in allfiles:
-            if splitext(i)[1] in self.extensions:
-                rawfiles.append(path + i)
-
-        if len(rawfiles) != 0:
-            print("Found files :")
-            for i in rawfiles:
-                print(i)
-        else:
-            print("No supported RAW files found. All files found are listed here: " + str(allfiles))
-            return
-
-        n = len(self.list)
-
-        for i in rawfiles:
-            frame = Frame(self.project, self.genname, number=n)
-            frame.fromraw(i)
-            self.project.set(itype, str(n), frame.infopath)
-            n += 1
-
-        self.project.set("Reference images", itype, "1")
-
-    def addfiles(self, allfiles, itype):
-        """
-        Add list of files to Batch
-        """
-
-        rawfiles = []
-        for i in allfiles:
-            if splitext(i)[1] in self.extensions:
-                rawfiles.append(i)
-
-        if len(rawfiles) != 0:
-            print("Found files :")
-            for i in rawfiles:
-                print(i)
-        else:
-            print("No supported RAW files found. All files found are listed here: " + str(allfiles))
-            return
-
-        n = len(self.list)
-
-        for i in rawfiles:
-            frame = Frame(self.project, self.genname, number=n)
-            frame.fromraw(i)
-            self.project.set(itype, str(n), frame.infopath)
-            self.list[n] = Frame(self.project, itype, infopath=frame.infopath, number=n)
-            n += 1
-
-        self.project.set("Reference images", itype, "1")
-
-    def addfile(self, file, itype):
-        """
-        Add a single file. Internal use only
-        """
-
-        if splitext(file)[1] not in self.extensions:
-            return
-
-        try:
-            n = len(self.project.get(itype).keys())
-        except KeyError:
-            n = 0
-
-        frame = Frame(self.project, self.genname, number=n)
-        frame.fromraw(file)
-        self.project.set(itype, str(n), frame.infopath)
-
-        self.list[str(n)] = Frame(self.project, itype, infopath=frame.infopath, number=str(n))
-
-        self.project.set("Reference images", itype, "1")
