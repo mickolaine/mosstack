@@ -6,17 +6,15 @@ Created on 2.10.2013
 
 """
 
-__author__ = 'Mikko Laine'
-
-from .. Registering.Registering import Registering
+#from .. Registering.Registering import Registering
 from subprocess import call, check_output
-from .. import Config
-from math import sqrt, log, fabs
-from operator import itemgetter
+from .. Config import Global
+#from math import sqrt, log, fabs
+#from operator import itemgetter
 from os.path import splitext, isfile
-from re import sub
-from shutil import copyfile
-import datetime   # For profiling
+#from re import sub
+#from shutil import copyfile
+#import datetime   # For profiling
 
 
 class Sextractor:
@@ -35,8 +33,8 @@ class Sextractor:
         """
 
         self.image = image
-        self.sextractor = project.sex
-        self.path = project.path
+        self.sextractor = Global.get("Programs", "sextractor")
+        self.path = image.wdir
         self.imagepath = image.getpath("light")
         self.catname = splitext(self.image.infopath)[0] + ".cat"
         self.confname = splitext(self.image.infopath)[0] + ".sex"
@@ -122,11 +120,6 @@ class Sextractor:
             return isfile(self.image.frameinfo.get("Paths", "catalog"))
         except KeyError:
             return False
-        #if self.image.frameinfo.haskey("Paths", "catalog"):
-        #    if isfile(self.image.frameinfo.get("Paths", "catalog")):
-        #        return True
-        #return False
-
 
     def setsensitivity(self, area, sigma):
         """
@@ -221,19 +214,19 @@ class Sextractor:
                 area, sigma = self.findsensitivity()
                 self.setsensitivity(area, sigma)
             else:
-                self.image.frameinfo.set("Paths","catalog", self.catname)
+                self.image.frameinfo.set("Paths", "catalog", self.catname)
                 break
 
         return self.coord
 
-    def maketriangles(self):
+    def gettriangles(self):
         """
         Make all possible triangles from coordinates in self.coord and save it to self.image.tri
 
         Result: image.tri = [[(x1,y1),(x2,y2),(x3,y3)], ... , ...]
         """
 
-        self.image.tri = []
+        tri = []
         n = 0
         #for i in self.coord:
         #    print(i)
@@ -245,6 +238,8 @@ class Sextractor:
                     if (j == k) or (i == k):
                         continue
                     n += 1
-                    self.image.tri.append([i, j, k])
+                    tri.append([i, j, k])
 
         print("Total number of triangles in image " + self.image.path + " is " + str(n) + ".")
+
+        return tri

@@ -1,3 +1,7 @@
+v0.5.0
+- Redesigned Frame - Batch relationship and added QFrame and QBatch to use
+  with PyQt4 gui
+
 v0.4.0 2014-05-23 -- Gui and sigma stacks
 - Added sigma clipping and sigma median stacking methods where values that
   differ more than 3 times the standard deviation from the median are either
