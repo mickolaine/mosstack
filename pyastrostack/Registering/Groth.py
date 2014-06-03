@@ -69,12 +69,13 @@ class Groth(Registering):
 
         self.findstars_single(frame)
 
-        self.step1(frame)
+        if frame.points is None:
+            self.step1(frame)
 
         if frame.pairs is None:
             self.step2(frame, self.ref)
 
-        self.transformer.affine_transform(frame, self.ref)
+        return self.transformer.affine_transform3(frame, self.ref)
 
     def findstars(self, imagelist, project):
         """
@@ -103,7 +104,8 @@ class Groth(Registering):
         frame.coordinates = sex.getcoordinates()
         frame.tri = sex.gettriangles()
 
-    def step1(self, image):
+    @staticmethod
+    def step1(image):
         """
         Calculates R,C,tR and tC for every triangle in image. These quantities are described in article #TODO: Cite the article
 
@@ -132,13 +134,13 @@ class Groth(Registering):
             r2 = sqrt(x2x1 * x2x1 + y2y1 * y2y1)
 
             R = r3 / r2
-            C = (x3x1 * x2x1 + y3y1 * y2y1) / (r3 * r2)     #Cosine of angle at vertex 1
+            C = (x3x1 * x2x1 + y3y1 * y2y1) / (r3 * r2)     # Cosine of angle at vertex 1
 
             tR = sqrt(2. * R * R * ep * ep * (1. / (r3 * r3) - C / (r2 * r3) + 1. / (r2 * r2)))
 
-            S = 1. - C ** 2.   #Sine^2 of angle at vertex 1
-            # S should be S**2 and on above line S should be sqrt of 1-C**2,
-            # but this might be faster. I don't know if python optimizes this.
+            S = 1. - C ** 2.    # Sine^2 of angle at vertex 1
+                                # S should be S**2 and on above line S should be sqrt of 1-C**2,
+                                # but this might be faster. I don't know if python optimizes this.
             tC = sqrt(2. * S * ep * ep * (1. / (r3 * r3) - C / (r2 * r3) + 1. / (r2 * r2)) +
                       3. * C * C * ep * ep * ep * ep * (1. / (r3 * r3) - C / (r2 * r3) + 1. / (r2 * r2)) ** 2.)
 
@@ -153,7 +155,8 @@ class Groth(Registering):
 
         print("Step 1 complete for image " + str(image.number) + ". " + str(len(image.tri)) + " triangles found.")
 
-    def step2(self, i1, i2):
+    @staticmethod
+    def step2(i1, i2):
         """
         A wrapper for Cython implementation of the algorithm
 

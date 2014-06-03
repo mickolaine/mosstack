@@ -2,12 +2,13 @@
 Graphical user interface for pyAstroStack. This file holds all the functionality for GUI drafted in Qt Designer.
 """
 
-from PyQt4.QtCore import QAbstractTableModel, Qt
+from PyQt4.QtCore import QAbstractTableModel, Qt, QThread, SIGNAL
 from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QProgressDialog, QMessageBox
 from ast import literal_eval
 from . UiDesign import Ui_MainWindow
 from . Config import Project, Setup
-from . Photo import Batch
+from . QBatch import QBatch
+from . QFrame import QFrame
 from . import Registering
 from . import Debayer
 from . import Stacker
@@ -48,6 +49,7 @@ class Ui(Ui_MainWindow):
         self.buttonStack.setExclusive(True)
 
         self.setValues()
+        self.thread = None
         self.fileDialog = QFileDialog()
         self.inputDialog = QInputDialog()
         self.messageBox = QMessageBox()
@@ -162,7 +164,7 @@ class Ui(Ui_MainWindow):
             try:
                 files = self.project.get(i)
                 files = list(files.values())
-                self.batch[i] = Batch(self.project, i)
+                self.batch[i] = QBatch(self.project, i)
                 self.batch[i].addfiles(files, i)
                 self.addFrame(files, i)
             except:
@@ -245,35 +247,43 @@ class Ui(Ui_MainWindow):
         self.biasfiles = files
         self.addFrame(files, "bias")
 
-    def addFrame(self, files, itype):
+    def addFrame(self, files, ftype):
         """
         Add files to frame list and batches. Create batches if they don't already exist.
         """
 
-        progress = QProgressDialog()
-        progress.show()
-        progress.setMinimum(1)
-        progress.setMaximum(len(files))
-        n = 0
+        #progress = QProgressDialog()
+        #progress.show()
+        #progress.setMinimum(1)
+        #progress.setMaximum(len(files))
+        #n = 1
         for i in files:
-            progress.setValue(n)
+            #progress.setValue(n)
             # If batch does not exist, create one
-            if itype not in self.batch:
-                self.batch[itype] = Batch(self.project, itype)
+            if ftype not in self.batch:
+                self.batch[ftype] = QBatch(self.project, ftype)
+            self.thread = GenericThread(self.batch[ftype].addfile, i, ftype)
+            self.disconnect(self, SIGNAL('updateTableView(QString)'), self.updateTableView)
+            self.connect(self, SIGNAL('updateTableView(QString)'), self.updateTableView)
+            self.thread.start()
 
-            # Add files
-            self.batch[itype].addfile(i, itype)
+            #n += 1
+            #progress.update()
 
-            # Add files to framearray
-            self.framearray.append([i, itype])
-            n += 1
-            progress.update()
+        #tablemodel = FrameTableModel(self.batch[ftype].framearray)
+        #self.tableView.setModel(tablemodel)
+        #self.tableView.resizeColumnsToContents()
+        #self.tableView.resizeRowsToContents()
+        #progress.hide()
 
-        tablemodel = FrameTableModel(self.framearray)
+    def updateTableView(self, text):
+        tablemodel = []
+        print(text)
+        for i in self.batch:
+            tablemodel += self.batch[i].framearray
         self.tableView.setModel(tablemodel)
         self.tableView.resizeColumnsToContents()
         self.tableView.resizeRowsToContents()
-        #progress.hide()
 
     def runProgram(self):
         """
@@ -337,7 +347,7 @@ class Ui(Ui_MainWindow):
         elif self.buttonDebayer.checkedButton().text() == "Bilinear Cython":
             self.debayerwrap = Debayer.BilinearCython()
         elif self.buttonDebayer.checkedButton().text() == "VNG OpenCL":
-            self.debayerwrap = Debayer.VNG()
+            self.debayerwrap = Debayer.VNGOpenCl()
         elif self.buttonDebayer.checkedButton().text() == "Bilinear OpenCL":
             self.debayerwrap = Debayer.BilinearOpenCl()
 
@@ -378,7 +388,7 @@ class FrameTableModel(QAbstractTableModel):
     Model for file list table.
     """
 
-    header_labels = ['File path', 'Type', 'Column 3', 'Column 4']
+    header_labels = ['File path', 'Type', 'Decoded', 'Calibrated', 'Debayered', 'Registered']
 
     def __init__(self, datain, parent=None, *args):
         QAbstractTableModel.__init__(self, parent, *args)
@@ -403,3 +413,23 @@ class FrameTableModel(QAbstractTableModel):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
             return self.header_labels[section]
         return QAbstractTableModel.headerData(self, section, orientation, role)
+
+
+class GenericThread(QThread):
+    """
+    Generic thread borrowed from http://joplaete.wordpress.com/2010/07/21/threading-with-pyqt4/
+
+    Will rewrite this, when I understand what's happening here
+    """
+    def __init__(self, function, *args, **kwargs):
+        QThread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+
+    def __del__(self):
+        self.wait()
+
+    def run(self):
+        self.function(*self.args, **self.kwargs)
+        return
