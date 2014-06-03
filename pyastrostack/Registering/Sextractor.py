@@ -27,7 +27,7 @@ class Sextractor:
     TODO: Test for SExtractor version: 2.4.4 has a bug
     """
 
-    def __init__(self, image, project):
+    def __init__(self, image):
         """
         Initializes the object and common configuration values
         """

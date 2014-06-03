@@ -26,15 +26,23 @@ class Frame(object):
         fphase = process phase: orig, calib#, rgb, reg, master
         """
 
-        self.status = {}        # Dict to hold information about process status
+        self.state = {         # Dict to hold information about process state
+            "prepare": 0,       # 0 = not started
+            "calibrate": 0,     # 1 = under process
+            "debayer": 0,       # 2 = done
+            "register": 0       # -1 = failed
+        }                       # -2 = invalid (eg. registration for darks)
 
         self.rawpath = rawpath
         self.infopath = infopath
         self.ftype = ftype
         self.fphase = fphase
         self.project = project
+        self.format = ".fits"       # TODO: Remove this legacy
 
-        self.wdir = self.project.get("Default", "Path")
+        # TODO: Get rid of this:
+        self.wdir = self.project.get("Setup", "Path")
+        self.name = self.project.get("Default", "Project name")
 
         # Instance variables required later
         self.rgb       = False      # Is image rgb or monochrome (Boolean)
@@ -74,9 +82,9 @@ class Frame(object):
         2. Decode raw to FITS
         3. Read raw's properties (dimensions, bayer filter...)
         4. Write everything to .info
-        5. Inform Gui that status has changed
+        5. Inform Gui that state has changed
         """
-        self.status["prepare"] = 1
+        self.state["prepare"] = 1
 
         if self.frameinfo is not None:
             self.readinfo()                     # 1.1. -- 1.2.
@@ -84,7 +92,7 @@ class Frame(object):
             return
 
         if not Frame.checkraw(self.rawpath):
-            self.status["prepare"] = -1
+            self.state["prepare"] = -1
             # TODO: Tell UI the file's not good
             return
 
@@ -92,8 +100,8 @@ class Frame(object):
         self.extractinfo()                      # 3.
         self.writeinfo()                        # 4.
 
-        # 5.
-        self.status["prepare"] = 2
+        self.state["prepare"] = 2
+        self.update_ui()
 
         return
 
@@ -105,10 +113,10 @@ class Frame(object):
         1. Subtract master bias
         2. Subtract master dark
         3. Divide with master flat
-        4. Inform Gui that status has changed
+        4. Inform Gui that state has changed
         """
 
-        self.status["calibrate"] = 1
+        self.state["calibrate"] = 1
 
         data = self.data
 
@@ -124,9 +132,9 @@ class Frame(object):
         self.data = data
         self.fphase = "calib"
         self.write()
-        self.status["calibrate"] = 2
+        self.state["calibrate"] = 2
 
-        # 4.
+        self.update_ui()
         return
 
     def debayer(self, debayer):
@@ -135,20 +143,20 @@ class Frame(object):
 
         1. Check what Debayer function to use
         2. Do the thing
-        3. Inform Gui that status has changed
+        3. Inform Gui that state has changed
         """
 
-        self.status["debayer"] = 1
+        self.state["debayer"] = 1
 
         self.data = debayer.debayer(self.data)
         self.fphase = "rgb"
         self.write()
-        self.status["debayer"] = 2
+        self.state["debayer"] = 2
 
-        # 3.
+        self.update_ui()
         return
 
-    def register(self):
+    def register(self, register):
         """
         Register the frame. Project tells how.
 
@@ -156,14 +164,16 @@ class Frame(object):
         2. Check if reference frame.
             2.(If)   Copy file
             2.(Else) Step 2
-        3. Inform Gui that status has changed
+        3. Inform Gui that state has changed
         """
 
-        self.status["register"] = 1
+        self.state["register"] = 1
 
-        pass
+        self.data = register.register_single(self)
 
-        self.status["register"] = 2
+        self.state["register"] = 2
+
+        self.update_ui()
 
         return
 
@@ -175,7 +185,7 @@ class Frame(object):
             return self.wdir + "/" + self.name + "_" + self.ftype + "_" + self.fphase + "." + fformat
         else:
             return self.wdir + "/" + self.name + "_" + self.ftype \
-                             + "_" + self.number + "_" + self.fphase + "." + fformat
+                             + "_" + str(self.number) + "_" + self.fphase + "." + fformat
 
     def rgbpath(self, fileformat=None):
         """
@@ -271,25 +281,27 @@ class Frame(object):
         Read the file into memory and extract all required information.
         """
 
-        output = str.split(check_output(["dcraw", "-i", "-v", self.rawpath]), "\n")
+        rawoutput = check_output(["dcraw", "-i", "-v", self.rawpath]).decode()
+
+        output = str.split(str(rawoutput), "\n")
 
         for i in output:                        # Some of these are extracted for possible future use
             line = str.split(i, ": ")
             if line[0] == "Timestamp":
                 self.timestamp = line[1]
-            elif line[0] == "Camera":
+            if line[0] == "Camera":
                 self.camera = line[1]
-            elif line[0] == "ISO speed":
+            if line[0] == "ISO speed":
                 self.isospeed = line[1]
-            elif line[0] == "Shutter":
+            if line[0] == "Shutter":
                 self.shutter = line[1]
-            elif line[0] == "Aperture":
+            if line[0] == "Aperture":
                 self.aperture = line[1]
-            elif line[0] == "Focal length":
-                self.focallenght = line[1]
-            elif line[0] == "Filter pattern":
+            if line[0] == "Focal length":
+                self.focallength = line[1]
+            if line[0] == "Filter pattern":
                 self.bayer = line[1][:4]
-            elif line[0] == "Daylight multipliers":
+            if line[0] == "Daylight multipliers":
                 self.dlmulti = line[1]
 
         self._load_data()
@@ -312,7 +324,7 @@ class Frame(object):
         """
 
         if self.infopath is None:
-            self.infopath = self.wdir + "/" + self.name + "_" + self.ftype + "_" + self.number + ".info"
+            self.infopath = self.wdir + "/" + self.name + "_" + self.ftype + "_" + str(self.number) + ".info"
         self.frameinfo = Config.Frame(self.infopath)
 
         self.frameinfo.set("Paths", "Raw", self.rawpath)
@@ -460,7 +472,7 @@ class Frame(object):
             return
 
         print("Converting RAW image...")
-        if call(["dcraw -v -4 -t 0 -D " + self.rawpath], shell=True):
+        if call(["dcraw -v -4 -t 0 -D '" + self.rawpath + "'"], shell=True):
             print("Something went wrong... There might be helpful output from Rawtran above this line.")
             if exists(self.path()):
                 print("File " + self.path() + " was created but dcraw returned an error.")
@@ -632,3 +644,8 @@ class Frame(object):
         if tiff:
             self._write_tiff(skimage=skimage)
 
+    def update_ui(self):
+        """
+        Update the user interface. Empty for now, but inheriting classes might replace this to something useful
+        """
+        pass

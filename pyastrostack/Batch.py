@@ -6,8 +6,7 @@ from os.path import splitext
 
 class Batch(object):
     """
-    Batch holds a list of photos loaded with astropy's fits.open
-    It also checks compatibility for each photo loaded
+    Batch holds a list of frames and handles connections to project files
     """
 
     extensions = (".CR2", ".cr2", ".NEF", ".nef")   # TODO: Add here all supported extensions,
