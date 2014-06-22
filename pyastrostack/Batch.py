@@ -187,7 +187,7 @@ class Batch(object):
 
         self.project.set("Reference images", itype, "1")
 
-    def addfile(self, file, itype):
+    def addfile(self, file, itype, number):
         """
         Add a single file. Internal use only
         """

@@ -34,7 +34,7 @@ class UserInterface():
         ui.setupMoar(window)
 
         window.show()
-        sys.exit(app.exec_())
+        app.exec_()
 
 
 if __name__ == "__main__":

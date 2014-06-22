@@ -1,7 +1,8 @@
 from . Batch import Batch
 from . QFrame import QFrame
 from PyQt4.QtGui import QWidget
-from PyQt4.QtCore import SIGNAL
+#from PyQt4.QtCore import SIGNAL
+from PyQt4.QtCore import *
 
 
 class QBatch(Batch, QWidget):
@@ -10,37 +11,45 @@ class QBatch(Batch, QWidget):
     integrated to Batch
     """
 
+    __pyqtSignals__ = ("update")
+
     def __init__(self, project, ftype):
         super(QWidget, self).__init__()
         super(QBatch, self).__init__(project, ftype)
         self.frames = {}
         self._framearray = {}
 
-    def addfile(self, file, ftype):
+    def addfile(self, file, ftype, number):
         """
         Add a single file. Internal use only
         """
 
-        try:
-            n = len(self.project.get(ftype).keys())
-        except KeyError:
-            n = 0
+        self.frames[number] = QFrame(project=self.project, rawpath=file, ftype=ftype, number=number)
+        self._framearray[number] = [self.frames[number].rawpath, ftype, self.frames[number].state["prepare"],
+                                                              self.frames[number].state["calibrate"],
+                                                              self.frames[number].state["debayer"],
+                                                              self.frames[number].state["register"]]
 
-        self.frames[n] = QFrame(project=self.project, rawpath=file, ftype=ftype, number=n)
-        self._framearray[n] = [self.frames[n].rawpath, ftype, self.frames[n].state["prepare"],
-                                                              self.frames[n].state["calibrate"],
-                                                              self.frames[n].state["debayer"],
-                                                              self.frames[n].state["register"]]
-
-        self.project.set(ftype, str(n), self.frames[n].infopath)
-        print("BAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-        self.emit(SIGNAL('updateTableView(QString)'), "FOO")
+        self.project.set(ftype, str(number), self.frames[number].infopath)
+        self.emit(SIGNAL("update"))
 
     def getframearray(self):
         temp = []
-        for i in self._framearray:
-            temp.append(self._framearray[i])
-        print(temp)
-        return temp
+        for i in self.frames:
+            temp.append([self.frames[i].rawpath, self.frames[i].ftype, self.frames[i].state["prepare"],
+                                                            self.frames[i].state["calibrate"],
+                                                            self.frames[i].state["debayer"],
+                                                            self.frames[i].state["register"]])
+        #print(temp)
+        self._framearray = temp
+        return self._framearray
+
+    def decode(self, number):
+        """
+        Decode all frames.
+        """
+
+        self.frames[number].decode()
+        self.emit(SIGNAL("update"))
 
     framearray = property(fget=getframearray)

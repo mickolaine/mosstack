@@ -2,8 +2,9 @@
 Graphical user interface for pyAstroStack. This file holds all the functionality for GUI drafted in Qt Designer.
 """
 
-from PyQt4.QtCore import QAbstractTableModel, Qt, QThread, SIGNAL
-from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QProgressDialog, QMessageBox
+#from PyQt4.QtCore import QAbstractTableModel, Qt, QThread, pyqtSignal, SIGNAL
+from PyQt4.QtCore import *
+from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QProgressDialog, QMessageBox, QAction, QApplication
 from ast import literal_eval
 from . UiDesign import Ui_MainWindow
 from . Config import Project, Setup
@@ -12,6 +13,7 @@ from . QFrame import QFrame
 from . import Registering
 from . import Debayer
 from . import Stacker
+import sys
 try:
     from PyQt4.QtCore import Qstring
     _fromUtf8 = QString.fromUtf8
@@ -29,7 +31,10 @@ except ImportError:
 class Ui(Ui_MainWindow):
 
     def __init__(self):
-        super(Ui, self).__init__()
+        super(Ui_MainWindow, self).__init__()
+        #self.app = QApplication(sys.argv)
+        #self.setupUi(self)
+        #self.app.exec_()
 
     def setupMoar(self, MainWindow):
         """
@@ -262,35 +267,42 @@ class Ui(Ui_MainWindow):
         Add files to frame list and batches. Create batches if they don't already exist.
         """
 
-        #progress = QProgressDialog()
-        #progress.show()
-        #progress.setMinimum(1)
-        #progress.setMaximum(len(files))
-        #n = 1
-        for i in files:
-            #progress.setValue(n)
+
+        # Add files to batch
+        number = 0
+        threadpool = []
+
+        for path in files:
             # If batch does not exist, create one
             if ftype not in self.batch:
                 self.batch[ftype] = QBatch(self.project, ftype)
-            self.thread = GenericThread(self.batch[ftype].addfile, i, ftype)
-            self.disconnect(self, SIGNAL('updateTableView(QString)'), self.updateTableView)
-            self.connect(self, SIGNAL('updateTableView(QString)'), self.updateTableView)
-            self.thread.start()
+            threadpool.append(GenericThread(self.batch[ftype].addfile, path, ftype, number))
 
-            #n += 1
-            #progress.update()
+            number += 1
 
-        #tablemodel = FrameTableModel(self.batch[ftype].framearray)
-        #self.tableView.setModel(tablemodel)
-        #self.tableView.resizeColumnsToContents()
-        #self.tableView.resizeRowsToContents()
-        #progress.hide()
+        n = 0
+        while n < number:
+            threadpool.append(GenericThread(self.batch[ftype].decode, n))
+            n += 1
 
-    def updateTableView(self, text):
+        threadpool.append(GenericThread(self.updateTableView))
+
+        while len(threadpool) > 0:
+            thread = threadpool[0]
+            threadpool = threadpool[1:]
+            #self.disconnect(thread, thread.signal, self.updateTableView)
+            self.connect(thread, SIGNAL("update"), self.updateTableView)  # , Qt.DirectConnection)
+            thread.start()
+
+        # Decode the frames
+        #self.batch[ftype].decode()
+
+    def updateTableView(self):
         tablemodel = []
-        print(text)
+        print("FOOOOOO")
         for i in self.batch:
             tablemodel += self.batch[i].framearray
+        tablemodel = FrameTableModel(tablemodel)
         self.tableView.setModel(tablemodel)
         self.tableView.resizeColumnsToContents()
         self.tableView.resizeRowsToContents()
@@ -431,15 +443,20 @@ class GenericThread(QThread):
 
     Will rewrite this, when I understand what's happening here
     """
+    __pyqtSignals__ = ("update")
+
     def __init__(self, function, *args, **kwargs):
-        QThread.__init__(self)
+        super(QThread, self).__init__()
+        #QThread.__init__(self)
         self.function = function
         self.args = args
         self.kwargs = kwargs
+        #self.signal = SIGNAL("signal")
 
     def __del__(self):
         self.wait()
 
     def run(self):
         self.function(*self.args, **self.kwargs)
+        #self.emit(SIGNAL("update"))
         return
