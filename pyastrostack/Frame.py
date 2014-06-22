@@ -79,7 +79,7 @@ class Frame(object):
             1.1. Check if everything .info file says is really done and found
             1.2. Update all variables to match .info's state
             1.3. Inform Gui to update itself
-        2. Decode raw to FITS
+        #2. Decode raw to FITS
         3. Read raw's properties (dimensions, bayer filter...)
         4. Write everything to .info
         5. Inform Gui that state has changed
@@ -96,14 +96,23 @@ class Frame(object):
             # TODO: Tell UI the file's not good
             return
 
-        self._decode()                          # 2.
+        #self._decode()                          # 2.
         self.extractinfo()                      # 3.
         self.writeinfo()                        # 4.
 
-        self.state["prepare"] = 2
+        self.state["prepare"] = 1
         self.update_ui()
 
         return
+
+    def decode(self):
+        """
+        Decode the frame. Now just calls _decode
+        """
+
+        self._decode()
+        self.state["prepare"] = 2
+        self.update_ui()
 
     def calibrate(self, stacker, bias=None, dark=None, flat=None):
         """
@@ -303,18 +312,10 @@ class Frame(object):
                 self.bayer = line[1][:4]
             if line[0] == "Daylight multipliers":
                 self.dlmulti = line[1]
+            if line[0] == "Image size":
+                self.x = line[1].strip().split(" x ")[0]
+                self.y = line[1].strip().split(" x ")[1]
 
-        self._load_data()
-
-        # Image dimensions
-        if len(self.image.shape) == 3:
-            self.x = self.image.shape[2]
-            self.y = self.image.shape[1]
-        else:
-            self.x = self.image.shape[1]
-            self.y = self.image.shape[0]
-
-        self._release_data()
         print("Done!")
         print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
 
