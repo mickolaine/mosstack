@@ -14,8 +14,8 @@ class QBatch(Batch, QWidget):
     __pyqtSignals__ = ("update")
 
     def __init__(self, project, ftype):
-        super(QWidget, self).__init__()
         super(QBatch, self).__init__(project, ftype)
+        super(QWidget, self).__init__()
         self.frames = {}
         self._framearray = {}
 
@@ -25,13 +25,13 @@ class QBatch(Batch, QWidget):
         """
 
         self.frames[number] = QFrame(project=self.project, rawpath=file, ftype=ftype, number=number)
-        self._framearray[number] = [self.frames[number].rawpath, ftype, self.frames[number].state["prepare"],
-                                                              self.frames[number].state["calibrate"],
-                                                              self.frames[number].state["debayer"],
-                                                              self.frames[number].state["register"]]
+        #self._framearray[number] = [self.frames[number].rawpath, ftype, self.frames[number].state["prepare"],
+        #                                                      self.frames[number].state["calibrate"],
+        #                                                      self.frames[number].state["debayer"],
+        #                                                      self.frames[number].state["register"]]
 
         self.project.set(ftype, str(number), self.frames[number].infopath)
-        self.emit(SIGNAL("update"))
+        self.emit(SIGNAL("update"), "CALLED FROM addfile()")
 
     def getframearray(self):
         temp = []
@@ -50,6 +50,6 @@ class QBatch(Batch, QWidget):
         """
 
         self.frames[number].decode()
-        self.emit(SIGNAL("update"))
+        self.emit(SIGNAL("update"), "CALLED FROM decode()")
 
     framearray = property(fget=getframearray)

@@ -285,7 +285,7 @@ class Ui(Ui_MainWindow):
             threadpool.append(GenericThread(self.batch[ftype].decode, n))
             n += 1
 
-        threadpool.append(GenericThread(self.updateTableView))
+        #threadpool.append(GenericThread(self.updateTableView))
 
         while len(threadpool) > 0:
             thread = threadpool[0]
@@ -299,7 +299,7 @@ class Ui(Ui_MainWindow):
 
     def updateTableView(self):
         tablemodel = []
-        print("FOOOOOO")
+        #print(text)
         for i in self.batch:
             tablemodel += self.batch[i].framearray
         tablemodel = FrameTableModel(tablemodel)
@@ -458,5 +458,5 @@ class GenericThread(QThread):
 
     def run(self):
         self.function(*self.args, **self.kwargs)
-        #self.emit(SIGNAL("update"))
+        self.emit(SIGNAL("update"), "CALLED FROM GenericThread.run()")
         return
