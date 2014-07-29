@@ -6,7 +6,7 @@ import numpy
 
 setup(
     name='pyAstroStack',
-    version='0.4.0',
+    version='0.4.1',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=['pyastrostack', 'pyastrostack.Debayer', 'pyastrostack.Registering', 'pyastrostack.Stacker'],

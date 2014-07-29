@@ -18,6 +18,12 @@ except ImportError:
     def _fromUtf8(s):
         return s
 
+try:
+    import pyopencl
+    use_pyopencl = True
+except ImportError:
+    use_pyopencl = False
+
 
 class Ui(Ui_MainWindow):
 
@@ -46,6 +52,10 @@ class Ui(Ui_MainWindow):
         self.buttonDebayer.setExclusive(True)
         self.buttonRegister.setExclusive(True)
         self.buttonStack.setExclusive(True)
+
+        if not use_pyopencl:
+            self.radioButtonBilinearCL.setEnabled(False)
+            self.radioButtonVNGCL.setEnabled(False)
 
         self.setValues()
         self.fileDialog = QFileDialog()

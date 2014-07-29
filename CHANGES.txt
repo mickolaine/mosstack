@@ -1,3 +1,7 @@
+v0.4.1 2014-07-30 -- Bugfix
+- Gui now checks for pyopencl and does not assume it exists. This affects the
+  gui only since cli already checks for opencl before use
+
 v0.4.0 2014-05-23 -- Gui and sigma stacks
 - Added sigma clipping and sigma median stacking methods where values that
   differ more than 3 times the standard deviation from the median are either
