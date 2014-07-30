@@ -1,3 +1,4 @@
+
 v0.4.1 2014-07-30 -- Bugfix
 - Gui now checks for pyopencl and does not assume it exists. This affects the
   gui only since cli already checks for opencl before use
