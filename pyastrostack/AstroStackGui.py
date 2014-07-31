@@ -267,39 +267,29 @@ class Ui(Ui_MainWindow):
         Add files to frame list and batches. Create batches if they don't already exist.
         """
 
-
         # Add files to batch
         number = 0
-        threadpool = []
+        threadpool = QThreadPool(self)
+        threadpool.setMaxThreadCount(4)
 
         for path in files:
             # If batch does not exist, create one
             if ftype not in self.batch:
                 self.batch[ftype] = QBatch(self.project, ftype)
-            threadpool.append(GenericThread(self.batch[ftype].addfile, path, ftype, number))
+                self.batch[ftype].refresh.connect(self.updateTableView)
+
+            threadpool.start(GenericThread(self.batch[ftype].addfile, path, ftype, number))
 
             number += 1
 
+        threadpool.waitForDone()
         n = 0
         while n < number:
-            threadpool.append(GenericThread(self.batch[ftype].decode, n))
+            threadpool.start(GenericThread(self.batch[ftype].decode, n), priority=-1)
             n += 1
-
-        #threadpool.append(GenericThread(self.updateTableView))
-
-        while len(threadpool) > 0:
-            thread = threadpool[0]
-            threadpool = threadpool[1:]
-            #self.disconnect(thread, thread.signal, self.updateTableView)
-            self.connect(thread, SIGNAL("update"), self.updateTableView)  # , Qt.DirectConnection)
-            thread.start()
-
-        # Decode the frames
-        #self.batch[ftype].decode()
 
     def updateTableView(self):
         tablemodel = []
-        #print(text)
         for i in self.batch:
             tablemodel += self.batch[i].framearray
         tablemodel = FrameTableModel(tablemodel)
@@ -437,26 +427,80 @@ class FrameTableModel(QAbstractTableModel):
         return QAbstractTableModel.headerData(self, section, orientation, role)
 
 
-class GenericThread(QThread):
+class GenericThread(QRunnable):
     """
     Generic thread borrowed from http://joplaete.wordpress.com/2010/07/21/threading-with-pyqt4/
 
     Will rewrite this, when I understand what's happening here
     """
     __pyqtSignals__ = ("update")
+    refresh = pyqtSignal()
 
     def __init__(self, function, *args, **kwargs):
-        super(QThread, self).__init__()
+        super(QRunnable, self).__init__()
         #QThread.__init__(self)
         self.function = function
         self.args = args
         self.kwargs = kwargs
         #self.signal = SIGNAL("signal")
 
+    #def __del__(self):
+    #    self.wait()
+
+    def run(self):
+        self.function(*self.args, **self.kwargs)
+        #self.emit(SIGNAL("update"), "CALLED FROM GenericThread.run()")
+        #self.refresh.emit()
+        return
+
+
+class BatchThread(QThread):
+    """
+
+    """
+
+    update = pyqtSignal()
+
+    def __init__(self, batch, function, *args, **kwargs):
+        super(QThread, self).__init__()
+        self.batch = batch
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+
     def __del__(self):
         self.wait()
 
     def run(self):
-        self.function(*self.args, **self.kwargs)
-        self.emit(SIGNAL("update"), "CALLED FROM GenericThread.run()")
+        if self.function == "decode":
+            self.run_decode()
+
+        if self.function == "calibrate":
+            self.run_calibrate()
+
+        if self.function == "debayering":
+            self.run_debayering()
+
+        if self.function == "registering":
+            self.run_registering()
+
+        if self.function == "stacking":
+            self.run_stacking()
+
         return
+
+    def run_decode(self):
+
+        pass
+
+    def run_calibrate(self):
+        pass
+
+    def run_debayering(self):
+        pass
+
+    def run_registering(self):
+        pass
+
+    def run_stacking(self):
+        pass

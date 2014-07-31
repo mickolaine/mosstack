@@ -10,13 +10,13 @@ class QBatch(Batch, QWidget):
     QBatch is a PyQt4 aware extension of Batch. I'm not sure how much this is needed yet so this might be
     integrated to Batch
     """
-
+    refresh = pyqtSignal()
     __pyqtSignals__ = ("update")
 
     def __init__(self, project, ftype):
         super(QBatch, self).__init__(project, ftype)
         super(QWidget, self).__init__()
-        self.frames = {}
+        #self.frames = {}
         self._framearray = {}
 
     def addfile(self, file, ftype, number):
@@ -31,7 +31,8 @@ class QBatch(Batch, QWidget):
         #                                                      self.frames[number].state["register"]]
 
         self.project.set(ftype, str(number), self.frames[number].infopath)
-        self.emit(SIGNAL("update"), "CALLED FROM addfile()")
+        #self.emit(SIGNAL("update"), "CALLED FROM addfile()")
+        self.refresh.emit()
 
     def getframearray(self):
         temp = []
@@ -50,6 +51,7 @@ class QBatch(Batch, QWidget):
         """
 
         self.frames[number].decode()
-        self.emit(SIGNAL("update"), "CALLED FROM decode()")
+        #self.emit(SIGNAL("update"), "CALLED FROM decode()")
+        self.refresh.emit()
 
     framearray = property(fget=getframearray)

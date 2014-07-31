@@ -27,7 +27,7 @@ class Batch(object):
 
         self.name    = self.project.get("Default", key="project name")    # Name for the resulting image
 
-        self.list    = {}                                                 # Empty dict for Photos
+        self.frames  = {}                                                 # Empty dict for Photos
 
         if genname in ("flat", "dark", "bias"):
             self.category = genname
@@ -42,7 +42,7 @@ class Batch(object):
         try:
             files = self.project.get(self.category)                       # Paths for the frame info files
             for key in files:
-                self.list[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
+                self.frames[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
         except KeyError:
             pass
 
@@ -54,15 +54,15 @@ class Batch(object):
         debayer: a Debayer-type object
         """
 
-        for i in self.list:
-            print("Processing image " + self.list[i].path)
+        for i in self.frames:
+            print("Processing image " + self.frames[i].path)
             t1 = datetime.datetime.now()
-            self.list[i].data = debayer.debayer(self.list[i].data[0])
+            self.frames[i].data = debayer.debayer(self.list[i].data[0])
             t2 = datetime.datetime.now()
             print("...Done")
             print("Debayering took " + str(t2 - t1) + " seconds.")
-            self.list[i].genname = "rgb"
-            self.list[i].write()
+            self.frames[i].genname = "rgb"
+            self.frames[i].write()
         self.project.set("Reference images", self.genname, str(self.refnum))
         print("Debayered images saved with generic name 'rgb'.")
 
@@ -74,7 +74,7 @@ class Batch(object):
         register: a Registering-type object
         """
 
-        register.register(self.list, self.project)
+        register.register(self.frames, self.project)
         self.project.set("Reference images", self.genname, str(self.refnum))
         print("Registered images saved with generic name 'reg'.")
 
@@ -87,7 +87,7 @@ class Batch(object):
         """
 
         new = Frame(self.project, self.genname, number="master")
-        new.data = stacker.stack(self.list, self.project)
+        new.data = stacker.stack(self.frames, self.project)
         new.write(tiff=True)
         print("Result image saved to " + new.path)
         print("                  and " + splitext(new.path)[0] + ".tiff")
@@ -99,12 +99,12 @@ class Batch(object):
 
         cframe = Frame(self.project, calib, number="master")
 
-        for i in self.list:
-            print("Subtracting " + calib + " from image " + str(self.list[i].number))
-            self.list[i].data = stacker.subtract(self.list[i], cframe)
-            if self.list[i].genname not in ("bias", "dark", "flat"):
-                self.list[i].genname = "calib"
-            self.list[i].write()
+        for i in self.frames:
+            print("Subtracting " + calib + " from image " + str(self.frames[i].number))
+            self.frames[i].data = stacker.subtract(self.frames[i].data, cframe.data)
+            if self.frames[i].genname not in ("bias", "dark", "flat"):
+                self.frames[i].genname = "calib"
+            self.frames[i].write()
         self.project.set("Reference images", "calib", str(self.refnum))
         print("Calibrated images saved with generic name 'calib'.")
 
@@ -115,12 +115,12 @@ class Batch(object):
 
         cframe = Frame(self.project, calib, number="master")
 
-        for i in self.list:
-            print("Dividing image " + str(self.list[i].number) + " with " + calib)
-            self.list[i].data = stacker.divide(self.list[i], cframe)
-            if self.list[i].genname not in ("bias", "dark", "flat"):
-                self.list[i].genname = "calib"
-            self.list[i].write()
+        for i in self.frames:
+            print("Dividing image " + str(self.frames[i].number) + " with " + calib)
+            self.frames[i].data = stacker.divide(self.frames[i].data, cframe.data)
+            if self.frames[i].genname not in ("bias", "dark", "flat"):
+                self.frames[i].genname = "calib"
+            self.frames[i].write()
         self.project.set("Reference images", "calib", str(self.refnum))
         print("Calibrated images saved with generic name 'calib'.")
 
@@ -148,7 +148,7 @@ class Batch(object):
             print("No supported RAW files found. All files found are listed here: " + str(allfiles))
             return
 
-        n = len(self.list)
+        n = len(self.frames)
 
         for i in rawfiles:
             frame = Frame(self.project, self.genname, number=n)
@@ -176,13 +176,13 @@ class Batch(object):
             print("No supported RAW files found. All files found are listed here: " + str(allfiles))
             return
 
-        n = len(self.list)
+        n = len(self.frames)
 
         for i in rawfiles:
             frame = Frame(self.project, self.genname, number=n)
             frame.fromraw(i)
             self.project.set(itype, str(n), frame.infopath)
-            self.list[n] = Frame(self.project, itype, infopath=frame.infopath, number=n)
+            self.frames[n] = Frame(self.project, itype, infopath=frame.infopath, number=n)
             n += 1
 
         self.project.set("Reference images", itype, "1")
@@ -204,6 +204,6 @@ class Batch(object):
         frame.fromraw(file)
         self.project.set(itype, str(n), frame.infopath)
 
-        self.list[str(n)] = Frame(self.project, itype, infopath=frame.infopath, number=str(n))
+        self.frames[str(n)] = Frame(self.project, itype, infopath=frame.infopath, number=str(n))
 
         self.project.set("Reference images", itype, "1")
