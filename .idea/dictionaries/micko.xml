@@ -19,6 +19,7 @@
       <w>cfag</w>
       <w>cfar</w>
       <w>cframe</w>
+      <w>checkraw</w>
       <w>codeblue</w>
       <w>codecommon</w>
       <w>codegreen</w>
@@ -45,6 +46,7 @@
       <w>frameinfo</w>
       <w>fromarray</w>
       <w>fromraw</w>
+      <w>ftype</w>
       <w>genname</w>
       <w>getcoordinates</w>
       <w>getdata</w>

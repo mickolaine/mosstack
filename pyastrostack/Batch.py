@@ -1,4 +1,4 @@
-from . Photo import Frame
+from . Frame import Frame
 from os import listdir
 import datetime   # For profiling
 from os.path import splitext
@@ -13,45 +13,53 @@ class Batch(object):
                                                     # and move this to a better place
                                                     # TODO: Better idea: Have dcraw check if it can read the files
 
-    def __init__(self, project, genname):
+    def __init__(self, project, ftype=None, fphase="orig"):
         """
         Constructor loads Frames according to arguments.
 
         Arguments:
         project = Configuration object for the project
-        genname = Generic name of the files
+        fphase = Generic name of the files
         """
 
         self.project = project
-        self.genname = genname
+        self.fphase = fphase
 
         self.name    = self.project.get("Default", key="project name")    # Name for the resulting image
 
         self.frames  = {}                                                 # Empty dict for Photos
 
-        if genname in ("flat", "dark", "bias"):
-            self.category = genname
-        else:
-            self.category = "light"
+        if ftype is not None:
+            self.ftype = ftype
+
+        if fphase is not None:
+            self.fphase = fphase
 
         try:
-            self.refnum  = int(project.get("Reference images", key=self.genname))  # Number of reference frame
+            self.refnum  = int(project.get("Reference images", key=self.ftype))  # Number of reference frame
         except KeyError:
             self.refnum = "1"
 
         try:
-            files = self.project.get(self.category)                       # Paths for the frame info files
+            files = self.project.get(self.ftype)                       # Paths for the frame info files
+            print(files)
             for key in files:
-                self.frames[key] = Frame(self.project, self.genname, infopath=files[key], number=key)
+                print(key)
+                frame = Frame(self.project, infopath=files[key])
+                print(frame)
+                self.frames[key] = frame
+
         except KeyError:
+            #print("Error")
             pass
+        print(self.frames)
 
     def debayer(self, debayer):
         """
         Debayer CFA-image into RGB.
 
         Arguments
-        debayer: a Debayer-type object
+        debayer: a Debayer-type objectitype
         """
 
         for i in self.frames:
@@ -61,9 +69,9 @@ class Batch(object):
             t2 = datetime.datetime.now()
             print("...Done")
             print("Debayering took " + str(t2 - t1) + " seconds.")
-            self.frames[i].genname = "rgb"
+            self.frames[i].fphase = "rgb"
             self.frames[i].write()
-        self.project.set("Reference images", self.genname, str(self.refnum))
+        self.project.set("Reference images", self.fphase, str(self.refnum))
         print("Debayered images saved with generic name 'rgb'.")
 
     def register(self, register):
@@ -75,7 +83,7 @@ class Batch(object):
         """
 
         register.register(self.frames, self.project)
-        self.project.set("Reference images", self.genname, str(self.refnum))
+        self.project.set("Reference images", self.fphase, str(self.refnum))
         print("Registered images saved with generic name 'reg'.")
 
     def stack(self, stacker):
@@ -86,11 +94,11 @@ class Batch(object):
         stacker = Stacking type object
         """
 
-        new = Frame(self.project, self.genname, number="master")
+        new = Frame(self.project, self.fphase, number="master")
         new.data = stacker.stack(self.frames, self.project)
         new.write(tiff=True)
-        print("Result image saved to " + new.path)
-        print("                  and " + splitext(new.path)[0] + ".tiff")
+        print("Result image saved to " + new.path())
+        print("                  and " + splitext(new.path())[0] + ".tiff")
 
     def subtract(self, calib, stacker):
         """
@@ -102,8 +110,8 @@ class Batch(object):
         for i in self.frames:
             print("Subtracting " + calib + " from image " + str(self.frames[i].number))
             self.frames[i].data = stacker.subtract(self.frames[i].data, cframe.data)
-            if self.frames[i].genname not in ("bias", "dark", "flat"):
-                self.frames[i].genname = "calib"
+            if self.frames[i].fphase not in ("bias", "dark", "flat"):
+                self.frames[i].fphase = "calib"
             self.frames[i].write()
         self.project.set("Reference images", "calib", str(self.refnum))
         print("Calibrated images saved with generic name 'calib'.")
@@ -118,13 +126,13 @@ class Batch(object):
         for i in self.frames:
             print("Dividing image " + str(self.frames[i].number) + " with " + calib)
             self.frames[i].data = stacker.divide(self.frames[i].data, cframe.data)
-            if self.frames[i].genname not in ("bias", "dark", "flat"):
-                self.frames[i].genname = "calib"
+            if self.frames[i].fphase not in ("bias", "dark", "flat"):
+                self.frames[i].fphase = "calib"
             self.frames[i].write()
         self.project.set("Reference images", "calib", str(self.refnum))
         print("Calibrated images saved with generic name 'calib'.")
 
-    def directory(self, path, itype):
+    def directory(self, path, ftype):
         """
         Add directory to Batch
 
@@ -150,19 +158,25 @@ class Batch(object):
 
         n = len(self.frames)
 
-        for i in rawfiles:
-            frame = Frame(self.project, self.genname, number=n)
-            frame.fromraw(i)
-            self.project.set(itype, str(n), frame.infopath)
-            n += 1
+        self.addfiles(rawfiles, ftype)
 
-        self.project.set("Reference images", itype, "1")
+        self.project.set("Reference images", ftype, "1")
 
-    def addfiles(self, allfiles, itype):
+    def addfiles(self, allfiles, ftype):
         """
         Add list of files to Batch
         """
 
+        try:
+            n = len(self.project.get(ftype).keys())
+        except KeyError:
+            n = 0
+
+        for i in allfiles:
+            self.addfile(i, ftype, n)
+            n += 1
+
+        '''
         if splitext(allfiles[0])[1] == ".info":
             pass
 
@@ -182,31 +196,47 @@ class Batch(object):
         n = len(self.frames)
 
         for i in rawfiles:
-            frame = Frame(self.project, self.genname, number=n)
+            frame = Frame(self.project, self.fphase, number=n)
             frame.fromraw(i)
-            self.project.set(itype, str(n), frame.infopath)
-            self.frames[n] = Frame(self.project, itype, infopath=frame.infopath, number=n)
+            self.project.set(ftype, str(n), frame.infopath)
+            self.frames[n] = Frame(self.project, ftype, infopath=frame.infopath, number=n)
             n += 1
 
-        self.project.set("Reference images", itype, "1")
+        self.project.set("Reference images", ftype, "1")
+        '''
 
-    def addfile(self, file, itype, number):
+    def addfile(self, file, ftype, number):
         """
-        Add a single file. Internal use only
+        Add a single file.
         """
 
-        if splitext(file)[1] not in self.extensions:
+        # If .info file given, give only that as an argument. Uses only information from this file and returns
+        if splitext(file)[1] == ".info":
+            frame = Frame(self.project, infopath=file)
+            self.frames[frame.number] = frame
             return
 
+        # Check how many frames there are already in the batch. Needed for new index key for frames dict
         try:
-            n = len(self.project.get(itype).keys())
+            n = len(self.project.get(ftype).keys())
         except KeyError:
             n = 0
 
-        frame = Frame(self.project, self.genname, number=n)
-        frame.fromraw(file)
-        self.project.set(itype, str(n), frame.infopath)
+        # Other than .info files
+        frame = Frame(self.project, rawpath=file, ftype=ftype, fphase=self.fphase, number=n)
 
-        self.frames[str(n)] = Frame(self.project, itype, infopath=frame.infopath, number=str(n))
+        # Try to prepare the file. Do not add if preparing fails. This means file's not valid
+        try:
+            frame.prepare()
+        except RuntimeError as error:
+            print(error.args[0])
+            print(error.args[1])
+            print("File " + file + " not added!")
+            return
+        frame.decode()
 
-        self.project.set("Reference images", itype, "1")
+        self.project.set(ftype, str(n), frame.infopath)
+
+        self.frames[str(n)] = frame
+
+        self.project.set("Reference images", ftype, "1")

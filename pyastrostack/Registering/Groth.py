@@ -81,6 +81,7 @@ class Groth(Registering):
         """
         Finds the stars and creates all the triangles from them
         """
+        print(list(imagelist))
         sex = Sextractor(list(imagelist.values())[0])    # TODO: Ref image here
         sensitivity = sex.findsensitivity()
         del sex

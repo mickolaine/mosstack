@@ -4,11 +4,11 @@ this file controls all the actions after that.
 """
 
 from . import Config
-from . Photo import Batch
+from . Batch import Batch
 from . import Registering
 from . import Debayer
 from . import Stacker
-from sys import version_info
+#from sys import version_info
 
 __author__ = 'Mikko Laine'
 
@@ -252,9 +252,9 @@ You can use either name or number as operation 'list' shows them.
         self.project = project
 
         # Set default values.
-        self.debayerwrap = Debayer.BilinearCython
+        self.debayerwrap = Debayer.VNGCython
         self.registerwrap = Registering.Groth_Skimage
-        self.stackerwrap = Stacker.Median
+        self.stackerwrap = Stacker.SigmaMedian
 
     def setproject(self, project):
         """
@@ -366,14 +366,14 @@ You can use either name or number as operation 'list' shows them.
         else:
             print("Invalid value")
 
-    def adddir(self, directory, itype):
+    def adddir(self, directory, ftype):
         """
         Add files in directory to project
 
         Arguments:
         directory - unix path to add
-        itype - light, flat, bias, dark
+        ftype - light, flat, bias, dark
         """
 
-        batch = Batch(project=self.project, genname=itype)
-        batch.directory(directory, itype)
+        batch = Batch(project=self.project, ftype=ftype)
+        batch.directory(directory, ftype)

@@ -90,11 +90,11 @@ class Frame(object):
             self.readinfo()                     # 1.1. -- 1.2.
             # 1.3.
             return
-
+        print(self.rawpath)
         if not Frame.checkraw(self.rawpath):
             self.state["prepare"] = -1
+            raise RuntimeError("Can't read file.", "Dcraw does not recognize this as a DSLR raw photo.")
             # TODO: Tell UI the file's not good
-            return
 
         #self._decode()                          # 2.
         self.extractinfo()                      # 3.
@@ -346,6 +346,7 @@ class Frame(object):
         self.frameinfo.set("Properties", "X", str(self.x))
         self.frameinfo.set("Properties", "Y", str(self.y))
 
+    '''
     def fromraw(self, path):
         """
         Create a Frame object from raw photo
@@ -361,7 +362,7 @@ class Frame(object):
         self.extractinfo()
         self.rawpath = path
         self.writeinfo()
-
+    '''
     def setclip(self, clip):
         """
         Set the data clip coordinates

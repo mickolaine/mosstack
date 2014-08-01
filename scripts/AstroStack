@@ -107,6 +107,7 @@ def main(argv):
             else:
                 print("No such setting " + argv[1])
                 print("Possible settings are \n debayer\n register\n stack")
+                exit()
             ui.list(argv[1], options)
 
     elif argv[0] == "dir":
