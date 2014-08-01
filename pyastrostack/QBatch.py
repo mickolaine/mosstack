@@ -1,8 +1,8 @@
 from . Batch import Batch
 from . QFrame import QFrame
 from PyQt4.QtGui import QWidget
-#from PyQt4.QtCore import SIGNAL
 from PyQt4.QtCore import *
+from os.path import splitext
 
 
 class QBatch(Batch, QWidget):
@@ -24,7 +24,13 @@ class QBatch(Batch, QWidget):
         Add a single file. Internal use only
         """
 
-        self.frames[number] = QFrame(project=self.project, rawpath=file, ftype=ftype, number=number)
+        # Check if the file is an .info file instead of raw file
+        if splitext(file)[1] == ".info":
+            frame = QFrame(project=self.project, infopath=file)
+            self.frames[frame.number] = frame
+            return
+
+        self.frames[str(number)] = QFrame(project=self.project, rawpath=file, ftype=ftype, number=number)
         #self._framearray[number] = [self.frames[number].rawpath, ftype, self.frames[number].state["prepare"],
         #                                                      self.frames[number].state["calibrate"],
         #                                                      self.frames[number].state["debayer"],
@@ -33,6 +39,21 @@ class QBatch(Batch, QWidget):
         self.project.set(ftype, str(number), self.frames[number].infopath)
         #self.emit(SIGNAL("update"), "CALLED FROM addfile()")
         self.refresh.emit()
+
+    def addfiles(self, allfiles, ftype):
+        """
+        Add several files at once. Used only with loading a project
+        """
+
+        # Check the files are indeed .info files. They should be but let this be a check that I use this method properly
+        rawfiles = []
+        for i in allfiles:
+            if splitext(i)[1] == ".info":
+                rawfiles.append(i)
+
+        for i in rawfiles:
+            frame = QFrame(project=self.project, infopath=i)
+            self.frames[frame.number] = frame
 
     def getframearray(self):
         temp = []
@@ -50,7 +71,7 @@ class QBatch(Batch, QWidget):
         Decode all frames.
         """
 
-        self.frames[number].decode()
+        self.frames[str(number)].decode()
         #self.emit(SIGNAL("update"), "CALLED FROM decode()")
         self.refresh.emit()
 

@@ -15,7 +15,12 @@ class QFrame(Frame):
         """
 
         """
-        super(QFrame, self).__init__(project=project, rawpath=rawpath, infopath=infopath, ftype=ftype, number=number, fphase=fphase)
+        super(QFrame, self).__init__(project=project,
+                                     rawpath=rawpath,
+                                     infopath=infopath,
+                                     ftype=ftype,
+                                     number=number,
+                                     fphase=fphase)
 
     def update_ui(self):
         """

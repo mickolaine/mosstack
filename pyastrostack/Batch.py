@@ -55,9 +55,9 @@ class Batch(object):
         """
 
         for i in self.frames:
-            print("Processing image " + self.frames[i].path)
+            print("Processing image " + self.frames[i].path())
             t1 = datetime.datetime.now()
-            self.frames[i].data = debayer.debayer(self.list[i].data[0])
+            self.frames[i].data = debayer.debayer(self.frames[i].data[0])
             t2 = datetime.datetime.now()
             print("...Done")
             print("Debayering took " + str(t2 - t1) + " seconds.")
@@ -162,6 +162,9 @@ class Batch(object):
         """
         Add list of files to Batch
         """
+
+        if splitext(allfiles[0])[1] == ".info":
+            pass
 
         rawfiles = []
         for i in allfiles:

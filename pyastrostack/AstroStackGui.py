@@ -162,8 +162,9 @@ class Ui(Ui_MainWindow):
 
     def loadProject(self):
         """
-        Load a project. Settings and filelists
+        Load a project. Settings and file lists
         """
+
         self.pfile = self.fileDialog.getOpenFileName(caption="Open project",
                                                      directory=self.setup.get("Default", "Path"),
                                                      filter="Project files (*.project)")
@@ -179,8 +180,6 @@ class Ui(Ui_MainWindow):
             try:
                 files = self.project.get(i)
                 files = list(files.values())
-                self.batch[i] = QBatch(self.project, i)
-                self.batch[i].addfiles(files, i)
                 self.addFrame(files, i)
             except:
                 pass
@@ -213,6 +212,7 @@ class Ui(Ui_MainWindow):
 
     def setProjectName(self, pname):
         self.projectName.setText(_fromUtf8(pname))
+        self.pname = pname
 
     def addLight(self):
         """
@@ -270,7 +270,7 @@ class Ui(Ui_MainWindow):
         # Add files to batch
         number = 0
         threadpool = QThreadPool(self)
-        threadpool.setMaxThreadCount(4)
+        threadpool.setMaxThreadCount(1)
 
         for path in files:
             # If batch does not exist, create one
@@ -278,7 +278,7 @@ class Ui(Ui_MainWindow):
                 self.batch[ftype] = QBatch(self.project, ftype)
                 self.batch[ftype].refresh.connect(self.updateTableView)
 
-            threadpool.start(GenericThread(self.batch[ftype].addfile, path, ftype, number))
+            threadpool.start(GenericThread(self.batch[ftype].addfile, path, ftype, str(number)))
 
             number += 1
 
@@ -322,26 +322,25 @@ class Ui(Ui_MainWindow):
         Run everything related to calibrating
         """
 
-        if self.checkBoxDarkBias.isChecked() or self.checkBoxFlatBias.isChecked():
-            #self.bias = Batch(self.project, "bias")
-            #self.bias.addfiles(self.biasfiles, "bias")
+        # If Bias frames are required
+        if self.checkBoxDarkBias.isChecked() or self.checkBoxFlatBias.isChecked() or self.checkBoxLightBias.isChecked():
             self.batch["bias"].stack(Stacker.Mean())
 
-        if self.checkBoxDarkBias.isChecked():
-            #self.dark = Batch(self.project, "dark")
-            #self.batch["dark"].addfiles(self.darkfiles, "dark")
-            self.batch["dark"].subtract("bias", Stacker.Mean())
+        # If Dark frames are required
+        if self.checkBoxDarkBias.isChecked() or self.checkBoxLightDark.isChecked() or self.checkBoxFlatDark.isChecked():
+            if self.checkBoxDarkBias.isChecked():
+                self.batch["dark"].subtract("bias", Stacker.Mean())
             self.batch["dark"].stack(Stacker.Mean())
 
-        if self.checkBoxFlatBias.isChecked() or self.checkBoxFlatDark.isChecked():
-            #self.flat = Batch(self.project, "flat")
-            #self.flat.addfiles(self.flatfiles, "flat")
-            self.batch["flat"].stack(Stacker.Mean())
+        # If Flat frames are required
+        if self.checkBoxFlatBias.isChecked() or self.checkBoxFlatDark.isChecked() or self.checkBoxLightFlat.isChecked():
             if self.checkBoxFlatBias.isChecked():
                 self.batch["flat"].subtract("bias", Stacker.Mean())
             if self.checkBoxFlatDark.isChecked():
                 self.batch["flat"].subtract("dark", Stacker.Mean())
+            self.batch["flat"].stack(Stacker.Mean())
 
+        # Process Light frames. Everything is ready for it
         if self.checkBoxLightBias.isChecked():
             self.batch["light"].subtract("bias", Stacker.Mean())
         if self.checkBoxLightDark.isChecked():

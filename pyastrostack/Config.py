@@ -14,6 +14,7 @@ import configparser
 import os
 from subprocess import check_output, CalledProcessError
 from sys import version_info
+from os.path import expanduser
 
 
 class ConfigAbstractor:
@@ -379,12 +380,13 @@ class Global(object):
     Global configurations
     """
 
-    configfile = "/.config/pyAstroStack/settings"
-
+    home = expanduser("~")
+    configfile = home + "/.config/pyAstroStack/settings"
     conf = configparser.ConfigParser()
 
     @staticmethod
     def get(section, key):
+
         Global.conf.read(Global.configfile)
         return Global.conf[section][key]
 

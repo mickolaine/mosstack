@@ -36,7 +36,7 @@ class Groth(Registering):
         if self.timing:
             t1 = datetime.datetime.now()
 
-        self.findstars(imagelist, project)
+        self.findstars(imagelist)
 
         ref = project.get("Reference images", "light")
 
@@ -77,16 +77,16 @@ class Groth(Registering):
 
         return self.transformer.affine_transform3(frame, self.ref)
 
-    def findstars(self, imagelist, project):
+    def findstars(self, imagelist):
         """
         Finds the stars and creates all the triangles from them
         """
-        sex = Sextractor(list(imagelist.values())[0], project)    # TODO: Ref image here
+        sex = Sextractor(list(imagelist.values())[0])    # TODO: Ref image here
         sensitivity = sex.findsensitivity()
         del sex
 
         for i in imagelist:
-            sex = Sextractor(imagelist[i], project)
+            sex = Sextractor(imagelist[i])
             sex.setsensitivity(sensitivity[0], sensitivity[1])
             imagelist[i].coordinates = sex.getcoordinates()
             imagelist[i].tri = sex.gettriangles()

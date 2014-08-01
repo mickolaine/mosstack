@@ -246,6 +246,8 @@ class Frame(object):
         """
 
         self.number = self.frameinfo.get("Default", "Number")
+        self.rawpath = self.frameinfo.get("Paths", "Raw")
+        self.ftype = self.frameinfo.get("Default", "Ftype")
 
         self.bayer = self.frameinfo.get("Properties", "Filter pattern")
         self.timestamp = self.frameinfo.get("Properties", "Timestamp")
@@ -330,6 +332,7 @@ class Frame(object):
 
         self.frameinfo.set("Paths", "Raw", self.rawpath)
         self.frameinfo.set("Default", "Number", str(self.number))
+        self.frameinfo.set("Default", "Ftype", self.ftype)
         self.frameinfo.set("Paths", self.fphase, self.path())
         self.frameinfo.set("Properties", "Filter pattern", self.bayer)
         self.frameinfo.set("Properties", "Timestamp", self.timestamp)
@@ -418,8 +421,9 @@ class Frame(object):
         """
         Set genname and take care of info file changes
         """
-        self._fphase = genname
-        print("Changing path to " + self.wdir + self.name + "_" + self.number + "_" + genname + ".fits")
+        self.fphase = genname
+        print("Changing path to " + self.wdir +
+              self.name + "_" + self.ftype + "_" + str(self.number) + "_" + genname + ".fits")
         self.frameinfo.set("Paths", genname, self.path())
 
     genname = property(fget=getgenname, fset=setgenname)

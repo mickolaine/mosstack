@@ -35,7 +35,7 @@ class Sextractor:
         self.image = image
         self.sextractor = Global.get("Programs", "sextractor")
         self.path = image.wdir
-        self.imagepath = image.getpath("light")
+        self.imagepath = image.getpath("orig")
         self.catname = splitext(self.image.infopath)[0] + ".cat"
         self.confname = splitext(self.image.infopath)[0] + ".sex"
 
@@ -240,6 +240,6 @@ class Sextractor:
                     n += 1
                     tri.append([i, j, k])
 
-        print("Total number of triangles in image " + self.image.path + " is " + str(n) + ".")
+        print("Total number of triangles in image " + self.image.path() + " is " + str(n) + ".")
 
         return tri

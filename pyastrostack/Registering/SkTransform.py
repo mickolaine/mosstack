@@ -21,9 +21,9 @@ class SkTransform(object):
 
         if sub("\D", "", image.number) == ref:  # For RGB-images i.number holds more than number. Strip that
             print("Not transforming the reference frame.")
-            oldpath = image.path
+            oldpath = image.path()
             image.genname = "reg"
-            newpath = image.path
+            newpath = image.path()
             copyfile(oldpath, newpath)
             return
 
