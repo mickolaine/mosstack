@@ -66,13 +66,43 @@ class QBatch(Batch, QWidget):
         self._framearray = temp
         return self._framearray
 
-    def decode(self, number):
+    def decode(self, number=None, frame=None):
         """
         Decode all frames.
         """
+        if number is not None:
+            self.frames[str(number)].decode()
+        if frame is not None:
+            self.frames[frame].decode()
 
-        self.frames[str(number)].decode()
         #self.emit(SIGNAL("update"), "CALLED FROM decode()")
+        self.refresh.emit()
+
+    def debayer(self, frame, debayer):
+        """
+        Debayer a single frame
+        """
+
+        print("Processing image " + self.frames[frame].path())
+        #t1 = datetime.datetime.now()
+        self.frames[frame].debayer(debayer)
+        #t2 = datetime.datetime.now()
+        print("...Done")
+        #print("Debayering took " + str(t2 - t1) + " seconds.")
+        self.project.set("Reference images", self.fphase, str(self.refnum))
+        self.frames[str(self.refnum)].isref = True
+        print("Debayered images saved with generic name 'rgb'.")
+        self.refresh.emit()
+
+    def register(self, frame, register):
+        """
+        Register a single frame
+        """
+
+        self.frames[frame].register(register)
+
+        self.project.set("Reference images", self.fphase, str(self.refnum))
+
         self.refresh.emit()
 
     framearray = property(fget=getframearray)

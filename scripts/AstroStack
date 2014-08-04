@@ -141,23 +141,24 @@ def main(argv):
         # AstroStack debayer <srcname>
 
         if argv[1]:
-            genname = argv[1]
+            fphase = argv[1]
+
         else:
-            print("Srcname not defined. Exiting...")
+            print("Scrname not defined. Try 'AstroStack debayer calib' or 'AstroStack debayer light'\nExiting...")
             exit()
 
-        ui.debayer(genname)
+        ui.debayer(fphase)
 
     elif argv[0] == "register":
         # AstroStack register <srcname>
 
         if argv[1]:
-            genname = argv[1]
+            fphase = argv[1]
         else:
             print("Srcname not defined. Exiting...")
             exit()
 
-        ui.register(genname)
+        ui.register(fphase)
 
     elif argv[0] == "subtract":
         # AstroStack subtract <srcname> <calibname>

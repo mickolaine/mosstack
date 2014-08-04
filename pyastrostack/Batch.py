@@ -13,7 +13,7 @@ class Batch(object):
                                                     # and move this to a better place
                                                     # TODO: Better idea: Have dcraw check if it can read the files
 
-    def __init__(self, project, ftype=None, fphase="orig"):
+    def __init__(self, project, ftype="light", fphase="orig"):
         """
         Constructor loads Frames according to arguments.
 
@@ -42,24 +42,21 @@ class Batch(object):
 
         try:
             files = self.project.get(self.ftype)                       # Paths for the frame info files
-            print(files)
+
             for key in files:
-                print(key)
-                frame = Frame(self.project, infopath=files[key])
-                print(frame)
+                frame = Frame(self.project, infopath=files[key], fphase=self.fphase)
                 self.frames[key] = frame
 
         except KeyError:
             #print("Error")
             pass
-        print(self.frames)
 
-    def debayer(self, debayer):
+    def debayerAll(self, debayer):
         """
-        Debayer CFA-image into RGB.
+        Debayer CFA-images into RGB.
 
         Arguments
-        debayer: a Debayer-type objectitype
+        debayer: a Debayer-type object
         """
 
         for i in self.frames:
@@ -74,7 +71,7 @@ class Batch(object):
         self.project.set("Reference images", self.fphase, str(self.refnum))
         print("Debayered images saved with generic name 'rgb'.")
 
-    def register(self, register):
+    def registerAll(self, register):
         """
         Register and transform images.
 
@@ -94,7 +91,8 @@ class Batch(object):
         stacker = Stacking type object
         """
 
-        new = Frame(self.project, self.fphase, number="master")
+        # Create new empty frame for the result
+        new = Frame(self.project, ftype=self.ftype, number="master")
         new.data = stacker.stack(self.frames, self.project)
         new.write(tiff=True)
         print("Result image saved to " + new.path())
@@ -105,14 +103,16 @@ class Batch(object):
         Subtract calib from images in imagelist
         """
 
-        cframe = Frame(self.project, calib, number="master")
+        cframe = Frame(self.project, ftype=calib, number="master")
 
         for i in self.frames:
             print("Subtracting " + calib + " from image " + str(self.frames[i].number))
             self.frames[i].data = stacker.subtract(self.frames[i].data, cframe.data)
+
             if self.frames[i].fphase not in ("bias", "dark", "flat"):
                 self.frames[i].fphase = "calib"
             self.frames[i].write()
+
         self.project.set("Reference images", "calib", str(self.refnum))
         print("Calibrated images saved with generic name 'calib'.")
 
@@ -121,7 +121,7 @@ class Batch(object):
         Divide images in imagelist with calib
         """
 
-        cframe = Frame(self.project, calib, number="master")
+        cframe = Frame(self.project, ftype=calib, number="master")
 
         for i in self.frames:
             print("Dividing image " + str(self.frames[i].number) + " with " + calib)
@@ -161,6 +161,7 @@ class Batch(object):
         self.addfiles(rawfiles, ftype)
 
         self.project.set("Reference images", ftype, "1")
+        self.frames["1"].isref = True
 
     def addfiles(self, allfiles, ftype):
         """
@@ -240,3 +241,4 @@ class Batch(object):
         self.frames[str(n)] = frame
 
         self.project.set("Reference images", ftype, "1")
+        self.frames["1"].isref = True

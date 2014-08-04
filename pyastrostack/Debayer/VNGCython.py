@@ -23,13 +23,13 @@ class VNGCython(Debayer):
 
         Give cfa-image, receive rgb-image. Return numpy.array
         """
-        #print(image)
-        cfa = np.float32(image) #.byteswap().newbyteorder()
-        #print(cfa)
+        print("VNG Cython")
+        cfa = np.float32(image)  # .byteswap().newbyteorder()
+
         r = np.zeros_like(cfa)
         g = np.zeros_like(cfa)
         b = np.zeros_like(cfa)
 
         result = np.array(_debayer(cfa, r, g, b))
-        #print(result)
+
         return result

@@ -2,8 +2,8 @@ from __future__ import division
 
 from .. Registering.Registering import Registering
 from . Sextractor import Sextractor
-from . ImTransform import ImTransform
-from . SkTransform import SkTransform
+#from . ImTransform import ImTransform
+#from . SkTransform import SkTransform
 import datetime   # For profiling
 from shutil import copyfile
 from re import sub
@@ -38,7 +38,7 @@ class Groth(Registering):
 
         self.findstars(imagelist)
 
-        ref = project.get("Reference images", "light")
+        ref = project.get("Reference images", "orig")
 
         for i in imagelist:
             #if imagelist[i].points is None:
@@ -49,7 +49,6 @@ class Groth(Registering):
                 self.step2(imagelist[i], imagelist[ref])
 
         for i in imagelist:
-
             self.transformer.affine_transform(imagelist[i], ref)
 
         if self.timing:

@@ -51,6 +51,8 @@ class VNGOpenCl(Debayer):
         [red, green, blue] as numpy.array
         """
 
+        print("VNG OpenCL")
+
         if not self.init:
             self.x = image.shape[1]
             self.y = image.shape[0]

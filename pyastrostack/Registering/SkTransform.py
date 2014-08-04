@@ -43,7 +43,10 @@ class SkTransform(object):
 
         tform = tf.estimate_transform(ttype="affine", dst=primary, src=secondary)
         imagedata = image.data
+        print(image.path())
         data = []
+        print("Dimensions:")
+        print(len(imagedata))
         for i in range(len(imagedata)):
             amax = np.amax(imagedata[i])
             data.append(tf.warp(np.float32(imagedata[i])/np.amax(imagedata[i]), inverse_map=tform))
@@ -69,9 +72,9 @@ class SkTransform(object):
 
         if sub("\D", "", image.number) == ref:  # For RGB-images i.number holds more than number. Strip that
             print("Not transforming the reference frame.")
-            oldpath = image.path
+            oldpath = image.path()
             image.genname = "reg"
-            newpath = image.path
+            newpath = image.path()
             copyfile(oldpath, newpath)
             return
 

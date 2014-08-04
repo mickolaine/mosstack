@@ -39,6 +39,7 @@ class Frame(object):
         self.fphase = fphase
         self.project = project
         self.format = ".fits"       # TODO: Remove this legacy
+        self.isref = False
 
         # TODO: Get rid of this:
         self.wdir = self.project.get("Setup", "Path")

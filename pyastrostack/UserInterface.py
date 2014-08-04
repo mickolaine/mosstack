@@ -276,28 +276,32 @@ You can use either name or number as operation 'list' shows them.
         self.registerwrap = eval("Registering." + project.get("Default", "register"))
         self.stackerwrap = eval("Stacker." + project.get("Default", "stack"))
 
-    def register(self, genname):
+    def register(self, fphase):
         """
         Register project files under specified section.
         """
 
-        batch = Batch(self.project, genname)
-        batch.register(self.registerwrap())
+        batch = Batch(self.project, ftype="light", fphase=fphase)
+        batch.registerAll(self.registerwrap())
 
-    def debayer(self, genname):
+    def debayer(self, fphase):
         """
         Debayer project files under specified section. Use debayering algorithm TODO:
         """
 
-        batch = Batch(self.project, genname)
-        batch.debayer(self.debayerwrap())
+        # Create new batch with ftype hardcoded. No need to debayer other than light
+        batch = Batch(self.project, ftype="light", fphase=fphase)
+        batch.debayerAll(self.debayerwrap())
 
     def stack(self, genname):
         """
         Stack project files under specified section. Stacker read from TODO: do this
         """
 
-        batch = Batch(self.project, genname)
+        if genname in ("bias", "dark", "flat"):
+            batch = Batch(self.project, ftype=genname)
+        else:
+            batch = Batch(self.project, fphase=genname)
         batch.stack(self.stackerwrap())
 
     def subtract(self, genname, calib):

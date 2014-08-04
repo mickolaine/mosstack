@@ -14,3 +14,5 @@ class Groth_Skimage(Groth):
     def __init__(self):
         self.timing = False
         self.transformer = SkTransform()
+        self.sensitivity = None
+        self.ref = None

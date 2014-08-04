@@ -125,49 +125,49 @@ def _debayer(np.ndarray[DTYPE_t, ndim=2] cfa, np.ndarray[DTYPE_t, ndim=2] r,
                 gsum = 0
                 bsum = 0
 
-                if grn < T:
+                if grn <= T:
                     rsum += (r3 + r13)/2.0
                     gsum += g8
                     bsum += (b7 + b9)/2.0
                     n += 1
 
-                if gre < T:
-                    rsum +=(r15 + r13)/2.0
+                if gre <= T:
+                    rsum += (r15 + r13)/2.0
                     gsum += g14
                     bsum += (b19 + b9)/2.0
                     n += 1
 
-                if grs < T:
-                    rsum +=(r23 + r13)/2.0
+                if grs <= T:
+                    rsum += (r23 + r13)/2.0
                     gsum += g18
                     bsum += (b17 + b19)/2.0
                     n += 1
 
-                if grw < T:
-                    rsum +=(r11 + r13)/2.0
+                if grw <= T:
+                    rsum += (r11 + r13)/2.0
                     gsum += g12
                     bsum += (b7 + b17)/2.0
                     n += 1
 
-                if grne < T:
+                if grne <= T:
                     rsum += (r5 + r13)/2.0
                     gsum += (g4 + g8 + g10 + g14)/4.0
                     bsum += b9
                     n += 1
 
-                if grse < T:
+                if grse <= T:
                     rsum += (r25 + r13)/2.0
                     gsum += (g14 + g18 + g20 + g24)/4.0
                     bsum += b19
                     n += 1
 
-                if grnw < T:
+                if grnw <= T:
                     rsum += (r1 + r13)/2.0
                     gsum += (g2 + g6 + g8 + g12)/4.0
                     bsum += b7
                     n += 1
 
-                if grsw < T:
+                if grsw <= T:
                     rsum += (r21 + r13)/2.0
                     gsum += (g12 + g16 + g18 + g22)/4.0
                     bsum += b17
@@ -255,49 +255,49 @@ def _debayer(np.ndarray[DTYPE_t, ndim=2] cfa, np.ndarray[DTYPE_t, ndim=2] r,
                 gsum = 0
                 bsum = 0
 
-                if grn < T:
+                if grn <= T:
                     rsum += (r2 + r4 + r12 + r14)/4.0
                     gsum += (g3 + g13)/2.0
                     bsum += b8
                     n += 1
 
-                if gre < T:
+                if gre <= T:
                     rsum += r14
                     gsum += (g13 + g15)/2.0
                     bsum += (b8 + b10 + b18 + b20)/4.0
                     n += 1
 
-                if grs < T:
+                if grs <= T:
                     rsum += (r12 + r14 + r22 + r24)/4.0
                     gsum += (g13 + g23)/2.0
                     bsum += b18
                     n += 1
 
-                if grw < T:
+                if grw <= T:
                     rsum += r12
                     gsum += (g11 + g13)/2.0
                     bsum += (b6 + b8 + b16 + b18)/4.0
                     n += 1
 
-                if grne < T:
+                if grne <= T:
                     rsum += (r4 + r14)/2.0
                     gsum += g9
                     bsum += (b8 + b10)/2.0
                     n += 1
 
-                if grse < T:
+                if grse <= T:
                     rsum += (r14 + r24)/2.0
                     gsum += g19
                     bsum += (b18 + b20)/2.0
                     n += 1
 
-                if grnw < T:
+                if grnw <= T:
                     rsum += (r2 + r12)/2.0
                     gsum += g7
                     bsum += (b6 + b8)/2.0
                     n += 1
 
-                if grsw < T:
+                if grsw <= T:
                     rsum += (r12 + r22)/2.0
                     gsum += g17
                     bsum += (b16 + b18)/2.0
