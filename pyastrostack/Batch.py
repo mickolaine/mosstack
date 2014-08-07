@@ -95,6 +95,9 @@ class Batch(object):
         new = Frame(self.project, ftype=self.ftype, number="master")
         new.data = stacker.stack(self.frames, self.project)
         new.write(tiff=True)
+        dim, new.x, new.y = new.data.shape
+        new.writeinfo()
+        self.project.set("Masters", self.ftype, new.infopath)
         print("Result image saved to " + new.path())
         print("                  and " + splitext(new.path())[0] + ".tiff")
 

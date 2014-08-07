@@ -70,7 +70,8 @@ class Ui(Ui_MainWindow):
         self.messageBox = QMessageBox()
 
         self.threadpool = QThreadPool(self)
-        self.threadpool.setMaxThreadCount(1)   # TODO: This should be an option
+        self.threads = 2
+        self.threadpool.setMaxThreadCount(self.threads)
 
         self.framearray = []
         self.batch = {}
@@ -316,7 +317,7 @@ class Ui(Ui_MainWindow):
         if self.checkBoxStack.isChecked():
             self.runStack()
 
-    def runCalib(self):
+    def runCalib_old(self):
         """
         Run everything related to calibrating
         """
@@ -371,6 +372,62 @@ class Ui(Ui_MainWindow):
 
         self.threadpool.setMaxThreadCount(1)
 
+    def runCalib(self):
+        """
+        Run everything needed for calibrating
+        """
+
+        # First gather some instructions on what is required. Makes reading the if's ahead easier
+        need_bias = self.checkBoxDarkBias.isChecked() or\
+                    self.checkBoxFlatBias.isChecked() or\
+                    self.checkBoxLightBias.isChecked()
+        need_dark = self.checkBoxDarkBias.isChecked() or\
+                    self.checkBoxLightDark.isChecked() or\
+                    self.checkBoxFlatDark.isChecked()
+        need_flat = self.checkBoxFlatBias.isChecked() or\
+                    self.checkBoxFlatDark.isChecked() or\
+                    self.checkBoxLightFlat.isChecked()
+
+        darkbias = self.checkBoxDarkBias.isChecked()
+        flatbias = self.checkBoxFlatBias.isChecked()
+        flatdark = self.checkBoxFlatDark.isChecked()
+        lightbias = self.checkBoxLightBias.isChecked()
+        lightdark = self.checkBoxLightDark.isChecked()
+        lightflat = self.checkBoxLightFlat.isChecked()
+
+        # Bias frames
+        if need_bias:
+            # Threads set to 1 because this has to be done before anything else
+            self.threadpool.setMaxThreadCount(1)
+            self.threadpool.start(GenericThread(self.batch["bias"].stack, Stacker.Mean()))
+            self.threadpool.setMaxThreadCount(self.threads)
+
+        # Dark frames
+        if need_dark:
+            for i in self.batch["dark"].frames:
+                self.threadpool.start(GenericThread(self.batch["dark"].calibrate, i, Stacker.Mean(), bias=darkbias))
+            self.threadpool.setMaxThreadCount(1)
+            self.threadpool.start(GenericThread(self.batch["dark"].stack, Stacker.Mean()))
+            self.threadpool.setMaxThreadCount(self.threads)
+
+        # Flat frames
+        if need_flat:
+            for i in self.batch["flat"].frames:
+                self.threadpool.start(GenericThread(self.batch["flat"].calibrate, i, Stacker.Mean(), bias=flatbias,
+                                                                                                     dark=flatdark))
+            self.threadpool.setMaxThreadCount(1)
+            self.threadpool.start(GenericThread(self.batch["flat"].stack, Stacker.Mean()))
+            self.threadpool.setMaxThreadCount(self.threads)
+
+        # Light frames
+        for i in self.batch["light"].frames:
+            self.threadpool.start(GenericThread(self.batch["light"].calibrate, i, Stacker.Mean(), bias=lightbias,
+                                                                                                  dark=lightdark,
+                                                                                                  flat=lightflat))
+        self.threadpool.setMaxThreadCount(1)
+        self.threadpool.start(GenericThread(self.batch["light"].stack, Stacker.Mean()))
+        self.threadpool.setMaxThreadCount(self.threads)
+
     def runDebayer(self):
         """
         Run everything related to debayering
@@ -400,8 +457,6 @@ class Ui(Ui_MainWindow):
             self.registerwrap = Registering.Groth_ImageMagick()
         elif self.buttonRegister.checkedButton().text() == self.radioButtonGrothSK.text():
             self.registerwrap = Registering.Groth_Skimage()
-        #elif self.buttonRegister.checkedButton().text() == self.radioButtonLegacy.text():
-        #    self.registerwrap = Registering.Sextractor2()
 
         # First register the reference frame. This has to be done before anything else
         self.threadpool.start(GenericThread(self.batch["light"].register,
@@ -415,7 +470,6 @@ class Ui(Ui_MainWindow):
             self.threadpool.start(GenericThread(self.batch["light"].register, i, self.registerwrap))
 
         self.threadpool.waitForDone()
-        #self.batch["light"].register(self.registerwrap)
 
     def runStack(self):
         """

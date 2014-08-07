@@ -62,6 +62,7 @@ class Groth(Registering):
 
         if frame.isref:
             self.ref = frame
+            print(frame.points)
 
         if self.ref is None:
             raise Exception("Reference frame must be registered first!")

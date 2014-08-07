@@ -40,6 +40,14 @@ class Frame(object):
         self.project = project
         self.format = ".fits"       # TODO: Remove this legacy
         self.isref = False
+        self.timestamp = None
+        self.camera = None
+        self.isospeed = None
+        self.shutter = None
+        self.aperture = None
+        self.focallength = None
+        self.bayer = None
+        self.dlmulti = None
 
         # TODO: Get rid of this:
         self.wdir = self.project.get("Setup", "Path")
@@ -178,10 +186,11 @@ class Frame(object):
         """
 
         self.state["register"] = 1
-
         self.data = register.register_single(self)
-
+        self.fphase = "reg"
         self.state["register"] = 2
+        self.write()
+        #self._release_data()    # Some memory is leaking. Checking if it's here
 
         self.update_ui()
 
@@ -261,7 +270,6 @@ class Frame(object):
 
         self.x = int(self.frameinfo.get("Properties", "X"))
         self.y = int(self.frameinfo.get("Properties", "Y"))
-
         try:
             self.pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
         except KeyError:
@@ -331,21 +339,24 @@ class Frame(object):
             self.infopath = self.wdir + "/" + self.name + "_" + self.ftype + "_" + str(self.number) + ".info"
         self.frameinfo = Config.Frame(self.infopath)
 
-        self.frameinfo.set("Paths", "Raw", self.rawpath)
+        self.frameinfo.set("Paths", "Raw", str(self.rawpath))
         self.frameinfo.set("Default", "Number", str(self.number))
-        self.frameinfo.set("Default", "Ftype", self.ftype)
+        self.frameinfo.set("Default", "Ftype", str(self.ftype))
         self.frameinfo.set("Paths", self.fphase, self.path())
-        self.frameinfo.set("Properties", "Filter pattern", self.bayer)
-        self.frameinfo.set("Properties", "Timestamp", self.timestamp)
-        self.frameinfo.set("Properties", "Camera", self.camera)
-        self.frameinfo.set("Properties", "ISO speed", self.isospeed)
-        self.frameinfo.set("Properties", "Shutter", self.shutter)
-        self.frameinfo.set("Properties", "Aperture", self.aperture)
-        self.frameinfo.set("Properties", "Focal length", self.focallength)
-        self.frameinfo.set("Properties", "Daylight multipliers", self.dlmulti)
+        self.frameinfo.set("Properties", "Filter pattern", str(self.bayer))
+        self.frameinfo.set("Properties", "Timestamp", str(self.timestamp))
+        self.frameinfo.set("Properties", "Camera", str(self.camera))
+        self.frameinfo.set("Properties", "ISO speed", str(self.isospeed))
+        self.frameinfo.set("Properties", "Shutter", str(self.shutter))
+        self.frameinfo.set("Properties", "Aperture", str(self.aperture))
+        self.frameinfo.set("Properties", "Focal length", str(self.focallength))
+        self.frameinfo.set("Properties", "Daylight multipliers", str(self.dlmulti))
 
-        self.frameinfo.set("Properties", "X", str(self.x))
-        self.frameinfo.set("Properties", "Y", str(self.y))
+        try:
+            self.frameinfo.set("Properties", "X", str(self.x))
+            self.frameinfo.set("Properties", "Y", str(self.y))
+        except KeyError:
+           pass
 
     '''
     def fromraw(self, path):

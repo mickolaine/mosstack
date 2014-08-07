@@ -75,7 +75,31 @@ class QBatch(Batch, QWidget):
         if frame is not None:
             self.frames[frame].decode()
 
-        #self.emit(SIGNAL("update"), "CALLED FROM decode()")
+        self.refresh.emit()
+
+    def calibrate(self, frame, stacker, bias=None, dark=None, flat=None):
+        """
+        Calibrate a single frame
+        """
+        print("Calibrating frame " + self.frames[frame].path())
+        biasframe = None
+        darkframe = None
+        flatframe = None
+        if bias:
+            biaspath = self.project.get("Masters", "bias")
+            biasframe = QFrame(project=self.project, infopath=biaspath)
+        if dark:
+            darkpath = self.project.get("Masters", "dark")
+            biasframe = QFrame(project=self.project, infopath=darkpath)
+        if flat:
+            flatpath = self.project.get("Masters", "flat")
+            biasframe = QFrame(project=self.project, infopath=flatpath)
+
+        self.frames[frame].calibrate(stacker, biasframe, darkframe, flatframe)
+        print("...Done")
+        self.project.set("Reference images", self.fphase, str(self.refnum))
+        self.frames[str(self.refnum)].isref = True
+        print("Calibrated images saved with generic name 'calib'.")
         self.refresh.emit()
 
     def debayer(self, frame, debayer):
@@ -100,9 +124,7 @@ class QBatch(Batch, QWidget):
         """
 
         self.frames[frame].register(register)
-
         self.project.set("Reference images", self.fphase, str(self.refnum))
-
         self.refresh.emit()
 
     framearray = property(fget=getframearray)

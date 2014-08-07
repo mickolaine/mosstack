@@ -58,6 +58,7 @@ class SkTransform(object):
         image.genname = "reg"
         image.data = data
         image.write()
+        del data
         print("Done")
 
     @staticmethod
@@ -82,6 +83,7 @@ class SkTransform(object):
         primary = []
         secondary = []
         m = 0
+        print(image.pairs)
         for i in image.pairs:
             if m > 11 or i[2] < 20:
                 break
@@ -92,7 +94,12 @@ class SkTransform(object):
         primary = np.array(primary)
         secondary = np.array(secondary)
 
-        tform = tf.estimate_transform(ttype="affine", dst=primary, src=secondary)
+        try:
+            tform = tf.estimate_transform(ttype="affine", dst=primary, src=secondary)
+        except IndexError:
+            print(primary)
+            print(secondary)
+
         imagedata = image.data
         data = []
         for i in range(len(imagedata)):
