@@ -77,7 +77,7 @@ class QBatch(Batch, QWidget):
 
         self.refresh.emit()
 
-    def calibrate(self, frame, stacker, bias=None, dark=None, flat=None):
+    def calibrate(self, frame, stacker, bias=0, dark=0, flat=0):
         """
         Calibrate a single frame
         """
@@ -85,13 +85,13 @@ class QBatch(Batch, QWidget):
         biasframe = None
         darkframe = None
         flatframe = None
-        if bias:
+        if bias > 0:
             biaspath = self.project.get("Masters", "bias")
             biasframe = QFrame(project=self.project, infopath=biaspath)
-        if dark:
+        if dark > 0:
             darkpath = self.project.get("Masters", "dark")
             biasframe = QFrame(project=self.project, infopath=darkpath)
-        if flat:
+        if flat > 0:
             flatpath = self.project.get("Masters", "flat")
             biasframe = QFrame(project=self.project, infopath=flatpath)
 
@@ -118,12 +118,12 @@ class QBatch(Batch, QWidget):
         print("Debayered images saved with generic name 'rgb'.")
         self.refresh.emit()
 
-    def register(self, frame, register):
+    def register(self, frame, register, ref=False):
         """
         Register a single frame
         """
 
-        self.frames[frame].register(register)
+        self.frames[frame].register(register, ref=ref)
         self.project.set("Reference images", self.fphase, str(self.refnum))
         self.refresh.emit()
 

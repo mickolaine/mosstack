@@ -24,7 +24,7 @@ class VNGCython(Debayer):
         Give cfa-image, receive rgb-image. Return numpy.array
         """
         print("VNG Cython")
-        cfa = np.float32(image)  # .byteswap().newbyteorder()
+        cfa = np.float32(image[0])  # .byteswap().newbyteorder()
 
         r = np.zeros_like(cfa)
         g = np.zeros_like(cfa)

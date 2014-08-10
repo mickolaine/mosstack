@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>819</width>
-    <height>626</height>
+    <width>1024</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <layout class="QGridLayout" name="gridLayout_3" columnstretch="3,10" rowminimumheight="0,0" columnminimumwidth="0,0">
+   <layout class="QGridLayout" name="gridLayout_3" rowstretch="10,2" columnstretch="1,8" rowminimumheight="0,150" columnminimumwidth="190,0">
     <property name="sizeConstraint">
      <enum>QLayout::SetMaximumSize</enum>
     </property>
@@ -30,7 +30,7 @@
     <item row="0" column="0">
      <layout class="QGridLayout" name="gridLayout_2">
       <property name="sizeConstraint">
-       <enum>QLayout::SetMaximumSize</enum>
+       <enum>QLayout::SetDefaultConstraint</enum>
       </property>
       <item row="0" column="0">
        <widget class="QLabel" name="label">
@@ -54,15 +54,15 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>3</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="pageFrames">
          <property name="geometry">
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>174</width>
-           <height>389</height>
+           <width>178</width>
+           <height>413</height>
           </rect>
          </property>
          <attribute name="label">
@@ -139,8 +139,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>174</width>
-           <height>389</height>
+           <width>178</width>
+           <height>413</height>
           </rect>
          </property>
          <attribute name="label">
@@ -227,8 +227,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>174</width>
-           <height>389</height>
+           <width>178</width>
+           <height>413</height>
           </rect>
          </property>
          <attribute name="label">
@@ -292,8 +292,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>174</width>
-           <height>389</height>
+           <width>178</width>
+           <height>413</height>
           </rect>
          </property>
          <attribute name="label">
@@ -337,8 +337,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>174</width>
-           <height>389</height>
+           <width>178</width>
+           <height>413</height>
           </rect>
          </property>
          <attribute name="label">
@@ -396,8 +396,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>174</width>
-           <height>389</height>
+           <width>178</width>
+           <height>413</height>
           </rect>
          </property>
          <attribute name="label">
@@ -476,6 +476,9 @@
     </item>
     <item row="0" column="1">
      <layout class="QGridLayout" name="gridLayout">
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMaximumSize</enum>
+      </property>
       <property name="horizontalSpacing">
        <number>0</number>
       </property>
@@ -511,20 +514,20 @@
       </item>
      </layout>
     </item>
-    <item row="1" column="0">
-     <widget class="QWidget" name="widget_2" native="true"/>
+    <item row="1" column="0" colspan="2">
+     <widget class="QTableView" name="tableView_2"/>
     </item>
    </layout>
    <zorder></zorder>
    <zorder></zorder>
-   <zorder>widget_2</zorder>
+   <zorder>tableView_2</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>819</width>
+     <width>1024</width>
      <height>20</height>
     </rect>
    </property>
@@ -536,9 +539,18 @@
     <addaction name="actionOpen_project"/>
     <addaction name="actionSave_project"/>
     <addaction name="separator"/>
+    <addaction name="actionSettings"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
+   <widget class="QMenu" name="menuAbout">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen_project">
@@ -559,6 +571,16 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings</string>
    </property>
   </action>
  </widget>

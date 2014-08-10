@@ -55,14 +55,13 @@ class Groth(Registering):
             t2 = datetime.datetime.now()
             print("Triangle calculations took " + str(t2 - t1) + " seconds.")
 
-    def register_single(self, frame):
+    def register_single(self, frame, ref=False):
         """
         Call everything required for frame's registration
         """
 
-        if frame.isref:
+        if ref:
             self.ref = frame
-            print(frame.points)
 
         if self.ref is None:
             raise Exception("Reference frame must be registered first!")
@@ -81,7 +80,7 @@ class Groth(Registering):
         """
         Finds the stars and creates all the triangles from them
         """
-        print(list(imagelist))
+
         sex = Sextractor(list(imagelist.values())[0])    # TODO: Ref image here
         sensitivity = sex.findsensitivity()
         del sex

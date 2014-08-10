@@ -20,7 +20,6 @@ class Mean(Stacking):
         """
 
         n = len(imagelist)
-        print(imagelist.values())
         newdata = zeros_like(list(imagelist.values())[0].data)
         number = 1
         print("Starting mean stack for " + str(n) + " images.")

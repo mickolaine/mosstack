@@ -174,23 +174,20 @@ class Frame(object):
         self.update_ui()
         return
 
-    def register(self, register):
+    def register(self, register, ref=False):
         """
         Register the frame. Project tells how.
 
         1. Step 1
-        2. Check if reference frame.
-            2.(If)   Copy file
-            2.(Else) Step 2
+        2. Call for register
         3. Inform Gui that state has changed
         """
 
         self.state["register"] = 1
-        self.data = register.register_single(self)
+        self.data = register.register_single(self, ref=ref)
         self.fphase = "reg"
         self.state["register"] = 2
         self.write()
-        #self._release_data()    # Some memory is leaking. Checking if it's here
 
         self.update_ui()
 
@@ -324,8 +321,8 @@ class Frame(object):
             if line[0] == "Daylight multipliers":
                 self.dlmulti = line[1]
             if line[0] == "Image size":
-                self.x = line[1].strip().split(" x ")[0]
-                self.y = line[1].strip().split(" x ")[1]
+                self.x = int(line[1].strip().split(" x ")[0])
+                self.y = int(line[1].strip().split(" x ")[1])
 
         print("Done!")
         print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
@@ -445,7 +442,7 @@ class Frame(object):
         if self._x:
             return self._x
         else:
-            self.x = self.frameinfo.get("Properties", "X")
+            self.x = int(self.frameinfo.get("Properties", "X"))
             return self._x
 
     def set_x(self, x):
@@ -457,7 +454,7 @@ class Frame(object):
         if self._y:
             return self._y
         else:
-            self.y = self.frameinfo.get("Properties", "Y")
+            self.y = int(self.frameinfo.get("Properties", "Y"))
             return self._y
 
     def set_y(self, y):

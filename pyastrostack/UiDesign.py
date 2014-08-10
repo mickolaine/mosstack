@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'AstroStack.ui'
+# Form implementation generated from reading ui file 'pyastrostack/AstroStack.ui'
 #
-# Created: Fri May 16 14:54:00 2014
-#      by: PyQt4 UI code generator 4.10.3
+# Created: Sat Aug  9 18:59:52 2014
+#      by: PyQt4 UI code generator 4.11.1
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -23,10 +23,10 @@ except AttributeError:
     def _translate(context, text, disambig):
         return QtGui.QApplication.translate(context, text, disambig)
 
-class Ui_MainWindow(QtGui.QWidget):
+class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
-        MainWindow.resize(819, 626)
+        MainWindow.resize(1024, 800)
         self.centralwidget = QtGui.QWidget(MainWindow)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -39,7 +39,7 @@ class Ui_MainWindow(QtGui.QWidget):
         self.gridLayout_3.setSpacing(-1)
         self.gridLayout_3.setObjectName(_fromUtf8("gridLayout_3"))
         self.gridLayout_2 = QtGui.QGridLayout()
-        self.gridLayout_2.setSizeConstraint(QtGui.QLayout.SetMaximumSize)
+        self.gridLayout_2.setSizeConstraint(QtGui.QLayout.SetDefaultConstraint)
         self.gridLayout_2.setObjectName(_fromUtf8("gridLayout_2"))
         self.label = QtGui.QLabel(self.centralwidget)
         self.label.setObjectName(_fromUtf8("label"))
@@ -53,7 +53,7 @@ class Ui_MainWindow(QtGui.QWidget):
         self.toolBox.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.toolBox.setObjectName(_fromUtf8("toolBox"))
         self.pageFrames = QtGui.QWidget()
-        self.pageFrames.setGeometry(QtCore.QRect(0, 0, 174, 389))
+        self.pageFrames.setGeometry(QtCore.QRect(0, 0, 178, 413))
         self.pageFrames.setObjectName(_fromUtf8("pageFrames"))
         self.label_6 = QtGui.QLabel(self.pageFrames)
         self.label_6.setGeometry(QtCore.QRect(7, 0, 61, 20))
@@ -72,7 +72,7 @@ class Ui_MainWindow(QtGui.QWidget):
         self.pushFlat.setObjectName(_fromUtf8("pushFlat"))
         self.toolBox.addItem(self.pageFrames, _fromUtf8(""))
         self.pageCalib = QtGui.QWidget()
-        self.pageCalib.setGeometry(QtCore.QRect(0, 0, 174, 389))
+        self.pageCalib.setGeometry(QtCore.QRect(0, 0, 178, 413))
         self.pageCalib.setObjectName(_fromUtf8("pageCalib"))
         self.layoutWidget = QtGui.QWidget(self.pageCalib)
         self.layoutWidget.setGeometry(QtCore.QRect(10, 0, 141, 241))
@@ -109,7 +109,7 @@ class Ui_MainWindow(QtGui.QWidget):
         self.verticalLayoutCalibrate.addWidget(self.checkBoxLightFlat)
         self.toolBox.addItem(self.pageCalib, _fromUtf8(""))
         self.pageDebayer = QtGui.QWidget()
-        self.pageDebayer.setGeometry(QtCore.QRect(0, 0, 174, 389))
+        self.pageDebayer.setGeometry(QtCore.QRect(0, 0, 178, 413))
         self.pageDebayer.setObjectName(_fromUtf8("pageDebayer"))
         self.layoutWidget1 = QtGui.QWidget(self.pageDebayer)
         self.layoutWidget1.setGeometry(QtCore.QRect(0, 0, 161, 111))
@@ -137,7 +137,7 @@ class Ui_MainWindow(QtGui.QWidget):
         self.verticalLayoutDebayer.addWidget(self.radioButtonVNGCL)
         self.toolBox.addItem(self.pageDebayer, _fromUtf8(""))
         self.pageReg = QtGui.QWidget()
-        self.pageReg.setGeometry(QtCore.QRect(0, 0, 174, 389))
+        self.pageReg.setGeometry(QtCore.QRect(0, 0, 178, 413))
         self.pageReg.setObjectName(_fromUtf8("pageReg"))
         self.layoutWidget2 = QtGui.QWidget(self.pageReg)
         self.layoutWidget2.setGeometry(QtCore.QRect(0, 10, 161, 73))
@@ -157,7 +157,7 @@ class Ui_MainWindow(QtGui.QWidget):
         self.verticalLayoutRegister.addWidget(self.radioButtonGrothSK)
         self.toolBox.addItem(self.pageReg, _fromUtf8(""))
         self.pageStack = QtGui.QWidget()
-        self.pageStack.setGeometry(QtCore.QRect(0, 0, 174, 389))
+        self.pageStack.setGeometry(QtCore.QRect(0, 0, 178, 413))
         self.pageStack.setObjectName(_fromUtf8("pageStack"))
         self.layoutWidget3 = QtGui.QWidget(self.pageStack)
         self.layoutWidget3.setGeometry(QtCore.QRect(10, 10, 117, 111))
@@ -183,7 +183,7 @@ class Ui_MainWindow(QtGui.QWidget):
         self.verticalLayoutStack.addWidget(self.radioButtonSMedian)
         self.toolBox.addItem(self.pageStack, _fromUtf8(""))
         self.pageRun = QtGui.QWidget()
-        self.pageRun.setGeometry(QtCore.QRect(0, 0, 174, 389))
+        self.pageRun.setGeometry(QtCore.QRect(0, 0, 178, 413))
         self.pageRun.setObjectName(_fromUtf8("pageRun"))
         self.label_2 = QtGui.QLabel(self.pageRun)
         self.label_2.setGeometry(QtCore.QRect(0, 0, 91, 16))
@@ -213,6 +213,7 @@ class Ui_MainWindow(QtGui.QWidget):
         self.gridLayout_2.addWidget(self.toolBox, 1, 0, 1, 1)
         self.gridLayout_3.addLayout(self.gridLayout_2, 0, 0, 1, 1)
         self.gridLayout = QtGui.QGridLayout()
+        self.gridLayout.setSizeConstraint(QtGui.QLayout.SetMaximumSize)
         self.gridLayout.setHorizontalSpacing(0)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.widget = QtGui.QWidget(self.centralwidget)
@@ -236,17 +237,23 @@ class Ui_MainWindow(QtGui.QWidget):
         self.tableView.setObjectName(_fromUtf8("tableView"))
         self.gridLayout.addWidget(self.tableView, 1, 0, 1, 1)
         self.gridLayout_3.addLayout(self.gridLayout, 0, 1, 1, 1)
-        self.widget_2 = QtGui.QWidget(self.centralwidget)
-        self.widget_2.setObjectName(_fromUtf8("widget_2"))
-        self.gridLayout_3.addWidget(self.widget_2, 1, 0, 1, 1)
-        self.gridLayout_3.setColumnStretch(0, 3)
-        self.gridLayout_3.setColumnStretch(1, 10)
+        self.tableView_2 = QtGui.QTableView(self.centralwidget)
+        self.tableView_2.setObjectName(_fromUtf8("tableView_2"))
+        self.gridLayout_3.addWidget(self.tableView_2, 1, 0, 1, 2)
+        self.gridLayout_3.setColumnMinimumWidth(0, 190)
+        self.gridLayout_3.setRowMinimumHeight(1, 150)
+        self.gridLayout_3.setColumnStretch(0, 1)
+        self.gridLayout_3.setColumnStretch(1, 8)
+        self.gridLayout_3.setRowStretch(0, 10)
+        self.gridLayout_3.setRowStretch(1, 2)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 819, 20))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1024, 20))
         self.menubar.setObjectName(_fromUtf8("menubar"))
         self.menuFile = QtGui.QMenu(self.menubar)
         self.menuFile.setObjectName(_fromUtf8("menuFile"))
+        self.menuAbout = QtGui.QMenu(self.menubar)
+        self.menuAbout.setObjectName(_fromUtf8("menuAbout"))
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName(_fromUtf8("statusbar"))
@@ -259,15 +266,23 @@ class Ui_MainWindow(QtGui.QWidget):
         self.actionNew_project.setObjectName(_fromUtf8("actionNew_project"))
         self.actionExit = QtGui.QAction(MainWindow)
         self.actionExit.setObjectName(_fromUtf8("actionExit"))
+        self.actionAbout = QtGui.QAction(MainWindow)
+        self.actionAbout.setObjectName(_fromUtf8("actionAbout"))
+        self.actionSettings = QtGui.QAction(MainWindow)
+        self.actionSettings.setObjectName(_fromUtf8("actionSettings"))
         self.menuFile.addAction(self.actionNew_project)
         self.menuFile.addAction(self.actionOpen_project)
         self.menuFile.addAction(self.actionSave_project)
         self.menuFile.addSeparator()
+        self.menuFile.addAction(self.actionSettings)
+        self.menuFile.addSeparator()
         self.menuFile.addAction(self.actionExit)
+        self.menuAbout.addAction(self.actionAbout)
         self.menubar.addAction(self.menuFile.menuAction())
+        self.menubar.addAction(self.menuAbout.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.toolBox.setCurrentIndex(3)
+        self.toolBox.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -312,8 +327,11 @@ class Ui_MainWindow(QtGui.QWidget):
         self.label_7.setText(_translate("MainWindow", "Project name:", None))
         self.projectName.setText(_translate("MainWindow", "Not Set! Choose File -> New project", None))
         self.menuFile.setTitle(_translate("MainWindow", "File", None))
+        self.menuAbout.setTitle(_translate("MainWindow", "Help", None))
         self.actionOpen_project.setText(_translate("MainWindow", "Open project", None))
         self.actionSave_project.setText(_translate("MainWindow", "Save project", None))
         self.actionNew_project.setText(_translate("MainWindow", "New project", None))
         self.actionExit.setText(_translate("MainWindow", "Exit", None))
+        self.actionAbout.setText(_translate("MainWindow", "About", None))
+        self.actionSettings.setText(_translate("MainWindow", "Settings", None))
 

@@ -4,12 +4,12 @@ Graphical user interface for pyAstroStack. This file holds all the functionality
 
 #from PyQt4.QtCore import QAbstractTableModel, Qt, QThread, pyqtSignal, SIGNAL
 from PyQt4.QtCore import *
-from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QProgressDialog, QMessageBox, QAction, QApplication
+from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox, QAction, QApplication
 from ast import literal_eval
 from . UiDesign import Ui_MainWindow
+from . settings import Ui_Dialog
 from . Config import Project, Setup
 from . QBatch import QBatch
-from . QFrame import QFrame
 from . import Registering
 from . import Debayer
 from . import Stacker
@@ -28,13 +28,10 @@ except ImportError:
     use_pyopencl = False
 
 
-class Ui(Ui_MainWindow):
+class Ui(Ui_MainWindow, QObject):
 
     def __init__(self):
         super(Ui_MainWindow, self).__init__()
-        #self.app = QApplication(sys.argv)
-        #self.setupUi(self)
-        #self.app.exec_()
 
     def setupMoar(self, MainWindow):
         """
@@ -47,6 +44,7 @@ class Ui(Ui_MainWindow):
         self.actionNew_project.triggered.connect(self.newProject)
         self.actionOpen_project.triggered.connect(self.loadProject)
         self.actionSave_project.triggered.connect(self.saveProject)
+        self.actionSettings.triggered.connect(self.settings)
         self.actionExit.triggered.connect(qApp.quit)
 
         self.pushLight.clicked.connect(self.addLight)
@@ -70,12 +68,25 @@ class Ui(Ui_MainWindow):
         self.messageBox = QMessageBox()
 
         self.threadpool = QThreadPool(self)
-        self.threads = 2
+        self.threads = 4
         self.threadpool.setMaxThreadCount(self.threads)
 
         self.framearray = []
         self.batch = {}
         self.pname = None
+
+    def settings(self):
+        """
+        Open settings window and read values from there.
+        """
+
+        self.swindow = Settings()
+        dialog = QDialog()
+        self.swindow.setupUi(dialog)
+        self.swindow.setupContent()
+        if dialog.exec():
+            new_values = self.swindow.getValues()
+            print(new_values)
 
     def setValues(self, values=None):
         """
@@ -103,7 +114,6 @@ class Ui(Ui_MainWindow):
                       "VNGOPENCL": 0,
                       "GrothIM": 0,
                       "GrothSK": 2,
-                      #"Legacy": 0,
                       "Mean": 0,
                       "Median": 0,
                       "SigmaMedian": 2,
@@ -129,7 +139,6 @@ class Ui(Ui_MainWindow):
 
         self.radioButtonGrothIM.setChecked(values["GrothIM"])
         self.radioButtonGrothSK.setChecked(values["GrothSK"])
-        #self.radioButtonLegacy.setChecked(values["Legacy"])
 
         self.radioButtonMean.setChecked(values["Mean"])
         self.radioButtonMedian.setChecked(values["Median"])
@@ -156,7 +165,6 @@ class Ui(Ui_MainWindow):
                   "VNGOPENCL": self.radioButtonVNGCL.isChecked(),
                   "GrothIM": self.radioButtonGrothIM.isChecked(),
                   "GrothSK": self.radioButtonGrothSK.isChecked(),
-                  #"Legacy": self.radioButtonLegacy.isChecked(),
                   "Mean": self.radioButtonMean.isChecked(),
                   "Median": self.radioButtonMedian.isChecked(),
                   "SigmaMedian": self.radioButtonSMedian.isChecked(),
@@ -229,9 +237,6 @@ class Ui(Ui_MainWindow):
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.addFrame(files, ftype)
 
-        #self.lightfiles = files
-        #self.addFrame(files, "light")
-
     def addLight(self):
         """
         Wrapper to add light files TODO: better solution
@@ -265,9 +270,6 @@ class Ui(Ui_MainWindow):
 
         # Add files to batch
         number = 0
-        #threadpool = QThreadPool(self)
-        #threadpool.setMaxThreadCount(1)
-
         for path in files:
             # If batch does not exist, create one
             if ftype not in self.batch:
@@ -279,14 +281,9 @@ class Ui(Ui_MainWindow):
             number += 1
 
         self.threadpool.waitForDone()
-        #n = 0
 
         for i in self.batch[ftype].frames:
             self.threadpool.start(GenericThread(self.batch[ftype].decode, i))
-
-        #while n < number:
-        #    self.threadpool.start(GenericThread(self.batch[ftype].decode, n), priority=-1)
-        #    n += 1
 
     def updateTableView(self):
         tablemodel = []
@@ -301,13 +298,11 @@ class Ui(Ui_MainWindow):
         """
         Check what needs to be done and call everything necessary
         """
-        #self.light = Batch(self.project, "light")
-        #self.light.addfiles(self.lightfiles, "light")
 
         self.messageBox.information(self.messageBox, 'Starting the process...',
                                     'Press Ok and the process will start. Program will be unresponsive and all the ' +
                                     'output goes to terminal.')
-
+        self.threadpool.waitForDone()
         if self.checkBoxCalib.isChecked():
             self.runCalib()
         if self.checkBoxDebayer.isChecked():
@@ -317,75 +312,20 @@ class Ui(Ui_MainWindow):
         if self.checkBoxStack.isChecked():
             self.runStack()
 
-    def runCalib_old(self):
-        """
-        Run everything related to calibrating
-        """
-
-        self.threadpool.setMaxThreadCount(1)
-
-        # If Bias frames are required
-        if self.checkBoxDarkBias.isChecked() or self.checkBoxFlatBias.isChecked() or self.checkBoxLightBias.isChecked():
-            self.threadpool.start(GenericThread(self.batch["bias"].stack, Stacker.Mean()))
-            #self.threadpool.waitForDone()
-            #self.batch["bias"].stack(Stacker.Mean())
-
-        # If Dark frames are required
-        if self.checkBoxDarkBias.isChecked() or self.checkBoxLightDark.isChecked() or self.checkBoxFlatDark.isChecked():
-            if self.checkBoxDarkBias.isChecked():
-                self.threadpool.start(GenericThread(self.batch["dark"].subtract, "bias", Stacker.Mean()))
-                #self.threadpool.waitForDone()
-                #self.batch["dark"].subtract("bias", Stacker.Mean())
-
-            self.threadpool.start(GenericThread(self.batch["dark"].stack, Stacker.Mean()))
-            #self.threadpool.waitForDone()
-            #self.batch["dark"].stack(Stacker.Mean())
-
-        # If Flat frames are required
-        if self.checkBoxFlatBias.isChecked() or self.checkBoxFlatDark.isChecked() or self.checkBoxLightFlat.isChecked():
-            if self.checkBoxFlatBias.isChecked():
-                self.threadpool.start(GenericThread(self.batch["flat"].subtract, "bias", Stacker.Mean()))
-                #self.threadpool.waitForDone()
-                #self.batch["flat"].subtract("bias", Stacker.Mean())
-            if self.checkBoxFlatDark.isChecked():
-                self.threadpool.start(GenericThread(self.batch["flat"].subtract, "dark", Stacker.Mean()))
-                #self.threadpool.waitForDone()
-                #self.batch["flat"].subtract("dark", Stacker.Mean())
-
-            self.threadpool.start(GenericThread(self.batch["flat"].stack, Stacker.Mean()))
-            #self.threadpool.waitForDone()
-            #self.batch["flat"].stack(Stacker.Mean())
-
-        # Process Light frames. Everything is ready for it
-        if self.checkBoxLightBias.isChecked():
-            self.threadpool.start(GenericThread(self.batch["light"].subtract, "bias", Stacker.Mean()))
-            #self.threadpool.waitForDone()
-            #self.batch["light"].subtract("bias", Stacker.Mean())
-        if self.checkBoxLightDark.isChecked():
-            self.threadpool.start(GenericThread(self.batch["light"].subtract, "dark", Stacker.Mean()))
-            #self.threadpool.waitForDone()
-            #self.batch["light"].subtract("dark", Stacker.Mean())
-        if self.checkBoxLightFlat.isChecked():
-            self.threadpool.start(GenericThread(self.batch["light"].divide, "flat", Stacker.Mean()))
-            #self.threadpool.waitForDone()
-            #self.batch["light"].divide("flat", Stacker.Mean())
-
-        self.threadpool.setMaxThreadCount(1)
-
     def runCalib(self):
         """
         Run everything needed for calibrating
         """
 
         # First gather some instructions on what is required. Makes reading the if's ahead easier
-        need_bias = self.checkBoxDarkBias.isChecked() or\
-                    self.checkBoxFlatBias.isChecked() or\
+        need_bias = self.checkBoxDarkBias.isChecked() + \
+                    self.checkBoxFlatBias.isChecked() + \
                     self.checkBoxLightBias.isChecked()
-        need_dark = self.checkBoxDarkBias.isChecked() or\
-                    self.checkBoxLightDark.isChecked() or\
+        need_dark = self.checkBoxDarkBias.isChecked() + \
+                    self.checkBoxLightDark.isChecked() + \
                     self.checkBoxFlatDark.isChecked()
-        need_flat = self.checkBoxFlatBias.isChecked() or\
-                    self.checkBoxFlatDark.isChecked() or\
+        need_flat = self.checkBoxFlatBias.isChecked() + \
+                    self.checkBoxFlatDark.isChecked() + \
                     self.checkBoxLightFlat.isChecked()
 
         darkbias = self.checkBoxDarkBias.isChecked()
@@ -396,27 +336,31 @@ class Ui(Ui_MainWindow):
         lightflat = self.checkBoxLightFlat.isChecked()
 
         # Bias frames
-        if need_bias:
+        if need_bias > 0:
             # Threads set to 1 because this has to be done before anything else
+
             self.threadpool.setMaxThreadCount(1)
             self.threadpool.start(GenericThread(self.batch["bias"].stack, Stacker.Mean()))
+            self.threadpool.waitForDone()
             self.threadpool.setMaxThreadCount(self.threads)
 
         # Dark frames
-        if need_dark:
+        if need_dark > 0:
             for i in self.batch["dark"].frames:
                 self.threadpool.start(GenericThread(self.batch["dark"].calibrate, i, Stacker.Mean(), bias=darkbias))
             self.threadpool.setMaxThreadCount(1)
             self.threadpool.start(GenericThread(self.batch["dark"].stack, Stacker.Mean()))
+            self.threadpool.waitForDone()
             self.threadpool.setMaxThreadCount(self.threads)
 
         # Flat frames
-        if need_flat:
+        if need_flat > 0:
             for i in self.batch["flat"].frames:
                 self.threadpool.start(GenericThread(self.batch["flat"].calibrate, i, Stacker.Mean(), bias=flatbias,
                                                                                                      dark=flatdark))
             self.threadpool.setMaxThreadCount(1)
             self.threadpool.start(GenericThread(self.batch["flat"].stack, Stacker.Mean()))
+            self.threadpool.waitForDone()
             self.threadpool.setMaxThreadCount(self.threads)
 
         # Light frames
@@ -426,6 +370,7 @@ class Ui(Ui_MainWindow):
                                                                                                   flat=lightflat))
         self.threadpool.setMaxThreadCount(1)
         self.threadpool.start(GenericThread(self.batch["light"].stack, Stacker.Mean()))
+        self.threadpool.waitForDone()
         self.threadpool.setMaxThreadCount(self.threads)
 
     def runDebayer(self):
@@ -441,8 +386,6 @@ class Ui(Ui_MainWindow):
             self.debayerwrap = Debayer.VNGOpenCl()
         elif self.buttonDebayer.checkedButton().text() == "Bilinear OpenCL":
             self.debayerwrap = Debayer.BilinearOpenCl()
-
-        #self.batch["light"].debayer(self.debayerwrap)
 
         for i in self.batch["light"].frames:
             self.threadpool.start(GenericThread(self.batch["light"].debayer, i, self.debayerwrap))
@@ -461,7 +404,8 @@ class Ui(Ui_MainWindow):
         # First register the reference frame. This has to be done before anything else
         self.threadpool.start(GenericThread(self.batch["light"].register,
                                             self.batch["light"].refnum,
-                                            self.registerwrap))
+                                            self.registerwrap,
+                                            ref=True))
         self.threadpool.waitForDone()
 
         for i in self.batch["light"].frames:
@@ -486,7 +430,42 @@ class Ui(Ui_MainWindow):
             self.stackingwrap = Stacker.SigmaClip()
 
         self.threadpool.start(GenericThread(self.batch["light"].stack, self.stackingwrap))
-        #self.batch["light"].stack(self.stackingwrap)
+
+
+class Settings(Ui_Dialog):
+    """
+    Defining actions for the Settings window.
+    """
+
+    def __init__(self):
+        super(Ui_Dialog, self).__init__()
+        self.fileDialog = QFileDialog()
+
+    def setupContent(self):
+        """
+        Set up everything
+        """
+
+        self.pushButtonBrowseTemp.clicked.connect(self.browseTempDialog)
+        self.pushButtonBrowseSex.clicked.connect(self.browseSexPath)
+        #self.comboBox.
+        self.values = dict()
+        self.values["processes"] = self.comboBox.currentText()
+
+    def browseTempDialog(self):
+        self.values["tempdir"] = self.fileDialog.getExistingDirectory(caption="Select directory for temporary files")
+        self.lineEditTemp.setText(self.values["tempdir"])
+
+    def browseSexPath(self):
+        self.values["sexpath"] = self.fileDialog.getOpenFileName(caption="Select SExtractor binary",
+                                                                 directory="/usr/bin/")
+
+    def getValues(self):
+        try:
+            self.values["processes"] = int(self.comboBox.currentText())
+        except ValueError:
+            print("Value has to be integer. Changing back to one process")
+        return self.values
 
 
 class FrameTableModel(QAbstractTableModel):
@@ -536,65 +515,7 @@ class GenericThread(QRunnable):
         self.function = function
         self.args = args
         self.kwargs = kwargs
-        #self.signal = SIGNAL("signal")
-
-    #def __del__(self):
-    #    self.wait()
 
     def run(self):
         self.function(*self.args, **self.kwargs)
-        #self.emit(SIGNAL("update"), "CALLED FROM GenericThread.run()")
-        #self.refresh.emit()
         return
-
-
-class BatchThread(QThread):
-    """
-
-    """
-
-    update = pyqtSignal()
-
-    def __init__(self, batch, function, *args, **kwargs):
-        super(QThread, self).__init__()
-        self.batch = batch
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-
-    def __del__(self):
-        self.wait()
-
-    def run(self):
-        if self.function == "decode":
-            self.run_decode()
-
-        if self.function == "calibrate":
-            self.run_calibrate()
-
-        if self.function == "debayering":
-            self.run_debayering()
-
-        if self.function == "registering":
-            self.run_registering()
-
-        if self.function == "stacking":
-            self.run_stacking()
-
-        return
-
-    def run_decode(self):
-
-        pass
-
-    def run_calibrate(self):
-        pass
-
-    def run_debayering(self):
-        pass
-
-    def run_registering(self):
-        pass
-
-    def run_stacking(self):
-        pass
