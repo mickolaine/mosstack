@@ -4,22 +4,22 @@ Graphical user interface for pyAstroStack. This file holds all the functionality
 
 #from PyQt4.QtCore import QAbstractTableModel, Qt, QThread, pyqtSignal, SIGNAL
 from PyQt4.QtCore import *
-from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox, QAction, QApplication
+from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox  # , QAction, QApplication
 from ast import literal_eval
 from . UiDesign import Ui_MainWindow
 from . settings import Ui_Dialog
-from . Config import Project, Setup
+from . Config import Project, Global
 from . QBatch import QBatch
 from . import Registering
 from . import Debayer
 from . import Stacker
-import sys
-try:
-    from PyQt4.QtCore import Qstring
-    _fromUtf8 = QString.fromUtf8
-except ImportError:
-    def _fromUtf8(s):
-        return s
+#import sys
+#try:
+#    from PyQt4.QtCore import Qstring
+#    _fromUtf8 = QString.fromUtf8
+#except ImportError:
+#    def _fromUtf8(s):
+#        return s
 
 try:
     import pyopencl
@@ -38,15 +38,16 @@ class Ui(Ui_MainWindow, QObject):
         Add things I don't know how to add with Qt Designer
         """
 
-        self.setup = Setup()
 
-        #Menu
+
+        # Menu
         self.actionNew_project.triggered.connect(self.newProject)
         self.actionOpen_project.triggered.connect(self.loadProject)
         self.actionSave_project.triggered.connect(self.saveProject)
         self.actionSettings.triggered.connect(self.settings)
         self.actionExit.triggered.connect(qApp.quit)
 
+        # Buttons
         self.pushLight.clicked.connect(self.addLight)
         self.pushDark.clicked.connect(self.addDark)
         self.pushFlat.clicked.connect(self.addFlat)
@@ -56,6 +57,12 @@ class Ui(Ui_MainWindow, QObject):
         self.buttonDebayer.setExclusive(True)
         self.buttonRegister.setExclusive(True)
         self.buttonStack.setExclusive(True)
+
+        # Check setup
+        try:
+            Global.get("Default", "Path")
+        except KeyError:
+            self.settings()
 
         if not use_pyopencl:
             self.radioButtonBilinearCL.setEnabled(False)
@@ -83,10 +90,22 @@ class Ui(Ui_MainWindow, QObject):
         self.swindow = Settings()
         dialog = QDialog()
         self.swindow.setupUi(dialog)
-        self.swindow.setupContent()
+
+        try:
+            self.values = {"tempdir": Global.get("Default", "path"),
+                           "sexpath": Global.get("Programs", "sextractor"),
+                           "processes": self.threads}
+        except KeyError:
+            self.values = {"tempdir": "", "sexpath": "", "processes": 1}
+
+        self.swindow.setupContent(values=self.values)
         if dialog.exec():
             new_values = self.swindow.getValues()
             print(new_values)
+
+            self.threads = new_values["processes"]
+            Global.set("Programs", "sextractor", self.values["sexpath"])
+            Global.set("Default", "path", self.values["tempdir"])
 
     def setValues(self, values=None):
         """
@@ -178,7 +197,7 @@ class Ui(Ui_MainWindow, QObject):
         """
 
         self.pfile = self.fileDialog.getOpenFileName(caption="Open project",
-                                                     directory=self.setup.get("Default", "Path"),
+                                                     directory=Global.get("Default", "Path"),
                                                      filter="Project files (*.project)")
         self.project = Project.load(self.pfile)
         self.setProjectName(self.project.get("Default", "Project name"))
@@ -441,16 +460,25 @@ class Settings(Ui_Dialog):
         super(Ui_Dialog, self).__init__()
         self.fileDialog = QFileDialog()
 
-    def setupContent(self):
+    def setupContent(self, values=None):
         """
         Set up everything
         """
 
         self.pushButtonBrowseTemp.clicked.connect(self.browseTempDialog)
         self.pushButtonBrowseSex.clicked.connect(self.browseSexPath)
-        #self.comboBox.
-        self.values = dict()
-        self.values["processes"] = self.comboBox.currentText()
+        self.comboBox.activated[int].connect(self.comboChange)
+        self.lineEditSex.editingFinished.connect(self.lineSexChanged)
+        self.lineEditTemp.editingFinished.connect(self.lineTempChanged)
+
+        if values is None:
+            self.values = dict()
+        else:
+            self.values = values
+
+        self.lineEditTemp.setText(self.values["tempdir"])
+        self.lineEditSex.setText(self.values["sexpath"])
+        self.comboBox.setCurrentIndex(self.values["processes"] - 1)
 
     def browseTempDialog(self):
         self.values["tempdir"] = self.fileDialog.getExistingDirectory(caption="Select directory for temporary files")
@@ -459,12 +487,21 @@ class Settings(Ui_Dialog):
     def browseSexPath(self):
         self.values["sexpath"] = self.fileDialog.getOpenFileName(caption="Select SExtractor binary",
                                                                  directory="/usr/bin/")
+        self.lineEditSex.setText(self.values["sexpath"])
 
-    def getValues(self):
+    def lineSexChanged(self):
+        self.values["sexpath"] = self.lineEditSex.text()
+
+    def lineTempChanged(self):
+        self.values["tempdir"] = self.lineEditTemp.text()
+
+    def comboChange(self):
         try:
             self.values["processes"] = int(self.comboBox.currentText())
         except ValueError:
-            print("Value has to be integer. Changing back to one process")
+            pass
+
+    def getValues(self):
         return self.values
 
 

@@ -14,7 +14,8 @@ import configparser
 import os
 from subprocess import check_output, CalledProcessError
 from sys import version_info
-from os.path import expanduser
+from os.path import expanduser, exists, split
+from os import makedirs
 
 
 class ConfigAbstractor:
@@ -56,6 +57,9 @@ class ConfigAbstractor:
 
 class Setup:
     """
+    Initial setup. Find all the necessary programs and create paths.
+
+    Old remove this:
     Class to control program settings
     """
 
@@ -67,7 +71,7 @@ class Setup:
         I'm not sure how just yet. Or why would someone need to do that.
         """
 
-        self.conf = ConfigAbstractor()
+        #self.conf = ConfigAbstractor()
         self.file = os.getenv("HOME") + file
 
         if not os.path.exists(os.path.split(self.file)[0]):
@@ -81,23 +85,74 @@ class Setup:
 
             try:
                 print("Looking for SExtractor binaries...")
-                self.conf.save("SExtractor", self.findsex(), "Programs")
-                print("Found " + self.conf.conf["Programs"]["SExtractor"])
+                Global.set("Programs", "SExtractor", self.findsex())
+                print("Found " + Global.get("Programs", "SExtractor"))
             except IOError as e:
                 print(e.args[0])
 
-            print("Be aware that the temporary files can take a lot of space (from 1 GB to 20 GB)")
-            temppath = self.input("Path for temporary files: ")
+            self.temppath()
 
-            # Make sure path ends in /
-            if temppath[len(temppath)-1] != "/":
-                temppath += "/"
+        #self.conf.read(self.file)
 
-            print("You have to manually copy SExtractor files default.param adn default.conv to temp directory.")
-            self.conf.save("Path", temppath)
-            self.conf.write(self.file)
+    def temppath(self):
+        """
+        Ask for temporary path, do all necessary checks and create path if needed.
+        """
 
-        self.conf.read(self.file)
+        print("AstroStack requires a dedicated directory for temporary files.")
+        print("Be aware that temp files can take a lot of space (from 1 GB to 20 GB) depending on your project.\n")
+        temppath = input("Path for temporary files: ")
+
+        # Make sure path ends in /
+        if temppath[len(temppath) - 1] != "/":
+            temppath += "/"
+
+        if not exists(temppath):
+            print("Path " + temppath + " not found. Creating...")
+            try:
+                makedirs(temppath)
+                print("Done")
+            except OSError:
+                print("Failed to create directory " + temppath)
+
+        Global.set("Default", "Path", temppath)
+        if not exists(Global.get("Default", "Path") + "default.conv") or \
+           not exists(Global.get("Default", "Path") + "default.param"):
+            self.createSExConf()
+
+    def createSExConf(self):
+        """
+        SExtractor requires two configuration files in the temp dir. This creates them. Files are from
+        SExtractor distribution package and all rights belong to it's author.
+        """
+
+        #default.param
+        param = """
+NUMBER
+FLUXERR_ISO
+FLUX_AUTO
+FLUXERR_AUTO
+X_IMAGE
+Y_IMAGE
+FLAGS
+        """
+
+        #default.conv
+        conv = """
+CONV NORM
+# 3x3 ``all-ground'' convolution mask with FWHM = 2 pixels.
+1 2 1
+2 4 2
+1 2 1
+        """
+
+        defaultparam = open(Global.get("Default", "Path") + "default.param", 'w')
+        defaultparam.write(param)
+        defaultparam.close()
+
+        defaultconv = open(Global.get("Default", "Path") + "default.conv", 'w')
+        defaultconv.write(conv)
+        defaultconv.close()
 
     def input(self, string):
         """
@@ -124,7 +179,7 @@ class Setup:
             try:
                 sexpath = check_output(["which", "sextractor"])
             except CalledProcessError:
-                print("Can't find SExtractor executable. Only $PATH has been checked.")
+                print("SExtractor executable not found in $PATH.")
                 sexpath = self.input("Give full path to SExtractor executable, eg. ~/bin/sex")
                 if not os.path.exists(sexpath):
                     raise IOError("File not found:", sexpath)
@@ -265,9 +320,12 @@ class Project(Config):
         pname - project name
         """
 
-        self.setup = Setup()
-        self.sex   = self.setup.get("Programs", "SExtractor")
-        self.path  = self.setup.get("Default", "path")
+        #self.setup = Setup()
+        try:
+            self.sex   = Global.get("Programs", "SExtractor")
+            self.path  = Global.get("Default", "path")
+        except KeyError:
+            self.setup = Setup()
 
         if pname is not None:
 
@@ -368,10 +426,10 @@ class Project(Config):
                 print("Using project file " + self.projectfile)
                 os.unlink(self.projectfile)
         self.set("Default", "Project name", pname)
-        self.set("Setup", "Path", self.setup.conf.conf["Default"]["Path"])
+        self.set("Setup", "Path", Global.get("Default", "Path"))
         self.set("Default", "debayer", "VNGCython")
         self.set("Default", "register", "Groth_Skimage")
-        self.set("Default", "stack", "Median")
+        self.set("Default", "stack", "SigmaMedian")
         self.write(self.projectfile)
 
 
@@ -390,4 +448,17 @@ class Global(object):
         Global.conf.read(Global.configfile)
         return Global.conf[section][key]
 
+    @staticmethod
+    def set(section, key, value):
 
+        Global.conf.read(Global.configfile)
+        if section not in Global.conf:
+            Global.conf[section] = {}
+        Global.conf[section][key] = value
+
+        if not exists(split(Global.configfile)[0]):
+            makedirs(split(Global.configfile)[0])
+
+        with open(Global.configfile, 'w') as configfile:
+            #print("Config written to " + Global.configfile)
+            Global.conf.write(configfile)
