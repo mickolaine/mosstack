@@ -6,9 +6,10 @@ Graphical user interface for pyAstroStack. This file holds all the functionality
 from PyQt4.QtCore import *
 from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox  # , QAction, QApplication
 from ast import literal_eval
+from subprocess import CalledProcessError
 from . UiDesign import Ui_MainWindow
 from . settings import Ui_Dialog
-from . Config import Project, Global
+from . Config import Project, Global, Setup
 from . QBatch import QBatch
 from . import Registering
 from . import Debayer
@@ -37,8 +38,6 @@ class Ui(Ui_MainWindow, QObject):
         """
         Add things I don't know how to add with Qt Designer
         """
-
-
 
         # Menu
         self.actionNew_project.triggered.connect(self.newProject)
@@ -96,7 +95,11 @@ class Ui(Ui_MainWindow, QObject):
                            "sexpath": Global.get("Programs", "sextractor"),
                            "processes": self.threads}
         except KeyError:
-            self.values = {"tempdir": "", "sexpath": "", "processes": 1}
+            try:
+                sexpath = Setup.findsex()
+            except CalledProcessError:
+                sexpath = ""
+            self.values = {"tempdir": "", "sexpath": sexpath, "processes": 1}
 
         self.swindow.setupContent(values=self.values)
         if dialog.exec():

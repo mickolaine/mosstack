@@ -85,7 +85,14 @@ class Setup:
 
             try:
                 print("Looking for SExtractor binaries...")
-                Global.set("Programs", "SExtractor", self.findsex())
+                try:
+                    sexpath = self.findsex()
+                except CalledProcessError:
+                    print("SExtractor executable not found in $PATH.")
+                    sexpath = input("Give full path to SExtractor executable, eg. ~/bin/sex")
+                    if not os.path.exists(sexpath):
+                        raise IOError("File not found:", sexpath)
+                Global.set("Programs", "SExtractor", sexpath)
                 print("Found " + Global.get("Programs", "SExtractor"))
             except IOError as e:
                 print(e.args[0])
@@ -126,7 +133,7 @@ class Setup:
         SExtractor distribution package and all rights belong to it's author.
         """
 
-        #default.param
+        # default.param
         param = """
 NUMBER
 FLUXERR_ISO
@@ -137,7 +144,7 @@ Y_IMAGE
 FLAGS
         """
 
-        #default.conv
+        # default.conv
         conv = """
 CONV NORM
 # 3x3 ``all-ground'' convolution mask with FWHM = 2 pixels.
@@ -169,24 +176,23 @@ CONV NORM
             print(version)
             print("It appears there's a new version of Python...")
 
-    def findsex(self):
+    @staticmethod
+    def findsex():
         """
         SExtractor executable is sometimes sex and sometimes sextractor. This finds out.
         """
         try:
             sexpath = check_output(["which", "sex"])
         except CalledProcessError:
-            try:
-                sexpath = check_output(["which", "sextractor"])
-            except CalledProcessError:
-                print("SExtractor executable not found in $PATH.")
-                sexpath = self.input("Give full path to SExtractor executable, eg. ~/bin/sex")
-                if not os.path.exists(sexpath):
-                    raise IOError("File not found:", sexpath)
-        #else:
-        #    raise IOError("SExtractor not found.")
+            sexpath = check_output(["which", "sextractor"])
+
+                #print("SExtractor executable not found in $PATH.")
+                #sexpath = input("Give full path to SExtractor executable, eg. ~/bin/sex")
+                #if not os.path.exists(sexpath):
+                #    raise IOError("File not found:", sexpath)
         return sexpath.decode().strip()
 
+    '''
     def get(self, section, key=None):
         """
         Return project information under defined section
@@ -223,7 +229,7 @@ CONV NORM
         self.conf.read(self.file)
         self.conf.save(key, value, section)
         self.conf.write(self.file)
-
+    '''
 
 class Config:
     """
@@ -320,7 +326,6 @@ class Project(Config):
         pname - project name
         """
 
-        #self.setup = Setup()
         try:
             self.sex   = Global.get("Programs", "SExtractor")
             self.path  = Global.get("Default", "path")
@@ -340,19 +345,16 @@ class Project(Config):
             except KeyError:
                 self.set("Default", "Project name", pname)
                 self.set("Setup", "Path", self.path)
-                self.set("Default", "debayer", "VNGCython")
-                self.set("Default", "register", "Groth_Skimage")
-                self.set("Default", "stack", "Median")
+                self.setdefaults()
                 self.set("Default", "Initialized", "True")
-            #self.conf.write(self.projectfile)
 
     @staticmethod
     def load(pfile):
         """
         Load project from disc
         """
-        setup = Setup()
-        path  = setup.get("Default", "path")
+
+        #path  = Global.get("Default", "path")
 
         project = Project()
         project.conf = configparser.ConfigParser()
@@ -377,9 +379,9 @@ class Project(Config):
         super().__init__(pfile)
 
         self.projectfile = pfile
-        self.setup = Setup()
-        self.sex   = self.setup.get("Programs", "SExtractor")
-        self.path  = self.setup.get("Default", "path")
+
+        self.sex  = Global.get("Programs", "SExtractor")
+        self.path = Global.get("Default", "Path")
 
     @staticmethod
     def input(string):
@@ -402,7 +404,6 @@ class Project(Config):
         Read project settings from specified project file
         """
         if self.projectfile is None:
-            # TODO: Change this error to a better one
             raise NameError("Project file not set, yet trying to access one. This shouldn't happen.")
         if os.path.exists(self.projectfile):
             self.conf.read(self.projectfile)
@@ -427,10 +428,16 @@ class Project(Config):
                 os.unlink(self.projectfile)
         self.set("Default", "Project name", pname)
         self.set("Setup", "Path", Global.get("Default", "Path"))
+        self.setdefaults()
+        self.write(self.projectfile)
+
+    def setdefaults(self):
+        """
+        Set default settings
+        """
         self.set("Default", "debayer", "VNGCython")
         self.set("Default", "register", "Groth_Skimage")
         self.set("Default", "stack", "SigmaMedian")
-        self.write(self.projectfile)
 
 
 class Global(object):

@@ -28,7 +28,7 @@ def main(argv):
 
     ui = UserInterface()
 
-    setup = Config.Setup()
+    #setup = Config.Setup()
 
     shorthelp = ui.shorthelp
 
@@ -44,11 +44,11 @@ def main(argv):
     if argv[0] == "init":
         project = Config.Project()
         project.initproject(argv[1])
-        setup.set("Default", "Project", argv[1])
+        Config.Global.set("Default", "Project", argv[1])
 
     try:
-        pname = setup.get("Default", "Project")
-        ppath = setup.get("Default", "Path") + pname + ".project"
+        pname = Config.Global.get("Default", "Project")
+        ppath = Config.Global.get("Default", "Path") + pname + ".project"
         if argv[0] == "set" and argv[1] == "project":
             pass
         else:
@@ -72,8 +72,8 @@ def main(argv):
         if argv[1] == "project":
             if argv[2]:
                 pname = argv[2]
-                setup.set("Default", "Project", pname)
-                ppath = setup.get("Default", "Path") + pname + ".project"
+                Config.Global.set("Default", "Project", pname)
+                ppath = Config.Global.get("Default", "Path") + pname + ".project"
                 project = Config.Project(pname)
                 print("Project set to " + ppath)
             else:

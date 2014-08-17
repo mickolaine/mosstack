@@ -217,7 +217,7 @@ class Batch(object):
         # If .info file given, give only that as an argument. Uses only information from this file and returns
         if splitext(file)[1] == ".info":
             frame = Frame(self.project, infopath=file)
-            self.frames[frame.number] = frame
+            self.frames[str(frame.number)] = frame
             return
 
         # Check how many frames there are already in the batch. Needed for new index key for frames dict
@@ -241,7 +241,6 @@ class Batch(object):
 
         self.project.set(ftype, str(n), frame.infopath)
 
-        self.frames[str(n)] = frame
-
+        self.frames[str(n + 1)] = frame
         self.project.set("Reference images", ftype, "1")
         self.frames["1"].isref = True
