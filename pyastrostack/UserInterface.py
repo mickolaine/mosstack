@@ -309,11 +309,14 @@ You can use either name or number as operation 'list' shows them.
         Subtract calibration frame from main frame or frames.
 
         Arguments:
-        section - section code or name for master frame (light, dark, flat, bias)
+        genname - section code or name for frames (light, dark, flat, bias)
         calib - name for master frame (dark, bias)
         """
 
-        batch = Batch(self.project, genname)
+        if genname == "calib":
+            batch = Batch(self.project, ftype="light", fphase="calib")
+        else:
+            batch = Batch(self.project, ftype=genname)
         batch.subtract(calib, self.stackerwrap())
 
     def divide(self, genname, calib):
@@ -321,11 +324,14 @@ You can use either name or number as operation 'list' shows them.
         Divide main frame with calibration frame.
 
         Arguments:
-        section - section code or name for master frame
+        genname - section code or name for frames (light, dark, flat, bias)
         calib - name for master frame (most likely flat)
         """
 
-        batch = Batch(self.project, genname)
+        if genname == "calib":
+            batch = Batch(self.project, ftype="light", fphase="calib")
+        else:
+            batch = Batch(self.project, ftype=genname)
         batch.divide(calib, self.stackerwrap())
 
     def list(self, setting, options):

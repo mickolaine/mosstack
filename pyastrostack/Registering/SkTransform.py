@@ -37,16 +37,15 @@ class SkTransform(object):
             #print(i)
             primary.append([i[0][0], i[0][1], 0])
             secondary.append([i[1][0], i[1][1], 0])
-            m +=1
+            m += 1
         primary = np.array(primary)
         secondary = np.array(secondary)
 
         tform = tf.estimate_transform(ttype="affine", dst=primary, src=secondary)
         imagedata = image.data
-        print(image.path())
+
         data = []
-        print("Dimensions:")
-        print(len(imagedata))
+
         for i in range(len(imagedata)):
             amax = np.amax(imagedata[i])
             data.append(tf.warp(np.float32(imagedata[i])/np.amax(imagedata[i]), inverse_map=tform))
@@ -71,7 +70,7 @@ class SkTransform(object):
         ref - Number for reference image
         """
 
-        if sub("\D", "", image.number) == ref:  # For RGB-images i.number holds more than number. Strip that
+        if str(image.number) == str(ref.number):  # For RGB-images i.number holds more than number. Strip that
             print("Not transforming the reference frame.")
             oldpath = image.path()
             image.genname = "reg"
@@ -83,7 +82,7 @@ class SkTransform(object):
         primary = []
         secondary = []
         m = 0
-        print(image.pairs)
+
         for i in image.pairs:
             if m > 11 or i[2] < 20:
                 break
@@ -97,8 +96,7 @@ class SkTransform(object):
         try:
             tform = tf.estimate_transform(ttype="affine", dst=primary, src=secondary)
         except IndexError:
-            print(primary)
-            print(secondary)
+            pass
 
         imagedata = image.data
         data = []

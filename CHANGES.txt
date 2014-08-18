@@ -1,6 +1,9 @@
 v0.5.0
 - Redesigned Frame - Batch relationship and added QFrame and QBatch to use
   with PyQt4 gui
+- Multithreading on GUI. Somewhat working.
+- Program icons added
+- Executable names changed from camel case to lower case
 
 v0.4.1 2014-07-30 -- Bugfix
 - Gui now checks for pyopencl and does not assume it exists. This affects the

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'pyastrostack/AstroStack.ui'
 #
-# Created: Sat Aug  9 18:59:52 2014
+# Created: Sun Aug 17 20:28:15 2014
 #      by: PyQt4 UI code generator 4.11.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -27,6 +27,9 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
         MainWindow.resize(1024, 800)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/icons/data/astrostack_icon128.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        MainWindow.setWindowIcon(icon)
         self.centralwidget = QtGui.QWidget(MainWindow)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -286,7 +289,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(_translate("MainWindow", "PyAstroStack", None))
+        MainWindow.setWindowTitle(_translate("MainWindow", "AstroStack", None))
         self.label.setText(_translate("MainWindow", "Project settings", None))
         self.label_6.setText(_translate("MainWindow", "Add", None))
         self.pushLight.setText(_translate("MainWindow", "Light", None))
@@ -335,3 +338,4 @@ class Ui_MainWindow(object):
         self.actionAbout.setText(_translate("MainWindow", "About", None))
         self.actionSettings.setText(_translate("MainWindow", "Settings", None))
 
+from . import icons_rc

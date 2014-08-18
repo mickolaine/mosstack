@@ -6,12 +6,12 @@ import numpy
 
 setup(
     name='pyAstroStack',
-    version='0.5dev',
+    version='0.5_rc1',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=['pyastrostack', 'pyastrostack.Debayer', 'pyastrostack.Registering', 'pyastrostack.Stacker'],
 #    packages=find_packages(),
-    scripts=['scripts/AstroStack', 'scripts/AstroStackGui'],
+    scripts=['scripts/astrostack', 'scripts/astrostackgui'],
     include_dirs=[numpy.get_include()],
 #   cmdclass = cmdclass,
 #    ext_modules=ext_modules,
@@ -19,6 +19,11 @@ setup(
                              "pyastrostack/Debayer/_BilinearCython.pyx",
                              "pyastrostack/Debayer/_VNGCython.pyx",
                              "pyastrostack/Stacker/_math.pyx"]),
+    data_files=[
+        ("share/astrostack/astrostack_icon32.png", ["data/astrostack_icon32.png"]),
+        ("share/astrostack/astrostack_icon64.png", ["data/astrostack_icon64.png"]),
+        ("share/astrostack/astrostack_icon128.png", ["data/astrostack_icon128.png"])
+    ],
     url='https://bitbucket.org/mikko_laine/pyastrostack/',
     license='LICENSE.txt',
     description='Stacking software for astronomical images',

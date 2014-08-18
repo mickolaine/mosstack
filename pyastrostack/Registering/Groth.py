@@ -38,15 +38,40 @@ class Groth(Registering):
 
         self.findstars(imagelist)
 
-        ref = project.get("Reference images", "orig")
+        ref = project.get("Reference images", "light")
+
+        self.register_single(imagelist[ref], ref=True)
+
+        for i in imagelist:
+            if i == ref:
+                continue
+            imagelist[i].data = self.register_single(imagelist[i])
+            imagelist[i].fphase = "reg"
+            imagelist[i].write()
+
+        if self.timing:
+            t2 = datetime.datetime.now()
+            print("Triangle calculations took " + str(t2 - t1) + " seconds.")
+
+    def register_old(self, imagelist, project):
+        """
+        Calls everything required for total registration process.
+        """
+
+        if self.timing:
+            t1 = datetime.datetime.now()
+
+        self.findstars(imagelist)
+
+        ref = project.get("Reference images", "light")
 
         for i in imagelist:
             #if imagelist[i].points is None:
             self.step1(imagelist[i])                      # Step1 has to be finished before the rest
 
         for i in imagelist:
-            if imagelist[i].pairs is None:
-                self.step2(imagelist[i], imagelist[ref])
+            #if imagelist[i].pairs is None:
+            self.step2(imagelist[i], imagelist[ref])
 
         for i in imagelist:
             self.transformer.affine_transform(imagelist[i], ref)
@@ -68,10 +93,11 @@ class Groth(Registering):
 
         self.findstars_single(frame)
 
-        if frame.points is None:
-            self.step1(frame)
+        #if frame.points is None:
+        self.step1(frame)
 
-        if frame.pairs is None:
+        #if frame.pairs is None:
+        if not ref:
             self.step2(frame, self.ref)
 
         return self.transformer.affine_transform3(frame, self.ref)

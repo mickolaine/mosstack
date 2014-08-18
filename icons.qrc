@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>data/astrostack_icon32.png</file>
+    <file>data/astrostack_icon64.png</file>
+    <file>data/astrostack_icon128.png</file>
+  </qresource>
+</RCC>
