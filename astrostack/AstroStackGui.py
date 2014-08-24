@@ -15,12 +15,12 @@ from . import Registering
 from . import Debayer
 from . import Stacker
 #import sys
-#try:
-#    from PyQt4.QtCore import Qstring
-#    _fromUtf8 = QString.fromUtf8
-#except ImportError:
-#    def _fromUtf8(s):
-#        return s
+try:
+    from PyQt4.QtCore import Qstring
+    _fromUtf8 = QString.fromUtf8
+except ImportError:
+    def _fromUtf8(s):
+        return s
 
 try:
     import pyopencl
@@ -34,7 +34,23 @@ class Ui(Ui_MainWindow, QObject):
     def __init__(self):
         super(Ui_MainWindow, self).__init__()
 
-    def setupMoar(self, MainWindow):
+        self.thread = None
+        self.fileDialog = QFileDialog()
+        self.inputDialog = QInputDialog()
+        self.messageBox = QMessageBox()
+        self.swindow = Settings()
+
+        self.threadpool = QThreadPool(self)
+        self.threads = 4
+
+        self.framearray = []
+        self.batch = {}
+        self.pname = None
+        self.project = None
+
+        self.values = {"tempdir": "", "sexpath": "/usr/bin/sex", "processes": 1}
+
+    def setupManual(self, MainWindow):
         """
         Add things I don't know how to add with Qt Designer
         """
@@ -44,6 +60,7 @@ class Ui(Ui_MainWindow, QObject):
         self.actionOpen_project.triggered.connect(self.loadProject)
         self.actionSave_project.triggered.connect(self.saveProject)
         self.actionSettings.triggered.connect(self.settings)
+        self.actionAbout.triggered.connect(self.about)
         self.actionExit.triggered.connect(qApp.quit)
 
         # Buttons
@@ -68,25 +85,25 @@ class Ui(Ui_MainWindow, QObject):
             self.radioButtonVNGCL.setEnabled(False)
 
         self.setValues()
-        self.thread = None
-        self.fileDialog = QFileDialog()
-        self.inputDialog = QInputDialog()
-        self.messageBox = QMessageBox()
+        #self.thread = None
+        #self.fileDialog = QFileDialog()
+        #self.inputDialog = QInputDialog()
+        #self.messageBox = QMessageBox()
 
-        self.threadpool = QThreadPool(self)
-        self.threads = 4
+        #self.threadpool = QThreadPool(self)
+        #self.threads = 4
         self.threadpool.setMaxThreadCount(self.threads)
 
-        self.framearray = []
-        self.batch = {}
-        self.pname = None
+        #self.framearray = []
+        #self.batch = {}
+        #self.pname = None
 
     def settings(self):
         """
         Open settings window and read values from there.
         """
 
-        self.swindow = Settings()
+        #self.swindow = Settings()
         dialog = QDialog()
         self.swindow.setupUi(dialog)
 
@@ -104,11 +121,20 @@ class Ui(Ui_MainWindow, QObject):
         self.swindow.setupContent(values=self.values)
         if dialog.exec():
             new_values = self.swindow.getValues()
-            print(new_values)
 
             self.threads = new_values["processes"]
             Global.set("Programs", "sextractor", self.values["sexpath"])
             Global.set("Default", "path", self.values["tempdir"])
+
+    def about(self):
+        """
+        Open about dialog
+        """
+
+        self.messageBox.information(self.messageBox, 'About',
+                                    'Mikko\'s Open Source Stacker for astronomical photos\nmosstack\n\n' +
+                                    'Licensed under GPLv3\n\n' +
+                                    'Nothing here yet.')
 
     def setValues(self, values=None):
         """
@@ -246,6 +272,7 @@ class Ui(Ui_MainWindow, QObject):
 
     def setProjectName(self, pname):
         self.projectName.setText(_fromUtf8(pname))
+        #self.projectName.setText(pname)
         self.pname = pname
 
     def addFrameDialog(self, ftype):
@@ -452,6 +479,12 @@ class Ui(Ui_MainWindow, QObject):
             self.stackingwrap = Stacker.SigmaClip()
 
         self.threadpool.start(GenericThread(self.batch["light"].stack, self.stackingwrap))
+
+        self.threadpool.waitForDone()
+
+        self.messageBox.information(self.messageBox, 'Stacking done!',
+                                    'Result image saved in ' + self.batch["light"].master.path() + "\n" +
+                                    'and ' + self.batch["light"].master.path(fformat="tiff"))
 
 
 class Settings(Ui_Dialog):

@@ -3,10 +3,9 @@ from .. Debayer.Debayer import Debayer
 import numpy as np
 import pyximport
 pyximport.install(setup_args={'include_dirs': [np.get_include()]})
-from . _VNGCython import _debayer
+from . _BilinearCython import _debayer
 
-
-class VNGCython(Debayer):
+class BilinearCython(Debayer):
     """
     Debayering class. I'll start with regular bilinear interpolation but more will come if necessary
 
@@ -23,13 +22,13 @@ class VNGCython(Debayer):
 
         Give cfa-image, receive rgb-image. Return numpy.array
         """
-        print("VNG Cython")
-        cfa = np.float32(image[0])  # .byteswap().newbyteorder()
-
+        #print(image)
+        cfa = np.float32(image) #.byteswap().newbyteorder()
+        #print(cfa)
         r = np.zeros_like(cfa)
         g = np.zeros_like(cfa)
         b = np.zeros_like(cfa)
 
         result = np.array(_debayer(cfa, r, g, b))
-
+        #print(result)
         return result

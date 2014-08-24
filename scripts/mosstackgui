@@ -15,13 +15,13 @@ try:
     from PyQt4.QtGui import QApplication, QMainWindow
 except ImportError:
     print("No PyQt4 found. Check your installation.")
-from pyastrostack import AstroStackGui
-try:
-    from PyQt4.QtCore import Qstring
-    _fromUtf8 = QString.fromUtf8
-except ImportError:
-    def _fromUtf8(s):
-        return s
+from astrostack import AstroStackGui
+#try:
+#    from PyQt4.QtCore import Qstring
+#    _fromUtf8 = QString.fromUtf8
+#except ImportError:
+#    def _fromUtf8(s):
+#        return s
 
 
 class UserInterface():
@@ -31,7 +31,7 @@ class UserInterface():
         window = QMainWindow()
         ui = AstroStackGui.Ui()
         ui.setupUi(window)
-        ui.setupMoar(window)
+        ui.setupManual(window)
 
         window.show()
         app.exec_()

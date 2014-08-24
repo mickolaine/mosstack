@@ -22,18 +22,21 @@ class UserInterface:
     setup = Config.Setup()
 
     shorthelp = """
-    pyAstroStack is run with:
-    AstroStack <operation> <arguments>
+    Mikko's Open Source Stacker is run with:
+    mosstack <operation> <arguments>
 
-    <operation>   - init, dir, file, ... Try AstroStack help for full list
+    <operation>   - init, dir, file, ... Try mosstack help for full list
     <arguments>   - Depends on <operation>
+
+    Gui is started with:
+    mosstackgui
     """
     """
     String to print when program run with no parameters or false parameters.
     """
 
     longhelp = """
-Using pyAstroStack
+Using Mikko's Open Source Stacker
 =========
 
 The program does nothing automatically. It's designed by the process
@@ -41,10 +44,10 @@ calibrate -> debayer -> align -> stack and user has to call each of these
 individually. User can also skip any of these steps, if for example no
 debayering is required or images are already aligned.
 
-UI is a command line one. User calls AstroStack with proper arguments and the
+UI is a command line one. User calls mosstack with proper arguments and the
 program does that step. Most commands work with pattern
 
-    ``AstroStack <operation> <arguments>``
+    ``astrostack <operation> <arguments>``
 
 where <operation> and <arguments> are something from following list.
 
@@ -73,29 +76,29 @@ portion of documentation.
 init
 ------------
 Initializes a new project. Project has to be initialized before anything else.
-AstroStack uses the project file to store information about the photo frames
+Mosstack uses the project file to store information about the photo frames
 and development of the process. Project file will have an extension
 ``project``, but as an argument init takes only project name without extension.
 
 Example:
 
-    ``AstroStack init Andromeda``
+    ``astrostack init Andromeda``
 
 This will initialize a new project called Andromeda. Most files will be named
 after this name. If the project already exists, program will inform and ask
 how to proceed.
 
 Initialization also sets the project active. Active project name is stored in
-$HOME/.config/pyAstroStack/settings.
+$HOME/.config/mosstack/settings.
 
 set project
 ------------
 Set the specified project name as the active project. Active project name is
-stored in $HOME/.config/pyAstroStack/settings.
+stored in $HOME/.config/mosstack/settings.
 
 Example:
 
-    ``AstroStack set project Andromeda``
+    ``mosstack set project Andromeda``
 
 Activating the project means all the commands will be run using information of
 that project file. User can have many simultaneous projects in his working
@@ -110,8 +113,8 @@ files in the project is to separate these types to their own directories.
 
 Example:
 
-    ``AstroStack dir /media/data/Astro/2013-11-25/Andromeda/ light``
-    ``AstroStack dir /media/data/Astro/2013-11-25/flat/ flat``
+    ``mosstack dir /media/data/Astro/2013-11-25/Andromeda/ light``
+    ``mosstack dir /media/data/Astro/2013-11-25/flat/ flat``
 
 file
 ------------
@@ -121,7 +124,7 @@ bias, dark and flat.
 
 Example:
 
-    ``AstroStack file /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
+    ``mosstack file /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
 
 subtract
 ------------
@@ -131,11 +134,11 @@ frame.
 
 Usage:
 
-    ``AstroStack subtract <batch> <master>``
+    ``mosstack subtract <batch> <master>``
 
 Example:
 
-    ``AstroStack subtract light dark``
+    ``mosstack subtract light dark``
 
 This example takes all frames identified by light and subtracts master dark
 from them one by one. After operation there are images identified by name
@@ -149,11 +152,11 @@ frame is required for this operation. Master means a stacked frame.
 
 Usage:
 
-    ``AstroStack divide <batch> <master>``
+    ``mosstack divide <batch> <master>``
 
 Example:
 
-    ``AstroStack divide light flat``
+    ``mosstack divide light flat``
 
 This example takes all frames identified by light and divides them by master
 dark from them one by one. After operation there are images identified by name
@@ -169,11 +172,11 @@ channel.
 
 Usage:
 
-    ``AstroStack debayer <batch>``
+    ``mosstack debayer <batch>``
 
 Example:
 
-    ``AstroStack debayer calib``
+    ``mosstack debayer calib``
 
 register
 ------------
@@ -183,11 +186,11 @@ Output files will be identified with "reg".
 
 Usage:
 
-    ``AstroStack register <batch>``
+    ``mosstack register <batch>``
 
 Example:
 
-    ``AstroStack register rgb``
+    ``mosstack register rgb``
 
 stack
 ------------
@@ -198,12 +201,12 @@ or "final" (if batch name is anything else).
 
 Usage:
 
-    ``AstroStack stack <batch>``
+    ``mosstack stack <batch>``
 
 Example:
 
-    ``AstroStack stack bias``
-    ``AstroStack stack reg``
+    ``mosstack stack bias``
+    ``mosstack stack reg``
 
 list
 ------------
@@ -212,15 +215,15 @@ be manually edited in the project file.
 
 Usage
 
-    ``AstroStack list <setting>``
+    ``mosstack list <setting>``
 
 Examples:
 
 List of settings to adjust
-    ``AstroStack list``
+    ``mosstack list``
 
 List of options for setting
-    ``AstroStack list debayer``
+    ``mosstack list debayer``
 
 set
 ------------
@@ -228,12 +231,12 @@ Set can also be used to adjust settings. See operation 'list' to see them
 
 Usage
 
-    ``AstroStack set <setting> <option>``
+    ``mosstack set <setting> <option>``
 
 Examples:
 
-    ``AstroStack set debayer Bilinear``
-    ``AstroStack set debayer 2``
+    ``mosstack set debayer Bilinear``
+    ``mosstack set debayer 2``
 
 You can use either name or number as operation 'list' shows them.
 
@@ -350,7 +353,7 @@ You can use either name or number as operation 'list' shows them.
 
     def set(self, setting, options, value):
         """
-        Save settings with command line AstroStack set operation
+        Save settings with command line mosstack set operation
 
         Arguments:
         setting - setting to alter

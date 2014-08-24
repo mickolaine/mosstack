@@ -1,21 +1,20 @@
 ===========
-pyAstroStack
+Mikko's Open Source Stacker for astronomical images
 ===========
 
-pyAstroStack is an open source registering and stacking software for
+Mosstack is an open source registering and stacking software for
 astronomical images. Original (and current) design is made for photos taken
-with DSLR camera. The program is still quite incomplete; only the core modules
-regarding image registration and stacking are working. If you understood none
-of that, this program probably isn't for you.
+with DSLR camera. Program is crude and it lacks functionality familiar with
+better known freeware stacking software.
 
 
 Prerequisites
 =========
 
-pyAstroStack relies heavily on other open source programs and libraries. Here's
+Mosstack relies heavily on other open source programs and libraries. Here's
 a complete list:
 
-* Python - <http://www.python.org>
+* Python 3 - <http://www.python.org>
 
 * DCRaw - <http://www.cybercom.net/~dcoffin/dcraw/>
 
@@ -29,8 +28,6 @@ a complete list:
 * ExifTool - <http://www.sno.phy.queensu.ca/~phil/exiftool/>
 
 * AstroPy - <http://www.astropy.org/>
-  or
-  pyFITS - <http://www.stsci.edu/institute/software_hardware/pyfits>
 
 * NumPy - <http://www.numpy.org/>
 
@@ -38,7 +35,7 @@ a complete list:
 
 * Cython - <http://www.cython.org/>
 
-* PyOpenCL - <http://mathema.tician.de/software/pyopencl>
+* PyOpenCL - <http://mathema.tician.de/software/pyopencl> (Not required but supported)
 
 * PyQt4 - <http://qt-project.org>
 
@@ -68,21 +65,22 @@ for now the program is limited to basic functionality.
 
 - A somewhat working GUI
     - PyQt4
+    - Multithreading
+
 
 Supported cameras
 ------------
-I have a Canon EOS 1100D and I've used that to do all the testings. Most likely
-everything with the same Bayer filter pattern works.
+Basically everything DCRaw can open, is supported. Then again maybe not.
+DCRaw does not debayer the images, only converts them and checks the bayer
+matrix. Most modern consumer DSLR's have bayer filter pattern 'RGGB' and
+for now that's the only one supported. As soon as I find out about some other
+pattern, I'll program support for that too.
 
-List of tested Camera Model IDs
- - EOS Rebel T3 / 1100D / Kiss X50
- - Canon 450D
-
-List of tested Bayer filter patterns (as printed by dcraw -i -v)
- - RGGBRGGBRGGBRGGB
+So if DCRaw (dcraw -i -v <file>) says the filter pattern is 'RGGBRGGBRGGBRGGB',
+the camera is supported.
 
 
-Using pyAstroStack
+Using mosstack
 =========
 
 The program does nothing automatically. It's designed by the process
@@ -90,10 +88,10 @@ calibrate -> debayer -> align -> stack and user has to call each of these
 individually. User can also skip any of these steps, if for example no
 debayering is required or images are already aligned.
 
-UI is a command line one. User calls AstroStack with proper arguments and the
+UI is a command line one. User calls mosstack with proper arguments and the
 program does that step. Most commands work with pattern
 
-    ``AstroStack <operation> <arguments>``
+    ``mosstack <operation> <arguments>``
 
 where <operation> and <arguments> are something from following list.
 
@@ -122,29 +120,29 @@ portion of documentation.
 init
 ------------
 Initializes a new project. Project has to be initialized before anything else.
-AstroStack uses the project file to store information about the photo frames
+Mosstack uses the project file to store information about the photo frames
 and development of the process. Project file will have an extension
 ``project``, but as an argument init takes only project name without extension.
 
 Example:
 
-    ``AstroStack init Andromeda``
+    ``mosstack init Andromeda``
 
 This will initialize a new project called Andromeda. Most files will be named
 after this name. If the project already exists, program will inform and ask
 how to proceed.
 
 Initialization also sets the project active. Active project name is stored in
-$HOME/.config/pyAstroStack/settings.
+$HOME/.config/mosstack/settings.
 
 set project
 ------------
 Set the specified project name as the active project. Active project name is
-stored in $HOME/.config/pyAstroStack/settings.
+stored in $HOME/.config/mosstack/settings.
 
 Example:
 
-    ``AstroStack set project Andromeda``
+    ``mosstack set project Andromeda``
 
 Activating the project means all the commands will be run using information of
 that project file. User can have many simultaneous projects in his working
@@ -159,8 +157,8 @@ files in the project is to separate these types to their own directories.
 
 Example:
 
-    ``AstroStack dir /media/data/Astro/2013-11-25/Andromeda/ light``
-    ``AstroStack dir /media/data/Astro/2013-11-25/flat/ flat``
+    ``mosstack dir /media/data/Astro/2013-11-25/Andromeda/ light``
+    ``mosstack dir /media/data/Astro/2013-11-25/flat/ flat``
 
 file
 ------------
@@ -170,7 +168,7 @@ bias, dark and flat.
 
 Example:
 
-    ``AstroStack file /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
+    ``mosstack file /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
 
 subtract
 ------------
@@ -180,11 +178,11 @@ frame.
 
 Usage:
 
-    ``AstroStack subtract <batch> <master>``
+    ``mosstack subtract <batch> <master>``
 
 Example:
 
-    ``AstroStack subtract light dark``
+    ``mosstack subtract light dark``
 
 This example takes all frames identified by light and subtracts master dark
 from them one by one. After operation there are images identified by name
@@ -198,11 +196,11 @@ frame is required for this operation. Master means a stacked frame.
 
 Usage:
 
-    ``AstroStack divide <batch> <master>``
+    ``mosstack divide <batch> <master>``
 
 Example:
 
-    ``AstroStack divide light flat``
+    ``mosstack divide light flat``
 
 This example takes all frames identified by light and divides them by master
 dark from them one by one. After operation there are images identified by name
@@ -218,11 +216,11 @@ channel.
 
 Usage:
 
-    ``AstroStack debayer <batch>``
+    ``mosstack debayer <batch>``
 
 Example:
 
-    ``AstroStack debayer calib``
+    ``mosstack debayer calib``
 
 register
 ------------
@@ -232,11 +230,11 @@ Output files will be identified with "reg".
 
 Usage:
 
-    ``AstroStack register <batch>``
+    ``mosstack register <batch>``
 
 Example:
 
-    ``AstroStack register rgb``
+    ``mosstack register rgb``
 
 stack
 ------------
@@ -247,12 +245,12 @@ or "final" (if batch name is anything else).
 
 Usage:
 
-    ``AstroStack stack <batch>``
+    ``mosstack stack <batch>``
 
 Example:
 
-    ``AstroStack stack bias``
-    ``AstroStack stack reg``
+    ``mosstack stack bias``
+    ``mosstack stack reg``
 
 list
 ------------
@@ -261,15 +259,15 @@ be manually edited in the project file.
 
 Usage
 
-    ``AstroStack list <setting>``
+    ``mosstack list <setting>``
 
 Examples:
 
 List of settings to adjust
-    ``AstroStack list``
+    ``mosstack list``
 
 List of options for setting
-    ``AstroStack list debayer``
+    ``mosstack list debayer``
 
 set
 ------------
@@ -277,11 +275,11 @@ Set can also be used to adjust settings. See operation 'list' to see them
 
 Usage
 
-    ``AstroStack set <setting> <option>``
+    ``mosstack set <setting> <option>``
 
 Examples:
 
-    ``AstroStack set debayer Bilinear``
-    ``AstroStack set debayer 2``
+    ``mosstack set debayer Bilinear``
+    ``mosstack set debayer 2``
 
 You can use either name or number as operation 'list' shows them.

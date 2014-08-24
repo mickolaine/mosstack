@@ -14,16 +14,16 @@ to run different stacking operations according to the project file.
 """
 
 import sys
-from pyastrostack import Config, Debayer, Registering, Stacker
+from astrostack import Config, Debayer, Registering, Stacker
 import os
-from pyastrostack.UserInterface import UserInterface
+from astrostack.UserInterface import UserInterface
 #import cProfile
 
 
 def main(argv):
     """
     The idea is to call program with
-    AstroStack projectname operation arguments
+    mosstack projectname operation arguments
     """
 
     ui = UserInterface()
@@ -58,7 +58,7 @@ def main(argv):
         ui.setproject(project)
 
     except IndexError:
-        print("Something went wrong. Check your input. Refer to \"AstroStack help\" if needed.")
+        print("Something went wrong. Check your input. Refer to \"mosstack help\" if needed.")
         exit()
 
     if argv[0] == "help":
@@ -78,7 +78,7 @@ def main(argv):
                 print("Project set to " + ppath)
             else:
                 print("No project name specified. Available projects are: Implement this")
-                print("Try AstroStack set project <project name>, without extension.")
+                print("Try mosstack set project <project name>, without extension.")
         elif argv[1] == "debayer":
             options = Debayer.__all__
             ui.set("Debayer", options, argv[2])
@@ -144,7 +144,7 @@ def main(argv):
             fphase = argv[1]
 
         else:
-            print("Scrname not defined. Try 'AstroStack debayer calib' or 'AstroStack debayer light'\nExiting...")
+            print("Scrname not defined. Try 'mosstack debayer calib' or 'mosstack debayer light'\nExiting...")
             exit()
 
         ui.debayer(fphase)

@@ -8,8 +8,8 @@
   <longdescription>
     An open source stacking software for astronomical images taken with a DSLR
     camera. PyAstroStack can calibrate, debayer, register, align and stack photos
-    taken with modern DSLR's from Canon. It has a command line user interface
-    inspired by AstroSurf IRIS.
+    taken with modern DSLR's from Canon. It has a simple Gui and an command line
+    user interface inspired by AstroSurf IRIS.
   </longdescription>
   <use>
     <flag name="opencl">Enables OpenCL support and pulls in pyopencl. This makes

@@ -166,7 +166,7 @@ class Frame(object):
 
         self.state["debayer"] = 1
 
-        self.data = debayer.debayer(self.data)
+        self.data = debayer.debayer(self.data[0])
         self.fphase = "rgb"
         self.write()
         self.state["debayer"] = 2

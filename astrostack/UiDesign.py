@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'pyastrostack/AstroStack.ui'
+# Form implementation generated from reading ui file 'astrostack/AstroStack.ui'
 #
-# Created: Sun Aug 17 20:28:15 2014
+# Created: Sun Aug 24 14:07:31 2014
 #      by: PyQt4 UI code generator 4.11.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -56,7 +56,7 @@ class Ui_MainWindow(object):
         self.toolBox.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.toolBox.setObjectName(_fromUtf8("toolBox"))
         self.pageFrames = QtGui.QWidget()
-        self.pageFrames.setGeometry(QtCore.QRect(0, 0, 178, 413))
+        self.pageFrames.setGeometry(QtCore.QRect(0, 0, 178, 438))
         self.pageFrames.setObjectName(_fromUtf8("pageFrames"))
         self.label_6 = QtGui.QLabel(self.pageFrames)
         self.label_6.setGeometry(QtCore.QRect(7, 0, 61, 20))
@@ -75,7 +75,7 @@ class Ui_MainWindow(object):
         self.pushFlat.setObjectName(_fromUtf8("pushFlat"))
         self.toolBox.addItem(self.pageFrames, _fromUtf8(""))
         self.pageCalib = QtGui.QWidget()
-        self.pageCalib.setGeometry(QtCore.QRect(0, 0, 178, 413))
+        self.pageCalib.setGeometry(QtCore.QRect(0, 0, 100, 30))
         self.pageCalib.setObjectName(_fromUtf8("pageCalib"))
         self.layoutWidget = QtGui.QWidget(self.pageCalib)
         self.layoutWidget.setGeometry(QtCore.QRect(10, 0, 141, 241))
@@ -112,7 +112,7 @@ class Ui_MainWindow(object):
         self.verticalLayoutCalibrate.addWidget(self.checkBoxLightFlat)
         self.toolBox.addItem(self.pageCalib, _fromUtf8(""))
         self.pageDebayer = QtGui.QWidget()
-        self.pageDebayer.setGeometry(QtCore.QRect(0, 0, 178, 413))
+        self.pageDebayer.setGeometry(QtCore.QRect(0, 0, 100, 30))
         self.pageDebayer.setObjectName(_fromUtf8("pageDebayer"))
         self.layoutWidget1 = QtGui.QWidget(self.pageDebayer)
         self.layoutWidget1.setGeometry(QtCore.QRect(0, 0, 161, 111))
@@ -140,7 +140,7 @@ class Ui_MainWindow(object):
         self.verticalLayoutDebayer.addWidget(self.radioButtonVNGCL)
         self.toolBox.addItem(self.pageDebayer, _fromUtf8(""))
         self.pageReg = QtGui.QWidget()
-        self.pageReg.setGeometry(QtCore.QRect(0, 0, 178, 413))
+        self.pageReg.setGeometry(QtCore.QRect(0, 0, 100, 30))
         self.pageReg.setObjectName(_fromUtf8("pageReg"))
         self.layoutWidget2 = QtGui.QWidget(self.pageReg)
         self.layoutWidget2.setGeometry(QtCore.QRect(0, 10, 161, 73))
@@ -160,7 +160,7 @@ class Ui_MainWindow(object):
         self.verticalLayoutRegister.addWidget(self.radioButtonGrothSK)
         self.toolBox.addItem(self.pageReg, _fromUtf8(""))
         self.pageStack = QtGui.QWidget()
-        self.pageStack.setGeometry(QtCore.QRect(0, 0, 178, 413))
+        self.pageStack.setGeometry(QtCore.QRect(0, 0, 100, 30))
         self.pageStack.setObjectName(_fromUtf8("pageStack"))
         self.layoutWidget3 = QtGui.QWidget(self.pageStack)
         self.layoutWidget3.setGeometry(QtCore.QRect(10, 10, 117, 111))
@@ -186,7 +186,7 @@ class Ui_MainWindow(object):
         self.verticalLayoutStack.addWidget(self.radioButtonSMedian)
         self.toolBox.addItem(self.pageStack, _fromUtf8(""))
         self.pageRun = QtGui.QWidget()
-        self.pageRun.setGeometry(QtCore.QRect(0, 0, 178, 413))
+        self.pageRun.setGeometry(QtCore.QRect(0, 0, 100, 30))
         self.pageRun.setObjectName(_fromUtf8("pageRun"))
         self.label_2 = QtGui.QLabel(self.pageRun)
         self.label_2.setGeometry(QtCore.QRect(0, 0, 91, 16))
@@ -244,7 +244,6 @@ class Ui_MainWindow(object):
         self.tableView_2.setObjectName(_fromUtf8("tableView_2"))
         self.gridLayout_3.addWidget(self.tableView_2, 1, 0, 1, 2)
         self.gridLayout_3.setColumnMinimumWidth(0, 190)
-        self.gridLayout_3.setRowMinimumHeight(1, 150)
         self.gridLayout_3.setColumnStretch(0, 1)
         self.gridLayout_3.setColumnStretch(1, 8)
         self.gridLayout_3.setRowStretch(0, 10)
@@ -289,7 +288,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(_translate("MainWindow", "AstroStack", None))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Mikko\'s Open Source Stacker", None))
         self.label.setText(_translate("MainWindow", "Project settings", None))
         self.label_6.setText(_translate("MainWindow", "Add", None))
         self.pushLight.setText(_translate("MainWindow", "Light", None))

@@ -1,0 +1,54 @@
+mosstack (0.5-1) trusty; urgency=low
+
+  * New version
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Sun, 24 Aug 2014 15:38:00 +0300
+
+astrostack (0.5-rc1-1) trusty; urgency=low
+
+  * Release candidate with a changed name
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Wed, 20 Aug 2014 19:57:00 +0300
+
+pyastrostack (0.4.1-1) trusty; urgency=low
+
+  * Fixed a bug where program crashes if no pyopencl found
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Fri, 30 Jun 2014 19:43:00 +0300
+
+pyastrostack (0.4.0-1) trusty; urgency=low
+
+  * Renaming to release
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Fri, 23 May 2014 14:51:00 +0300
+
+pyastrostack (0.4dev-2) trusty; urgency=low
+
+  * Fixed typo in dependencies
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Thu, 22 May 2014 20:26:00 +0300
+
+pyastrostack (0.4dev-1) trusty; urgency=low
+
+  * Update to version 0.4dev
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Thu, 22 May 2014 15:53:00 +0300
+
+pyastrostack (0.3.0-3) trusty; urgency=low
+
+  * Changed everything to Python 3
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Thu, 17 Apr 2014 17:21:00 +0300
+
+pyastrostack (0.3.0-2) unstable; urgency=low
+
+  * Fixed dependencies
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Wed, 09 Apr 2014 20:06:00 +0300
+
+
+pyastrostack (0.3.0-1) unstable; urgency=low
+
+  * source package automatically created by stdeb 0.6.0+git
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Tue, 08 Apr 2014 21:35:54 +0300

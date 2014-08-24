@@ -63,11 +63,11 @@ class Setup:
     Class to control program settings
     """
 
-    def __init__(self, file="/.config/pyAstroStack/settings"):
+    def __init__(self, file="/.config/mosstack/settings"):
         """
         Checks the settings-file from specified location.
 
-        Default location is ~/.config/pyAstroStack but it might be possible to change it somehow.
+        Default location is ~/.config/mosstack but it might be possible to change it somehow.
         I'm not sure how just yet. Or why would someone need to do that.
         """
 
@@ -80,7 +80,7 @@ class Setup:
         # If file does not exists, load some default values and write it
         if not os.path.exists(self.file):
 
-            print("Seems like this is the first time you run pyAstroStack. Creating the setup file.")
+            print("Seems like this is the first time you run mosstack. Creating the setup file.")
             self.input("Press enter to continue.")
 
             try:
@@ -106,7 +106,7 @@ class Setup:
         Ask for temporary path, do all necessary checks and create path if needed.
         """
 
-        print("AstroStack requires a dedicated directory for temporary files.")
+        print("Mosstack requires a dedicated directory for temporary files.")
         print("Be aware that temp files can take a lot of space (from 1 GB to 20 GB) depending on your project.\n")
         temppath = input("Path for temporary files: ")
 
@@ -229,6 +229,7 @@ FLAGS
         self.conf.write(self.file)
     '''
 
+
 class Config:
     """
     Configuration keeper object.
@@ -292,6 +293,7 @@ class Config:
 
         if section not in self.conf:
             self.conf[section] = {}
+        #print("Writing " + section + ", " + key + ", " + value)
         self.conf[section][key] = value
         #print("Setting " + key + " in section " + section + " changed to " + value)
         self.write(self.conffile)
@@ -444,7 +446,7 @@ class Global(object):
     """
 
     home = expanduser("~")
-    configfile = home + "/.config/pyAstroStack/settings"
+    configfile = home + "/.config/mosstack/settings"
     conf = configparser.ConfigParser()
 
     @staticmethod

@@ -24,6 +24,7 @@ class Batch(object):
 
         self.project = project
         self.fphase = fphase
+        self.master = None
 
         self.name    = self.project.get("Default", key="project name")    # Name for the resulting image
 
@@ -92,14 +93,14 @@ class Batch(object):
         """
 
         # Create new empty frame for the result
-        new = Frame(self.project, ftype=self.ftype, number="master")
-        new.data = stacker.stack(self.frames, self.project)
-        new.write(tiff=True)
-        dim, new.x, new.y = new.data.shape
-        new.writeinfo()
-        self.project.set("Masters", self.ftype, new.infopath)
-        print("Result image saved to " + new.path())
-        print("                  and " + splitext(new.path())[0] + ".tiff")
+        self.master = Frame(self.project, ftype=self.ftype, number="master")
+        self.master.data = stacker.stack(self.frames, self.project)
+        self.master.write(tiff=True)
+        dim, self.master.x, self.master.y = self.master.data.shape
+        self.master.writeinfo()
+        self.project.set("Masters", self.ftype, self.master.infopath)
+        print("Result image saved to " + self.master.path())
+        print("                  and " + self.master.path(fformat="tiff"))
 
     def subtract(self, calib, stacker):
         """

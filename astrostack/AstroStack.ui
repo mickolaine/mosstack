@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>AstroStack</string>
+   <string>Mikko's Open Source Stacker</string>
   </property>
   <property name="windowIcon">
    <iconset resource="../icons.qrc">
@@ -24,7 +24,7 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
-   <layout class="QGridLayout" name="gridLayout_3" rowstretch="10,2" columnstretch="1,8" rowminimumheight="0,150" columnminimumwidth="190,0">
+   <layout class="QGridLayout" name="gridLayout_3" rowstretch="10,2" columnstretch="1,8" rowminimumheight="0,0" columnminimumwidth="190,0">
     <property name="sizeConstraint">
      <enum>QLayout::SetMaximumSize</enum>
     </property>
@@ -66,7 +66,7 @@
            <x>0</x>
            <y>0</y>
            <width>178</width>
-           <height>413</height>
+           <height>438</height>
           </rect>
          </property>
          <attribute name="label">
@@ -143,8 +143,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>178</width>
-           <height>413</height>
+           <width>100</width>
+           <height>30</height>
           </rect>
          </property>
          <attribute name="label">
@@ -231,8 +231,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>178</width>
-           <height>413</height>
+           <width>100</width>
+           <height>30</height>
           </rect>
          </property>
          <attribute name="label">
@@ -296,8 +296,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>178</width>
-           <height>413</height>
+           <width>100</width>
+           <height>30</height>
           </rect>
          </property>
          <attribute name="label">
@@ -341,8 +341,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>178</width>
-           <height>413</height>
+           <width>100</width>
+           <height>30</height>
           </rect>
          </property>
          <attribute name="label">
@@ -400,8 +400,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>178</width>
-           <height>413</height>
+           <width>100</width>
+           <height>30</height>
           </rect>
          </property>
          <attribute name="label">

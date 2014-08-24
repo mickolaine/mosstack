@@ -43,6 +43,7 @@
       <w>findsensitivity</w>
       <w>fitspath</w>
       <w>fkwargs</w>
+      <w>framearray</w>
       <w>frameinfo</w>
       <w>fromarray</w>
       <w>fromraw</w>
@@ -121,6 +122,7 @@
       <w>srcname</w>
       <w>srcpath</w>
       <w>subpixel</w>
+      <w>tablemodel</w>
       <w>thru</w>
       <w>wdir</w>
     </words>
