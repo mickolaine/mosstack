@@ -1,4 +1,4 @@
 include *.txt
-recursive-include debian *
+recursive-include distributing *
 recursive-include doc *
-recursive-include pyastrostack *.pyx *.c
+recursive-include astrostack *.pyx *.c

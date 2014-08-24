@@ -1,0 +1,42 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+"""
+Created on 28.4.2014
+
+@author: Mikko Laine
+
+Graphical user interface for pyAstroStack.
+
+"""
+
+import sys
+try:
+    from PyQt4.QtGui import QApplication, QMainWindow
+except ImportError:
+    print("No PyQt4 found. Check your installation.")
+from astrostack import AstroStackGui
+#try:
+#    from PyQt4.QtCore import Qstring
+#    _fromUtf8 = QString.fromUtf8
+#except ImportError:
+#    def _fromUtf8(s):
+#        return s
+
+
+class UserInterface():
+
+    def __init__(self):
+        app = QApplication(sys.argv)
+        window = QMainWindow()
+        ui = AstroStackGui.Ui()
+        ui.setupUi(window)
+        ui.setupManual(window)
+
+        window.show()
+        app.exec_()
+
+
+if __name__ == "__main__":
+
+    UserInterface()

@@ -1,0 +1,20 @@
+This file has some copy paste scripts to test the working of mosstack
+
+mosstack init Testi
+mosstack set debayer 2
+mosstack dir /media/Dee/Astrokuvat/2013-12-30/OrionNebula/ light
+mosstack dir /media/Dee/Astrokuvat/2013-12-30/Bias/ bias
+mosstack dir /media/Dee/Astrokuvat/2013-12-30/Dark/ dark
+mosstack dir /media/Dee/Astrokuvat/2013-12-30/Flat/ flat
+mosstack stack bias
+mosstack subtract dark bias
+mosstack stack dark
+mosstack subtract flat bias
+mosstack subtract flat dark
+mosstack stack flat
+mosstack subtract light bias
+#mosstack subtract calib dark
+mosstack divide calib flat
+mosstack debayer calib
+mosstack register rgb
+mosstack stack reg

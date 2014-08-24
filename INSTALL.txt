@@ -14,8 +14,9 @@ or if you want to install under $HOME
 Installing required software
 =========
 
-Everything has been written and tested using Python3, but those dependencies have problems in Ubuntu. Seems like
-this works on Python2 as well.
+Everything has been written and tested using Python3. The program itself works on Python 2, but some libraries are
+under different names and I think it's too much hassle to support both. Modern Linux distributions have a good support
+for Python 3 so I've dropped support for version 2.
 
 Ubuntu
 -------------
@@ -28,7 +29,7 @@ You might receive an error regarding GPG fingerprint. You can ignore until I fin
 
 After adding the repository just
 
-    ``sudo apt-get install pyastrostack``
+    ``sudo apt-get install mosstack``
 
 And apt will install everything necessary.
 
@@ -40,10 +41,6 @@ Ubuntu manual install
 Starting from Ubuntu 14.04 all the dependencies can be installed straight from package-manager. This apt-get one-liner
 should install everything necessary
 
-    ``sudo apt-get install cython dcraw imagemagick sextractor python-imaging python-astropy python-skimage python-configparser``
-
-Or if you intend to use Python 3
-
     ``sudo apt-get install cython3 dcraw imagemagick sextractor python3-imaging python3-astropy python3-skimage python-configparser``
 
 This assumes you have the newest full Ubuntu desktop installed. If you have customized your installation, other packages
@@ -51,38 +48,101 @@ might be required as well.
 
 Newer versions of Python packages can be installed via pip (python-pip in package manager). For example
 
-    ``pip install --upgrade --user numpy
+    ``pip install --upgrade --user numpy``
 
 The switch --user installs package into $HOME, so it won't mess up your system. Without that you need sudo in front
 of that command.
 
 
-
-Debian (Under construction. Instructions probably doesn't work. Refer to Ubuntu instructions)
+Debian Wheezy
 -------------
 
-This oneliner ought install most of the required software
+Mosstack requires Python 3 and Debian Wheezy does not include many required Python libraries for version 3. It is
+required to manually install several of them with the tool pip.
 
-    ``apt-get install dcraw sextractor libtiff5-dev imagemagick numpy python3-pip python3-pyopencl``
+    ``apt-get install python3-pip``
 
-AstroPy can be installed now with
+Also other packages need to be installed from package manager before using pip any further. Here's a oneliner to do help
+with that:
 
-    ``pip-3.2 install astropy``
+    ``apt-get install dcraw sextractor libtiff5-dev imagemagick python3-pyqt4``
 
-as root or
+Pip is used like this:
 
-    ``pip-3.2 install --user astropy``
+    ``pip3.2 install <package>``
 
-if you want the installation on users $HOME.
+or as user
 
-Also Python packages Pillow and Cython have to be installed with pip
+    ``pip3.2 install --user <package>``
 
-    ``pip-3.2 install cython``
-    ``pip-3.2 install pillow``
+Required packages are
+
+    numpy
+    scipy
+    astropy
+    pillow
+    cython
+
+If you have a working OpenCL installation, you can use it with mosstack. Enable it with by installing pyopencl with
+Pip.
+
+    ``pip3.2 install pyopencl``
+
+Now to installing mosstack. Since you are reading this you probably have already extracted the source package. Now
+simply
+
+    ``python3 setup.py install``
+
+or as user
+
+    ``python3 setup.py install --user``
+
+in the extracted directory root.
+
+Or as copy & paste commands:
+
+    ``tar xvf mosstack-0.5.tar.gz``
+    ``cd mosstack-0.5``
+    ``python3 setup.py install --user``
+
+
+Debian Jessie
+------------
+Jessie lacks one required package. Scikit-image for Python 3 is needed for affine transformations. This can be obtained
+by some 3rd party repositories or with Pip. Install pip with
+
+    ``apt-get install python3-pip``
+
+and install Scikit-image with
+
+    ``pip3 install scikit-image``
+
+Add switch "--user" if you wish to install to users home directory.
+
+Now you can install AstroStack with .deb file found in
+
+    ``dpkg -i mosstack.deb``
+    ``apt-get -f install``
+
+The latter takes care of all the dependencies not installed.
+
+On manual install, please refer to instructions for Debian Wheezy.
+
+
+Debian Sid
+------------
+Sid (at least on 2014-08-24) has all the required libraries on package manager. mosstack can be installed manually
+as instructed for Debian Wheezy, or with .deb package downloaded from
+
+After downloading, simply
+
+    ``dpkg -i mosstack.deb``
+    ``apt-get -f install``
+
 
 Gentoo
 ------------
-AstroPy and SExtractor are in Science overlay, so that has to be activated. Easiest way is to use Layman
+Several required libraries are in Science overlay, so that has to be activated. Easiest way is to use Layman
 
     ``emerge layman``
 
@@ -90,9 +150,10 @@ and activate the overlay by
 
     ``layman -a science``
 
-After that all the requirements can be installed with
+Ebuild for mosstack is also in Science overlay. It's marked ~amd64 so it has to be unmasked. If you use Gentoo, you
+probably are familiar with that.
 
-    ``emerge dcraw sextractor imagemagick exiftool astropy numpy cython pyopencl``
+    ``emerge moss``
 
-Some of these might be ~arch and require unmasking, but as a Gentoo user you might know how to get around it
+and portage will take care of all the dependencies.
 

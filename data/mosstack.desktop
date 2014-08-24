@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=0.5
+Name=Mosastack
+Comment=Stacking software for astronomical images
+Exec=mosstackgui
+Icon=/usr/share/mosstack/mosstack.xpm
+Terminal=false
+Type=Application
+Categories=Science;Application;
+StartupNotify=true
