@@ -1,12 +1,12 @@
-# PyAstroStack
-## an open source stacking software for astronomical images
+# Mosstack
+## Mikko's Open Source Stacker for astronomical images
 
-PyAstroStack is an open source registering and stacking software for
+Mosstack is an open source registering and stacking software for
 astronomical images. Original (and current) design is made for photos taken
 with DSLR camera.
 
-Version 0.4.0 finally brings GUI, but that still needs a lot of work. I still
-consider command line interface more useful.
+Version 0.5 finally brings multithreading to GUI. Other than that, the features
+are still quite limited
 
 Full list of working features:
 
