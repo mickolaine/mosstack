@@ -30,6 +30,7 @@
       <w>cython</w>
       <w>dcraw</w>
       <w>debayer</w>
+      <w>debayered</w>
       <w>deldata</w>
       <w>demosaic</w>
       <w>demosaiced</w>

@@ -10,7 +10,6 @@ Package: mosstack
 Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python3-numpy (>= 1.7), python3-astropy (>= 0.2.3), python3-imaging (>= 2.3.0), python3-skimage (>= 0.8.2), sextractor (>= 2.8.6), dcraw (>= 9.19), imagemagick (>= 6.7.7.10), cython3 (>= 0.19), libimage-exiftool-perl (>= 9.13), python3-pyqt4
 Description: Stacking software for astronomical images
- .
  Mosstack is an open source registering and stacking software for
  astronomical images. Original (and current) design is made for photos taken
  with DSLR camera. The program is simple and crude compared to it's commercial

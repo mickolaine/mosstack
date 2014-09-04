@@ -58,10 +58,10 @@ class QBatch(Batch, QWidget):
     def getframearray(self):
         temp = []
         for i in self.frames:
-            temp.append([self.frames[i].rawpath, self.frames[i].ftype, self.frames[i].state["prepare"],
-                                                            self.frames[i].state["calibrate"],
-                                                            self.frames[i].state["debayer"],
-                                                            self.frames[i].state["register"]])
+            temp.append([i, self.frames[i].rawpath, self.frames[i].ftype, self.frames[i].state["prepare"],
+                                                    self.frames[i].state["calibrate"],
+                                                    self.frames[i].state["debayer"],
+                                                    self.frames[i].state["register"]])
         #print(temp)
         self._framearray = temp
         return self._framearray

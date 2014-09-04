@@ -355,6 +355,27 @@ class Frame(object):
         except KeyError:
            pass
 
+    def infotable(self):
+        """
+        Return all the possible information extracted in one table (2d array)
+        """
+
+        table = [["Path to image", self.path()],
+                 ["Path to original raw photo", self.rawpath],
+                 ["Image number", self.number],
+                 ["Dimensions", str(self.x) + "x" + str(self.y)],
+                 ["Frame type", self.ftype],
+                 ["Time stamp", self.timestamp],
+                 ["Camera", self.camera],
+                 ["Filter pattern", self.bayer],
+                 ["ISO speed", self.isospeed],
+                 ["Shutter speed", self.shutter],
+                 ["Aperture", self.aperture],
+                 ["Focal length", self.focallength],
+                 ["Daylight multipliers", self.dlmulti]]
+
+        return table
+
     '''
     def fromraw(self, path):
         """

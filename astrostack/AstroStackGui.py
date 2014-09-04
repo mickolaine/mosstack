@@ -2,9 +2,8 @@
 Graphical user interface for pyAstroStack. This file holds all the functionality for GUI drafted in Qt Designer.
 """
 
-#from PyQt4.QtCore import QAbstractTableModel, Qt, QThread, pyqtSignal, SIGNAL
 from PyQt4.QtCore import *
-from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox  # , QAction, QApplication
+from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox, QAbstractItemView, QItemSelectionModel,QSortFilterProxyModel
 from ast import literal_eval
 from subprocess import CalledProcessError
 from . UiDesign import Ui_MainWindow
@@ -14,7 +13,7 @@ from . QBatch import QBatch
 from . import Registering
 from . import Debayer
 from . import Stacker
-#import sys
+
 try:
     from PyQt4.QtCore import Qstring
     _fromUtf8 = QString.fromUtf8
@@ -74,6 +73,8 @@ class Ui(Ui_MainWindow, QObject):
         self.buttonRegister.setExclusive(True)
         self.buttonStack.setExclusive(True)
 
+        # TableView
+
         # Check setup
         try:
             Global.get("Default", "Path")
@@ -85,18 +86,7 @@ class Ui(Ui_MainWindow, QObject):
             self.radioButtonVNGCL.setEnabled(False)
 
         self.setValues()
-        #self.thread = None
-        #self.fileDialog = QFileDialog()
-        #self.inputDialog = QInputDialog()
-        #self.messageBox = QMessageBox()
-
-        #self.threadpool = QThreadPool(self)
-        #self.threads = 4
         self.threadpool.setMaxThreadCount(self.threads)
-
-        #self.framearray = []
-        #self.batch = {}
-        #self.pname = None
 
     def settings(self):
         """
@@ -335,13 +325,32 @@ class Ui(Ui_MainWindow, QObject):
             self.threadpool.start(GenericThread(self.batch[ftype].decode, i))
 
     def updateTableView(self):
-        tablemodel = []
+        """
+        Update frame list view.
+        """
+        self.tablemodel = []
         for i in self.batch:
-            tablemodel += self.batch[i].framearray
-        tablemodel = FrameTableModel(tablemodel)
-        self.tableView.setModel(tablemodel)
+            self.tablemodel += self.batch[i].framearray
+        self.tablemodel = GenericTableModel(self.tablemodel)
+        self.tablemodel.header_labels = ['Id', 'File path', 'Type', 'Decoded', 'Calibrated', 'Debayered', 'Registered']
+        self.tableView.setModel(self.tablemodel)
         self.tableView.resizeColumnsToContents()
         self.tableView.resizeRowsToContents()
+        self.tableView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tableView.selectionModel().currentChanged.connect(self.updateInfoView)
+
+    def updateInfoView(self, selected, deselected):
+        """
+        Update frame information view to the selected frame Qt.DisplayRole
+        """
+
+        id = self.tablemodel.data(selected.sibling(selected.row(), 0), Qt.DisplayRole)
+        ftype = self.tablemodel.data(selected.sibling(selected.row(), 2), Qt.DisplayRole)
+        self.infotablemodel = GenericTableModel(self.batch[ftype].frames[id].infotable())
+        self.infotablemodel.header_labels = ["Attribute", "Value"]
+        self.tableView_2.setModel(self.infotablemodel)
+        self.tableView_2.resizeColumnsToContents()
+        self.tableView_2.resizeRowsToContents()
 
     def runProgram(self):
         """
@@ -541,12 +550,10 @@ class Settings(Ui_Dialog):
         return self.values
 
 
-class FrameTableModel(QAbstractTableModel):
+class GenericTableModel(QAbstractTableModel):
     """
-    Model for file list table.
+    Implementation of QAbstractTableModel required for the TableViews
     """
-
-    header_labels = ['File path', 'Type', 'Decoded', 'Calibrated', 'Debayered', 'Registered']
 
     def __init__(self, datain, parent=None, *args):
         QAbstractTableModel.__init__(self, parent, *args)

@@ -1,3 +1,7 @@
+v0.5.1 2014-09-04
+- Implemented info box below the frame list. Info box shows many information
+  about the selected frame.
+
 v0.5.0
 - Redesigned Frame - Batch relationship and added QFrame and QBatch to use
   with PyQt4 gui

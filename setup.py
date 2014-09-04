@@ -6,7 +6,7 @@ import numpy
 
 setup(
     name='mosstack',
-    version='0.5',
+    version='0.5.1',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=['astrostack', 'astrostack.Debayer', 'astrostack.Registering', 'astrostack.Stacker'],
@@ -21,8 +21,6 @@ setup(
                              "astrostack/Stacker/_math.pyx"]),
     data_files=[
         ("share/mosstack/", ["data/mosstack.xpm"]),
-#        ("share/astrostack/", ["data/astrostack_icon64.png"]),
-#        ("share/astrostack/", ["data/astrostack_icon128.png"]),
         ("share/applications/", ["data/mosstack.desktop"])
     ],
     url='https://bitbucket.org/mikko_laine/pyastrostack/',

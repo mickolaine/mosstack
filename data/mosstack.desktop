@@ -1,6 +1,6 @@
 [Desktop Entry]
 Version=0.5
-Name=Mosastack
+Name=Mosstack
 Comment=Stacking software for astronomical images
 Exec=mosstackgui
 Icon=/usr/share/mosstack/mosstack.xpm
