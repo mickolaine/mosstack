@@ -1,3 +1,8 @@
+v0.5.2 2014-09-07
+- Can now add a finished master frame to a project. Only works in CLI. The
+  command is "mosstack master <file> <type>"
+- Cleanup of old deactivated lines of code.
+
 v0.5.1 2014-09-04
 - Implemented info box below the frame list. Info box shows many information
   about the selected frame.

@@ -28,8 +28,6 @@ def main(argv):
 
     ui = UserInterface()
 
-    #setup = Config.Setup()
-
     shorthelp = ui.shorthelp
 
     longhelp = ui.longhelp
@@ -113,7 +111,7 @@ def main(argv):
     elif argv[0] == "dir":
 
         if argv[1]:
-            directory = argv[1]
+            directory = argv[1]  # TODO: Check validity of path
         else:
             directory = os.getcwd()
 
@@ -122,9 +120,23 @@ def main(argv):
         #project.adddir(directory, itype)
 
     elif argv[0] == "file":
-
+        # TODO: Check validity of path
+        path = argv[1]
         itype = argv[2]
-        project.addfile(argv[1], itype)
+        ui.addfile(path, itype)
+        #project.addfile(argv[1], itype)
+
+    elif argv[0] == "master":
+        # TODO: Check validity of path
+        path = argv[1]
+        if argv[2] in ("flat", "dark", "bias"):
+            ftype = argv[2]
+            ui.addmaster(path, ftype)
+        else:
+            print("Master frame has to be either flat, dark or bias")
+            print("Try again:")
+            print("          mosstack master <path to file> <flat, dark or bias>")
+            exit()
 
     elif argv[0] == "stack":
         # AstroStack stack <srcname>

@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image as Im
 import gc
 import ast
+import magic
 
 
 class Frame(object):
@@ -33,24 +34,25 @@ class Frame(object):
             "register": 0       # -1 = failed
         }                       # -2 = invalid (eg. registration for darks)
 
-        self.rawpath = rawpath
-        self.infopath = infopath
-        self.ftype = ftype
-        self.fphase = fphase
-        self.project = project
-        self.format = ".fits"       # TODO: Remove this legacy
-        self.isref = False
-        self.timestamp = None
-        self.camera = None
-        self.isospeed = None
-        self.shutter = None
-        self.aperture = None
+        self.rawpath     = rawpath
+        self.infopath    = infopath
+        self.ftype       = ftype
+        self.fphase      = fphase
+        self.rawtype     = None
+        self.project     = project
+        self.format      = ".fits"
+        self.isref       = False
+        self.staticpath  = False
+        self.timestamp   = None
+        self.camera      = None
+        self.isospeed    = None
+        self.shutter     = None
+        self.aperture    = None
         self.focallength = None
-        self.bayer = None
-        self.dlmulti = None
+        self.bayer       = None
+        self.dlmulti     = None
 
-        # TODO: Get rid of this:
-        self.wdir = self.project.get("Setup", "Path")
+        self.wdir = Config.Global.get("Default", "Path")
         self.name = self.project.get("Default", "Project name")
 
         # Instance variables required later
@@ -62,6 +64,7 @@ class Frame(object):
         self._points   = None       # String to pass to ImageMagick convert, if star matching is already done.
         self._x        = None
         self._y        = None       # Dimensions for image
+        self._path     = None
 
         self.number = number
 
@@ -87,30 +90,24 @@ class Frame(object):
         1. Check if there already is an .info file
             1.1. Check if everything .info file says is really done and found
             1.2. Update all variables to match .info's state
-            1.3. Inform Gui to update itself
-        #2. Decode raw to FITS
-        3. Read raw's properties (dimensions, bayer filter...)
-        4. Write everything to .info
-        5. Inform Gui that state has changed
+        2. Read raw's properties (dimensions, bayer filter...)
+        3. Write everything to .info
         """
         self.state["prepare"] = 1
 
         if self.frameinfo is not None:
             self.readinfo()                     # 1.1. -- 1.2.
-            # 1.3.
             return
-        print(self.rawpath)
-        if not Frame.checkraw(self.rawpath):
+
+        if not self.checkraw(self.rawpath):
             self.state["prepare"] = -1
             raise RuntimeError("Can't read file.", "Dcraw does not recognize this as a DSLR raw photo.")
             # TODO: Tell UI the file's not good
 
-        #self._decode()                          # 2.
-        self.extractinfo()                      # 3.
-        self.writeinfo()                        # 4.
+        self.extractinfo()                      # 2.
+        self.writeinfo()                        # 3.
 
         self.state["prepare"] = 1
-        self.update_ui()
 
         return
 
@@ -193,10 +190,51 @@ class Frame(object):
 
         return
 
+    @staticmethod
+    def createmaster(project, path, ftype):
+        """
+        Return a Frame object with a master frame
+
+        Arguments:
+        project - a Project class object
+        path - unix path to fits or tiff master frame
+        ftype - type of master: bias, dark or flat
+        """
+
+        frame = Frame(project, ftype=ftype, number="master")
+        type = Frame.identify(path)
+        frame._path = path
+
+        if type == "fits":
+            frame.rawtype = "fits"
+            frame.staticpath = True
+            frame._load_fits(path=path)
+            frame.extractinfo()
+            frame.writeinfo()
+        elif type == "tiff":
+            frame.rawtype = "tiff"
+            frame._load_tiff(path=path)
+            frame.extractinfo()
+            frame.writeinfo()
+            #frame._path = splitext(frame._path)[0] + ".fits"
+            frame.write()
+
+        return frame
+
     def path(self, fformat="fits"):
         """
         Return path, which is constructed on the fly
         """
+
+        if fformat == "fits":
+
+            if self.staticpath:
+                return self._path
+            try:
+                return self.frameinfo.get("Paths", self.fphase)
+            except (KeyError, AttributeError):
+                pass
+
         if self.number is None:
             return self.wdir + "/" + self.name + "_" + self.ftype + "_" + self.fphase + "." + fformat
         else:
@@ -221,6 +259,26 @@ class Frame(object):
         for i in ("_r", "_g", "_b"):
             pathlist.append(base + i + ext)
         return pathlist
+
+    @staticmethod
+    def identify(path):
+        """
+        Identify the file in path. Return format.
+
+        Supported formats are TIFF, FITS and RAW (which means everything recognized by dcraw).
+        If not recognized, will return file magic's description
+        """
+        mg = magic.open(magic.NONE)
+        mg.load()
+        ms = mg.file(path)
+
+        if ms.split()[0] == "TIFF":
+            return "tiff"
+        if ms.split()[0] == "FITS":
+            return "fits"
+        if call(["dcraw", "-i", path]):
+            return "raw"
+        return ms
 
     def combine(self, newpath):
         """
@@ -272,31 +330,54 @@ class Frame(object):
         except KeyError:
             pass
 
-    @staticmethod
-    def checkraw(rawpath):
+    def checkraw(self, rawpath):
         """
-        Check if source file is something dcraw can decode
+        Check the type of the raw file
 
         Arguments:
         rawpath - Unix path to raw file
 
         Returns:
-        Boolean
+        True if file recognized
+        False if file invalid
         """
 
         try:
             if exists(rawpath):
+                if splitext(rawpath)[1] in (".fits", ".FITS"):
+                    self.rawtype = "fits"
+                    return True
+                elif splitext(rawpath)[1] in (".tif", ".TIF", ".tiff", ".TIFF"):
+                    self.rawtype = "tiff"
+                    return True
                 if call(["dcraw", "-i", rawpath]):
                     return False
                 else:
                     return True
         except:
-            return 0
+            return False
 
     def extractinfo(self):
         """
         Read the file into memory and extract all required information.
         """
+
+        if self.rawtype == "fits":
+            #self._load_fits(path=self.rawpath)
+            data = self.image.data
+            if len(data.shape) == 2:
+                self.x, self.y = data.shape
+            elif len(data.shape) == 3:
+                temp, self.x, self.y = data.shape
+            self.data = data
+            return
+        if self.rawtype == "tiff":
+            #self._load_tiff()
+            if len(self._data) == 2:
+                self.x, self.y = self._data.shape
+            elif len(self._data.shape) == 3:
+                temp, self.x, self.y = self._data.shape
+            return
 
         rawoutput = check_output(["dcraw", "-i", "-v", self.rawpath]).decode()
 
@@ -339,7 +420,7 @@ class Frame(object):
         self.frameinfo.set("Paths", "Raw", str(self.rawpath))
         self.frameinfo.set("Default", "Number", str(self.number))
         self.frameinfo.set("Default", "Ftype", str(self.ftype))
-        self.frameinfo.set("Paths", self.fphase, self.path())
+        self.frameinfo.set("Paths", self.fphase, str(self.path()))
         self.frameinfo.set("Properties", "Filter pattern", str(self.bayer))
         self.frameinfo.set("Properties", "Timestamp", str(self.timestamp))
         self.frameinfo.set("Properties", "Camera", str(self.camera))
@@ -376,23 +457,6 @@ class Frame(object):
 
         return table
 
-    '''
-    def fromraw(self, path):
-        """
-        Create a Frame object from raw photo
-
-        Arguments:
-        path - Unix path of the photo
-
-        Returns:
-        Frame
-        """
-
-        self._convert(path)
-        self.extractinfo()
-        self.rawpath = path
-        self.writeinfo()
-    '''
     def setclip(self, clip):
         """
         Set the data clip coordinates
@@ -554,17 +618,24 @@ class Frame(object):
             print("Can't continue. Exiting.")
             exit()
 
-    def _load_fits(self):
+    def _load_fits(self, path=None):
         """
         Load a fits file created by this program
+        """
+        if path is None:
+            path = self.path()
+        self.hdu = fits.open(path, memmap=True)
+        self.image = self.hdu[0]
 
-        Arguments:
-        suffix - file name suffix indicating progress of process. eg. calib, reg, rgb
-        number - number of file
+    def _load_tiff(self, path=None):
+        """
+        Load a tiff file
         """
 
-        self.hdu = fits.open(self.path(), memmap=True)
-        self.image = self.hdu[0]
+        if path is None:
+            self.data = np.array(Im.open(self.rawpath))
+        else:
+            self.data = np.array(Im.open(path))
 
     def _load_data(self):
         """
@@ -597,7 +668,6 @@ class Frame(object):
                 self._data = np.array([self.image.data])
         if np.amin(self._data) >= 32768:
             self._data -= 32768
-            #print(self._data)
 
     def _release_data(self):
         """
@@ -657,11 +727,9 @@ class Frame(object):
         Load data from current fits and save it as a tiff. Required because ImageMagick
         doesn't work with fits too well.
         """
-        #self._load_data()
 
         image = []
         rgbpath = self.rgbpath(fileformat="tiff")
-        #data = self.data
         for i in [0, 1, 2]:
             image.append(Im.fromarray(np.flipud(np.int16(self.data[i]))))
             image[i].save(rgbpath[i], format="tiff")

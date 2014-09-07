@@ -58,6 +58,7 @@ init        | <project name>
 set         | <setting> <option>
 dir         | <path to dir> <image type>
 file        | <path to file> <image type>
+master      | <path to file> <image type>
 debayer     | <generic name>
 register    | <generic name>
 stack       | <generic name>
@@ -125,6 +126,15 @@ bias, dark and flat.
 Example:
 
     ``mosstack file /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
+
+master
+------------
+Add a finished master frame for bias, dark or flat. Accepts FITS or TIFF files.
+This is a nice feature if you do several images with the same data.
+
+Example:
+
+    ``mosstack master /media/data/astrostack/Andro_bias_master_orig.fits bias``
 
 subtract
 ------------
@@ -390,3 +400,27 @@ You can use either name or number as operation 'list' shows them.
 
         batch = Batch(project=self.project, ftype=ftype)
         batch.directory(directory, ftype)
+
+    def addfile(self, path, ftype):
+        """
+        Add a single file to project
+
+        Arguments:
+        path - unix path to file
+        ftype - light, flat, bias, dark
+        """
+
+        batch = Batch(project=self.project, ftype=ftype)
+        batch.addfile(path, ftype)
+
+    def addmaster(self, path, ftype):
+        """
+        Add a ready master frame to project
+
+        Arguments:
+        path - unix path to file
+        ftype - flat, bias or dark
+        """
+
+        batch = Batch(project=self.project, ftype=ftype)
+        batch.addmaster(path, ftype)

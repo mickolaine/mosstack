@@ -9,10 +9,6 @@ class Batch(object):
     Batch holds a list of frames and handles connections to project files
     """
 
-    extensions = (".CR2", ".cr2", ".NEF", ".nef")   # TODO: Add here all supported extensions,
-                                                    # and move this to a better place
-                                                    # TODO: Better idea: Have dcraw check if it can read the files
-
     def __init__(self, project, ftype="light", fphase="orig"):
         """
         Constructor loads Frames according to arguments.
@@ -26,9 +22,9 @@ class Batch(object):
         self.fphase = fphase
         self.master = None
 
-        self.name    = self.project.get("Default", key="project name")    # Name for the resulting image
+        self.name = self.project.get("Default", key="project name")    # Name for the resulting image
 
-        self.frames  = {}                                                 # Empty dict for Photos
+        self.frames = {}                                               # Empty dict for Photos
 
         if ftype is not None:
             self.ftype = ftype
@@ -37,7 +33,7 @@ class Batch(object):
             self.fphase = fphase
 
         try:
-            self.refnum  = int(project.get("Reference images", key=self.ftype))  # Number of reference frame
+            self.refnum = int(project.get("Reference images", key=self.ftype))  # Number of reference frame
         except KeyError:
             self.refnum = "1"
 
@@ -107,7 +103,8 @@ class Batch(object):
         Subtract calib from images in imagelist
         """
 
-        cframe = Frame(self.project, ftype=calib, number="master")
+        calibinfo = self.project.get("Masters", calib)
+        cframe = Frame(self.project, infopath=calibinfo, ftype=calib, number="master")
 
         for i in self.frames:
             print("Subtracting " + calib + " from image " + str(self.frames[i].number))
@@ -125,7 +122,8 @@ class Batch(object):
         Divide images in imagelist with calib
         """
 
-        cframe = Frame(self.project, ftype=calib, number="master")
+        calibinfo = self.project.get("Masters", calib)
+        cframe = Frame(self.project, infopath=calibinfo, ftype=calib, number="master")
 
         for i in self.frames:
             print("Dividing image " + str(self.frames[i].number) + " with " + calib)
@@ -149,7 +147,7 @@ class Batch(object):
         rawfiles = []
 
         for i in allfiles:
-            if splitext(i)[1] in self.extensions:
+            if splitext(i)[1] in (".cr2", ".CR2", ".nef", ".NEF"):
                 rawfiles.append(path + i)
 
         if len(rawfiles) != 0:
@@ -160,7 +158,7 @@ class Batch(object):
             print("No supported RAW files found. All files found are listed here: " + str(allfiles))
             return
 
-        n = len(self.frames)
+        #n = len(self.frames)
 
         self.addfiles(rawfiles, ftype)
 
@@ -172,45 +170,15 @@ class Batch(object):
         Add list of files to Batch
         """
 
-        try:
-            n = len(self.project.get(ftype).keys())
-        except KeyError:
-            n = 0
+        #try:
+        #    n = len(self.project.get(ftype).keys())
+        #except KeyError:
+        #    n = 0
 
         for i in allfiles:
-            self.addfile(i, ftype, n)
-            n += 1
+            self.addfile(i, ftype)
 
-        '''
-        if splitext(allfiles[0])[1] == ".info":
-            pass
-
-        rawfiles = []
-        for i in allfiles:
-            if splitext(i)[1] in self.extensions:
-                rawfiles.append(i)
-
-        if len(rawfiles) != 0:
-            print("Found files :")
-            for i in rawfiles:
-                print(i)
-        else:
-            print("No supported RAW files found. All files found are listed here: " + str(allfiles))
-            return
-
-        n = len(self.frames)
-
-        for i in rawfiles:
-            frame = Frame(self.project, self.fphase, number=n)
-            frame.fromraw(i)
-            self.project.set(ftype, str(n), frame.infopath)
-            self.frames[n] = Frame(self.project, ftype, infopath=frame.infopath, number=n)
-            n += 1
-
-        self.project.set("Reference images", ftype, "1")
-        '''
-
-    def addfile(self, file, ftype, number):
+    def addfile(self, file, ftype):
         """
         Add a single file.
         """
@@ -222,10 +190,12 @@ class Batch(object):
             return
 
         # Check how many frames there are already in the batch. Needed for new index key for frames dict
-        try:
-            n = len(self.project.get(ftype).keys())
-        except KeyError:
-            n = 0
+        #try:
+        #    n = len(self.project.get(ftype).keys())
+        #except KeyError:
+        #    n = 0
+
+        n = self.nextkey()
 
         # Other than .info files
         frame = Frame(self.project, rawpath=file, ftype=ftype, fphase=self.fphase, number=n)
@@ -242,6 +212,29 @@ class Batch(object):
 
         self.project.set(ftype, str(n), frame.infopath)
 
-        self.frames[str(n + 1)] = frame
-        self.project.set("Reference images", ftype, "1")
-        self.frames["1"].isref = True
+        self.frames[n] = frame
+
+    def addmaster(self, file, ftype):
+        """re
+        Add a ready master to batch
+        """
+
+        frame = Frame.createmaster(self.project, file, ftype)
+
+        self.project.set("Masters", ftype, frame.infopath)
+
+    def nextkey(self):
+        """
+        Return next free key for frame in dict
+
+        This is required because if a frame is removed, total number of frames will be less than the highest key. Also
+        the keys are string representations of numbers for compatibility reasons, so this won't be a oneliner.
+        """
+
+        keys = list(self.frames.keys())
+        if len(keys) == 0:
+            return "0"
+        for i in range(len(keys)):
+            keys[i] = int(keys[i])
+
+        return str(max(keys) + 1)

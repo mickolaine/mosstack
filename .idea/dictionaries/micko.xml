@@ -2,6 +2,7 @@
   <dictionary name="micko">
     <words>
       <w>adddir</w>
+      <w>addfiles</w>
       <w>addrgb</w>
       <w>astro</w>
       <w>astropy's</w>
@@ -44,6 +45,7 @@
       <w>findsensitivity</w>
       <w>fitspath</w>
       <w>fkwargs</w>
+      <w>fphase</w>
       <w>framearray</w>
       <w>frameinfo</w>
       <w>fromarray</w>
@@ -98,6 +100,7 @@
       <w>rawpath</w>
       <w>raws</w>
       <w>rawtran</w>
+      <w>rawtype</w>
       <w>readinfo</w>
       <w>readproject</w>
       <w>rednewpath</w>
@@ -125,6 +128,7 @@
       <w>subpixel</w>
       <w>tablemodel</w>
       <w>thru</w>
+      <w>todo's</w>
       <w>wdir</w>
     </words>
   </dictionary>
