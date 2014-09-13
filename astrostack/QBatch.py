@@ -97,8 +97,8 @@ class QBatch(Batch, QWidget):
 
         self.frames[frame].calibrate(stacker, biasframe, darkframe, flatframe)
         print("...Done")
-        self.project.set("Reference images", self.fphase, str(self.refnum))
-        self.frames[str(self.refnum)].isref = True
+        #self.project.set("Reference images", self.fphase, str(self.refId))
+        self.frames[self.refId].isref = True
         print("Calibrated images saved with generic name 'calib'.")
         self.refresh.emit()
 
@@ -113,8 +113,8 @@ class QBatch(Batch, QWidget):
         #t2 = datetime.datetime.now()
         print("...Done")
         #print("Debayering took " + str(t2 - t1) + " seconds.")
-        self.project.set("Reference images", self.fphase, str(self.refnum))
-        self.frames[str(self.refnum)].isref = True
+        #self.project.set("Reference images", self.fphase, str(self.refId))
+        self.frames[self.refId].isref = True
         print("Debayered images saved with generic name 'rgb'.")
         self.refresh.emit()
 
@@ -124,7 +124,7 @@ class QBatch(Batch, QWidget):
         """
 
         self.frames[frame].register(register, ref=ref)
-        self.project.set("Reference images", self.fphase, str(self.refnum))
+        #self.project.set("Reference images", self.fphase, str(self.refId))
         self.refresh.emit()
 
     framearray = property(fget=getframearray)

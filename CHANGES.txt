@@ -1,3 +1,6 @@
+v0.6
+- Added new stacking methods: Maximum, Minimum
+
 v0.5.2 2014-09-07
 - Can now add a finished master frame to a project. Only works in CLI. The
   command is "mosstack master <file> <type>"

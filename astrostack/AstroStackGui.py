@@ -47,6 +47,10 @@ class Ui(Ui_MainWindow, QObject):
         self.pname = None
         self.project = None
 
+        self.selectedId = None
+        self.selectedFtype = None
+        self.infotablemodel = None
+
         self.values = {"tempdir": "", "sexpath": "/usr/bin/sex", "processes": 1}
 
     def setupManual(self, MainWindow):
@@ -68,6 +72,7 @@ class Ui(Ui_MainWindow, QObject):
         self.pushFlat.clicked.connect(self.addFlat)
         self.pushBias.clicked.connect(self.addBias)
         self.pushButtonRun.clicked.connect(self.runProgram)
+        self.pushButtonMakeRef.clicked.connect(self.makeRef)
 
         self.buttonDebayer.setExclusive(True)
         self.buttonRegister.setExclusive(True)
@@ -257,7 +262,7 @@ class Ui(Ui_MainWindow, QObject):
         self.project = Project(self.pname)
         self.setValues()
         self.framearray = []
-        tablemodel = FrameTableModel(self.framearray)
+        tablemodel = GenericTableModel(self.framearray)
         self.tableView.setModel(tablemodel)
 
     def setProjectName(self, pname):
@@ -344,13 +349,19 @@ class Ui(Ui_MainWindow, QObject):
         Update frame information view to the selected frame Qt.DisplayRole
         """
 
-        id = self.tablemodel.data(selected.sibling(selected.row(), 0), Qt.DisplayRole)
-        ftype = self.tablemodel.data(selected.sibling(selected.row(), 2), Qt.DisplayRole)
-        self.infotablemodel = GenericTableModel(self.batch[ftype].frames[id].infotable())
+        self.selectedId = str(self.tablemodel.data(selected.sibling(selected.row(), 0), Qt.DisplayRole))
+        self.selectedFtype = self.tablemodel.data(selected.sibling(selected.row(), 2), Qt.DisplayRole)
+        self.infotablemodel = GenericTableModel(self.batch[self.selectedFtype].frames[self.selectedId].infotable())
         self.infotablemodel.header_labels = ["Attribute", "Value"]
         self.tableView_2.setModel(self.infotablemodel)
         self.tableView_2.resizeColumnsToContents()
         self.tableView_2.resizeRowsToContents()
+
+    def makeRef(self):
+        """
+        Make selected image the reference frame
+        """
+        self.batch[self.selectedFtype].setRef(self.selectedId)
 
     def runProgram(self):
         """
@@ -461,13 +472,13 @@ class Ui(Ui_MainWindow, QObject):
 
         # First register the reference frame. This has to be done before anything else
         self.threadpool.start(GenericThread(self.batch["light"].register,
-                                            self.batch["light"].refnum,
+                                            self.batch["light"].refId,
                                             self.registerwrap,
                                             ref=True))
         self.threadpool.waitForDone()
 
         for i in self.batch["light"].frames:
-            if i == self.batch["light"].refnum:
+            if i == self.batch["light"].refId:
                 continue
             self.threadpool.start(GenericThread(self.batch["light"].register, i, self.registerwrap))
 
@@ -477,8 +488,11 @@ class Ui(Ui_MainWindow, QObject):
         """
         Run everything related to stacking
         """
-
-        if self.radioButtonMean.isChecked():
+        if self.radioButtonMaximum.isChecked():
+            self.stackingwrap = Stacker.Maximum()
+        elif self.radioButtonMinimum.isChecked():
+            self.stackingwrap = Stacker.Minimum()
+        elif self.radioButtonMean.isChecked():
             self.stackingwrap = Stacker.Mean()
         elif self.radioButtonMedian.isChecked():
             self.stackingwrap = Stacker.Median()

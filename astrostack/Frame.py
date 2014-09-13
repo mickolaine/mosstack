@@ -118,7 +118,7 @@ class Frame(object):
 
         self._decode()
         self.state["prepare"] = 2
-        self.update_ui()
+        #self.update_ui()
 
     def calibrate(self, stacker, bias=None, dark=None, flat=None):
         """
@@ -149,7 +149,7 @@ class Frame(object):
         self.write()
         self.state["calibrate"] = 2
 
-        self.update_ui()
+        #self.update_ui()
         return
 
     def debayer(self, debayer):
@@ -168,7 +168,7 @@ class Frame(object):
         self.write()
         self.state["debayer"] = 2
 
-        self.update_ui()
+        #self.update_ui()
         return
 
     def register(self, register, ref=False):
@@ -186,7 +186,7 @@ class Frame(object):
         self.state["register"] = 2
         self.write()
 
-        self.update_ui()
+        #self.update_ui()
 
         return
 

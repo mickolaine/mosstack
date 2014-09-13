@@ -15,11 +15,12 @@ class SigmaMedian(Stacking):
     average afterwards.
     """
 
-    def __init__(self):
+    def __init__(self, kappa=3.0):
         #super().__init__()
         self.name = "sigma median"
+        self.kappa = kappa
         pass
 
-    @staticmethod
-    def _realstack(frames):
-        return _sigmaMedian(frames, np.std(frames, axis=0), np.median(frames, axis=0), 3.0)
+    #@staticmethod
+    def _realstack(self, frames):
+        return _sigmaMedian(frames, np.std(frames, axis=0), np.median(frames, axis=0), self.kappa)
