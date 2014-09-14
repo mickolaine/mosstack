@@ -157,7 +157,12 @@ class Sextractor:
         while x > max or x < min:
             self.createconf()
             self.execsex()
-            x = float(check_output(["tail", "-1", self.catname]).split()[0])
+
+            try:
+                x = float(check_output(["tail", "-1", self.catname]).split()[0])
+            except ValueError:
+                self.config["DETECT_MINAREA"] = str(float(self.config["DETECT_MINAREA"])*.9)
+                self.config["DETECT_THRESH"] = str(float(self.config["DETECT_THRESH"])*.9)
             if x < min:
                 self.config["DETECT_MINAREA"] = str(float(self.config["DETECT_MINAREA"])*.9)
                 self.config["DETECT_THRESH"] = str(float(self.config["DETECT_THRESH"])*.9)

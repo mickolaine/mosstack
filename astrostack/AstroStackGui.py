@@ -42,6 +42,8 @@ class Ui(Ui_MainWindow, QObject):
         self.threadpool = QThreadPool(self)
         self.threads = 4
 
+        self.kappa = 3.0
+
         self.framearray = []
         self.batch = {}
         self.pname = None
@@ -73,12 +75,15 @@ class Ui(Ui_MainWindow, QObject):
         self.pushBias.clicked.connect(self.addBias)
         self.pushButtonRun.clicked.connect(self.runProgram)
         self.pushButtonMakeRef.clicked.connect(self.makeRef)
+        self.pushButtonRemoveFrame.clicked.connect(self.delFrame)
 
         self.buttonDebayer.setExclusive(True)
         self.buttonRegister.setExclusive(True)
         self.buttonStack.setExclusive(True)
 
-        # TableView
+        # LineEdits
+
+        self.lineEditKappa.editingFinished.connect(self.lineKappaChanged)
 
         # Check setup
         try:
@@ -154,13 +159,14 @@ class Ui(Ui_MainWindow, QObject):
                       "BilinearCython": 0,
                       "VNGCython": 2,
                       "BilinearOpenCl": 0,
-                      "VNGOPENCL": 0,
+                      "VNGOpenCL": 0,
                       "GrothIM": 0,
                       "GrothSK": 2,
                       "Mean": 0,
                       "Median": 0,
                       "SigmaMedian": 2,
-                      "SigmaClip": 0
+                      "SigmaClip": 0,
+                      "Kappa": 3.0
             }
 
         self.checkBoxDarkBias.setCheckState(values["CalibDarkBias"])
@@ -178,7 +184,7 @@ class Ui(Ui_MainWindow, QObject):
         self.radioButtonBilinearCyt.setChecked(values["BilinearCython"])
         self.radioButtonVNGCyt.setChecked(values["VNGCython"])
         self.radioButtonBilinearCL.setChecked(values["BilinearOpenCl"])
-        self.radioButtonVNGCL.setChecked(values["VNGOPENCL"])
+        self.radioButtonVNGCL.setChecked(values["VNGOpenCL"])
 
         self.radioButtonGrothIM.setChecked(values["GrothIM"])
         self.radioButtonGrothSK.setChecked(values["GrothSK"])
@@ -187,6 +193,8 @@ class Ui(Ui_MainWindow, QObject):
         self.radioButtonMedian.setChecked(values["Median"])
         self.radioButtonSMedian.setChecked(values["SigmaMedian"])
         self.radioButtonSClip.setChecked(values["SigmaClip"])
+
+        self.lineEditKappa.setText(str(values["Kappa"]))
 
     def getValues(self):
         """
@@ -205,14 +213,20 @@ class Ui(Ui_MainWindow, QObject):
                   "BilinearCython": self.radioButtonBilinearCyt.isChecked(),
                   "VNGCython": self.radioButtonVNGCyt.isChecked(),
                   "BilinearOpenCl": self.radioButtonBilinearCL.isChecked(),
-                  "VNGOPENCL": self.radioButtonVNGCL.isChecked(),
+                  "VNGOpenCL": self.radioButtonVNGCL.isChecked(),
                   "GrothIM": self.radioButtonGrothIM.isChecked(),
                   "GrothSK": self.radioButtonGrothSK.isChecked(),
                   "Mean": self.radioButtonMean.isChecked(),
                   "Median": self.radioButtonMedian.isChecked(),
                   "SigmaMedian": self.radioButtonSMedian.isChecked(),
-                  "SigmaClip": self.radioButtonSClip.isChecked()
+                  "SigmaClip": self.radioButtonSClip.isChecked(),
+                  #"Kappa": self.lineEditKappa.text()
                   }
+        try:
+            float(self.lineEditKappa.text())
+            values["Kappa"] = float(self.lineEditKappa.text())
+        except ValueError:
+            values["Kappa"] = 3.0
         return values
 
     def loadProject(self):
@@ -361,7 +375,26 @@ class Ui(Ui_MainWindow, QObject):
         """
         Make selected image the reference frame
         """
+
         self.batch[self.selectedFtype].setRef(self.selectedId)
+
+    def delFrame(self):
+        """
+        Delete the selected frame from project.
+        """
+
+        self.batch[self.selectedFtype].removeFrame(self.selectedId)
+        self.updateTableView()
+
+    def lineKappaChanged(self):
+        """
+        Change values["Kappa"]
+        """
+        try:
+            float(self.lineEditKappa.text())
+            self.values["Kappa"] = float(self.lineEditKappa.text())
+        except ValueError:
+            self.messageBox.information(self.messageBox, 'Error', 'You must type a decimal number eg. 3.0')
 
     def runProgram(self):
         """
@@ -497,9 +530,9 @@ class Ui(Ui_MainWindow, QObject):
         elif self.radioButtonMedian.isChecked():
             self.stackingwrap = Stacker.Median()
         elif self.radioButtonSMedian.isChecked():
-            self.stackingwrap = Stacker.SigmaMedian()
+            self.stackingwrap = Stacker.SigmaMedian(kappa=self.values["Kappa"])
         elif self.radioButtonSClip.isChecked():
-            self.stackingwrap = Stacker.SigmaClip()
+            self.stackingwrap = Stacker.SigmaClip(kappa=self.values["Kappa"])
 
         self.threadpool.start(GenericThread(self.batch["light"].stack, self.stackingwrap))
 

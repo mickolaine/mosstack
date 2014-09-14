@@ -38,7 +38,10 @@ class Groth(Registering):
 
         self.findstars(imagelist)
 
-        ref = project.get("Reference images", "light")
+        try:
+            ref = project.get("Reference images", "light")
+        except KeyError:
+            ref = "1"
 
         self.register_single(imagelist[ref], ref=True)
 

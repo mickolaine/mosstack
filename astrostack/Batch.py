@@ -240,3 +240,11 @@ class Batch(object):
             keys[i] = int(keys[i])
 
         return str(max(keys) + 1)
+
+    def removeFrame(self, frameId):
+        """
+        Remove frame by id from the project.
+        """
+
+        self.project.remove(self.ftype, frameId)
+        del self.frames[frameId]

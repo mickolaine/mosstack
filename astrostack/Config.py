@@ -298,6 +298,24 @@ class Config:
         #print("Setting " + key + " in section " + section + " changed to " + value)
         self.write(self.conffile)
 
+    def remove(self, section, key):
+        """
+        Remove key from section
+
+        return True if successful, False if key or section not found
+        """
+
+        self.conf.read(self.conffile)
+
+        try:
+            state = self.conf.remove_option(section, key)
+            self.write(self.conffile)
+
+        except configparser.NoSectionError:
+            state = False
+
+        return state
+
     def write(self, file):
         """
         Write values in file

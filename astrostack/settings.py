@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'settings.ui'
+# Form implementation generated from reading ui file 'astrostack/settings.ui'
 #
-# Created: Sat Sep 13 14:29:28 2014
+# Created: Sun Sep 14 14:19:37 2014
 #      by: PyQt4 UI code generator 4.11.1
 #
 # WARNING! All changes made in this file will be lost!
