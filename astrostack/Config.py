@@ -71,7 +71,6 @@ class Setup:
         I'm not sure how just yet. Or why would someone need to do that.
         """
 
-        #self.conf = ConfigAbstractor()
         self.file = os.getenv("HOME") + file
 
         if not os.path.exists(os.path.split(self.file)[0]):
@@ -87,6 +86,11 @@ class Setup:
                 print("Looking for SExtractor binaries...")
                 try:
                     sexpath = self.findsex()
+                    version_string = check_output([sexpath, "--version"]).split()[2]
+                    if version_string == "2.4.4":
+                        print("SExtractor version 2.4.4 found. This is an old version which contains a serious bug.")
+                        print("Mosstack will not work with this version. Please upgrade SExtractor.")
+                        exit()
                 except CalledProcessError:
                     print("SExtractor executable not found in $PATH.")
                     sexpath = input("Give full path to SExtractor executable, eg. ~/bin/sex")
@@ -98,8 +102,6 @@ class Setup:
                 print(e.args[0])
 
             self.temppath()
-
-        #self.conf.read(self.file)
 
     def temppath(self):
         """
@@ -189,45 +191,6 @@ FLAGS
                 #if not os.path.exists(sexpath):
                 #    raise IOError("File not found:", sexpath)
         return sexpath.decode().strip()
-
-    '''
-    def get(self, section, key=None):
-        """
-        Return project information under defined section
-
-        Arguments:
-        section = string to look for in configuration
-        key     = key to look for in section, not needed
-
-        Returns:
-        dict {key: value}
-        string value, if key defined
-        """
-
-        self.conf.read(self.file)
-
-        if key:
-            return self.conf.conf[section][key]
-        else:
-            return dict(self.conf.conf._sections[section])
-
-    def set(self, section, key, value):
-        """
-        Set key: value under section in project settings
-
-        Arguments:
-        section
-        key
-        value
-
-        Returns:
-        Nothing
-        """
-
-        self.conf.read(self.file)
-        self.conf.save(key, value, section)
-        self.conf.write(self.file)
-    '''
 
 
 class Config:

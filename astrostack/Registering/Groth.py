@@ -2,11 +2,7 @@ from __future__ import division
 
 from .. Registering.Registering import Registering
 from . Sextractor import Sextractor
-#from . ImTransform import ImTransform
-#from . SkTransform import SkTransform
 import datetime   # For profiling
-from shutil import copyfile
-from re import sub
 from math import sqrt
 import pyximport
 import numpy as np
@@ -14,7 +10,7 @@ pyximport.install(setup_args={'include_dirs': [np.get_include()]})
 from . _step2 import step2 as _step2
 
 
-class Groth(Registering):
+class Groth():
     """
     Registering implementation which uses SExtractor to find stars, method by E.J. Groth to do the star matching and
     ImageMagick to do the affine transforms.

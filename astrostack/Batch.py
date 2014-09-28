@@ -56,10 +56,13 @@ class Batch(object):
         refId: Id of the reference frame. Id is the same as in project file and key in frames dict
         """
 
-        self.frames[self.refId].isref = False
-        self.refId = refId
-        self.frames[self.refId].isref = True
-        self.project.set("Reference images", self.ftype, str(self.refId))
+        try:
+            self.frames[self.refId].isref = False
+            self.refId = refId
+            self.frames[self.refId].isref = True
+            self.project.set("Reference images", self.ftype, str(self.refId))
+        except KeyError:
+            raise
 
     def debayerAll(self, debayer):
         """
@@ -78,7 +81,7 @@ class Batch(object):
             print("Debayering took " + str(t2 - t1) + " seconds.")
             self.frames[i].fphase = "rgb"
             self.frames[i].write()
-        #self.project.set("Reference images", self.fphase, str(self.refId))
+
         print("Debayered images saved with generic name 'rgb'.")
 
     def registerAll(self, register):
@@ -90,7 +93,7 @@ class Batch(object):
         """
 
         register.register(self.frames, self.project)
-        #self.project.set("Reference images", self.fphase, str(self.refId))
+
         print("Registered images saved with generic name 'reg'.")
 
     def stack(self, stacker):
@@ -127,7 +130,6 @@ class Batch(object):
                 self.frames[i].fphase = "calib"
             self.frames[i].write()
 
-        #self.project.set("Reference images", "calib", str(self.refId))
         print("Calibrated images saved with generic name 'calib'.")
 
     def divide(self, calib, stacker):
@@ -144,7 +146,7 @@ class Batch(object):
             if self.frames[i].fphase not in ("bias", "dark", "flat"):
                 self.frames[i].fphase = "calib"
             self.frames[i].write()
-        #self.project.set("Reference images", "calib", str(self.refId))
+
         print("Calibrated images saved with generic name 'calib'.")
 
     def directory(self, path, ftype):
@@ -171,12 +173,7 @@ class Batch(object):
             print("No supported RAW files found. All files found are listed here: " + str(allfiles))
             return
 
-        #n = len(self.frames)
-
         self.addfiles(rawfiles, ftype)
-
-        #self.project.set("Reference images", ftype, "1")
-        #self.frames["1"].isref = True
 
     def addfiles(self, allfiles, ftype):
         """
@@ -217,7 +214,7 @@ class Batch(object):
         self.frames[n] = frame
 
     def addmaster(self, file, ftype):
-        """re
+        """
         Add a ready master to batch
         """
 

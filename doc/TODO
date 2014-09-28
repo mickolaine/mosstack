@@ -1,12 +1,13 @@
 List of TODO's too big to be in a single line comment
 
-- Clean scripts/mosstack to include only the necessary and move all the
++ DONE: Clean scripts/mosstack to include only the necessary and move all the
   functionality to UserInterface.py
 - Change both GUI and CLI to use the same methods
 - Registering should be fully independent from other parts of the program.
   Remove ImageMagick's affine transform if necessary
 - Add support for python-magic
-- Implement reference frame
++ DONE: Implement reference frame
++ DONE: Implement removal of frames from project
 + DONE: Fix id assigning for frames in batch. Now it calculates number of
   frames and takes n+1. This will fail if you remove frames
-- Implement removal of frames from project
+

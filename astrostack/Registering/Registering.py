@@ -9,6 +9,8 @@ Created on 2.10.2013
 
 """
 
+from .. Registering.Groth import Groth
+
 
 class Registering:
     """
@@ -24,9 +26,25 @@ class Registering:
     """
 
     def __init__(self):
-        pass
+        self.reg = Groth()
 
-    def register(self, imagelist, project):
+    def register(self, frame):
+        """
+        Call everything necessary to register one frame
+
+        Arguments:
+        frame - a Frame-type object
+        """
+
+        # find stars
+
+
+        # calculate transform
+
+        # do the transform
+
+
+    def register_old(self, imagelist, project):
         """
         Calls everything required for total registration process.
 

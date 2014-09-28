@@ -76,6 +76,9 @@ class Ui(Ui_MainWindow, QObject):
         self.pushButtonRun.clicked.connect(self.runProgram)
         self.pushButtonMakeRef.clicked.connect(self.makeRef)
         self.pushButtonRemoveFrame.clicked.connect(self.delFrame)
+        self.pushButtonMasterBias.clicked.connect(self.addMasterBias)
+        self.pushButtonMasterDark.clicked.connect(self.addMasterDark)
+        self.pushButtonMasterFlat.clicked.connect(self.addMasterFlat)
 
         self.buttonDebayer.setExclusive(True)
         self.buttonRegister.setExclusive(True)
@@ -195,6 +198,7 @@ class Ui(Ui_MainWindow, QObject):
         self.radioButtonSClip.setChecked(values["SigmaClip"])
 
         self.lineEditKappa.setText(str(values["Kappa"]))
+        self.values = values
 
     def getValues(self):
         """
@@ -223,10 +227,10 @@ class Ui(Ui_MainWindow, QObject):
                   #"Kappa": self.lineEditKappa.text()
                   }
         try:
-            float(self.lineEditKappa.text())
             values["Kappa"] = float(self.lineEditKappa.text())
         except ValueError:
             values["Kappa"] = 3.0
+        print(values["Kappa"])
         return values
 
     def loadProject(self):
@@ -291,7 +295,7 @@ class Ui(Ui_MainWindow, QObject):
         if self.pname is None:
             self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
             return
-        files = QFileDialog.getOpenFileNames(caption="Select light files",
+        files = QFileDialog.getOpenFileNames(caption="Select " + ftype + " files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.addFrame(files, ftype)
 
@@ -342,6 +346,45 @@ class Ui(Ui_MainWindow, QObject):
 
         for i in self.batch[ftype].frames:
             self.threadpool.start(GenericThread(self.batch[ftype].decode, i))
+
+    def addMasterDialog(self, ftype):
+        if self.pname is None:
+            self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
+            return
+        file = QFileDialog.getOpenFileName(caption="Select master file",
+                                            filter="Fits and Tiff (*.FITS *.fits *.tiff *.TIFF *.tif *.TIF)")
+        return self.addMasterFrame(file, ftype)
+
+    def addMasterDark(self):
+        if self.addMasterDialog("dark"):
+            self.checkBoxDark.setCheckable(True)
+            self.checkBoxDark.setCheckState(2)
+            #self.checkBoxDark.setCheckable(False)
+
+    def addMasterBias(self):
+        if self.addMasterDialog("bias"):
+            print("FOOOOOOO")
+            self.checkBoxBias.setCheckable(True)
+            self.checkBoxBias.setCheckState(2)
+            #self.checkBoxBias.setCheckable(False)
+
+    def addMasterFlat(self):
+        if self.addMasterDialog("flat"):
+            self.checkBoxFlat.setCheckable(True)
+            self.checkBoxFlat.setCheckState(2)
+            #self.checkBoxFlat.setCheckable(False)
+
+    def addMasterFrame(self, file, ftype):
+        """
+        Add file to project as master frame of type ftype
+        """
+        try:
+            if ftype not in self.batch:
+                self.batch[ftype] = QBatch(self.project, ftype)
+            self.batch[ftype].addmaster(file, ftype)
+            return True
+        except:
+            return False
 
     def updateTableView(self):
         """

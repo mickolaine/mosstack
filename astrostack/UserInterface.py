@@ -8,9 +8,7 @@ from . Batch import Batch
 from . import Registering
 from . import Debayer
 from . import Stacker
-#from sys import version_info
-
-__author__ = 'Mikko Laine'
+import os
 
 
 class UserInterface:
@@ -258,16 +256,254 @@ You can use either name or number as operation 'list' shows them.
 
     """
 
-    def __init__(self, project=None):
+    def __init__(self):
         """
         Initialize user interface and set project name if specified
         """
-        self.project = project
+        self.project = None
 
         # Set default values.
         self.debayerwrap = Debayer.VNGCython
         self.registerwrap = Registering.Groth_Skimage
         self.stackerwrap = Stacker.SigmaMedian
+
+    def start(self, argv):
+        """
+        Parse arguments and run functions according
+        """
+
+        if len(argv) == 0:
+            print(self.shorthelp)
+            exit()
+
+        if argv[0] == "help":
+            print(self.longhelp)
+            exit()
+
+        if argv[0] == "init":
+            try:
+                project = Config.Project()
+                project.initproject(argv[1])
+                Config.Global.set("Default", "Project", argv[1])
+                print("New project started: \n" + Config.Global.get("Default", "Path") + argv[1] + ".project")
+                exit()
+            except IndexError:
+                print("Project name not specified. Try \"mosstack help\" and see what went wrong.")
+                exit()
+
+        try:
+            pname = Config.Global.get("Default", "Project")
+            ppath = Config.Global.get("Default", "Path") + "/" + pname + ".project"
+            if argv[0] == "set" and argv[1] == "project":
+                pass
+            else:
+                print("Current project is " + ppath + "\n")
+            project = Config.Project(pname)
+            project.readproject()
+            self.setproject(project)
+
+        except IndexError:
+            print("Something went wrong. Check your input. Refer to \"mosstack help\" if needed.")
+            exit()
+
+        if argv[0] == "set":
+
+            if argv[1] == "project":
+                if argv[2]:
+                    pname = argv[2]
+                    Config.Global.set("Default", "Project", pname)
+                    ppath = Config.Global.get("Default", "Path") + pname + ".project"
+                    self.setproject(Config.Project(pname))
+                    print("Project set to " + ppath)
+                else:
+                    print("No project name specified.")
+                    print("Try mosstack set project <project name>, without path or extension.")
+
+            elif argv[1] == "debayer":
+                options = Debayer.__all__
+                self.set("Debayer", options, argv[2])
+            elif argv[1] == "register":
+                options = Registering.__all__
+                self.set("Register", options, argv[2])
+            elif argv[1] == "stack":
+                options = Stacker.__all__
+                self.set("Stack", options, argv[2])
+
+            else:
+                print("Don't know how to set " + argv[1])
+                print("Possible options to set are \n project\n debayer\n register\n stack")
+
+        elif argv[0] == "list":
+
+            if len(argv) == 1:
+                print("Settings to list are \n debayer\n register\n stack")
+            else:
+                if argv[1] == "debayer":
+                    options = Debayer.__all__
+                elif argv[1] == "register":
+                    options = Registering.__all__
+                elif argv[1] == "stack":
+                    options = Stacker.__all__
+                else:
+                    print("No such setting " + argv[1])
+                    print("Possible settings are \n debayer\n register\n stack")
+                    exit()
+                self.list(argv[1], options)
+
+        elif argv[0] == "dir":
+
+            if argv[1]:
+                try:
+                    directory = UserInterface.absolutepath(argv[1], directory=True)
+                except IOError:
+                    print("Directory " + argv[1] + " not found. Check your input")
+                    exit()
+            else:
+                directory = UserInterface.absolutepath(os.getcwd(), directory=True)
+
+            itype = argv[2]
+            self.adddir(directory, itype)
+
+        elif argv[0] == "file":
+
+            try:
+                path = UserInterface.absolutepath(argv[1])
+                itype = argv[2]
+                self.addfile(path, itype)
+            except IOError:
+                print("File " + argv[1] + " not found. Check your input")
+                exit()
+
+        elif argv[0] == "master":
+
+            try:
+                path = UserInterface.absolutepath(argv[1])
+            except IOError:
+                print("File " + argv[1] + " not found. Check your input")
+                exit()
+            if argv[2] in ("flat", "dark", "bias"):
+                ftype = argv[2]
+                self.addmaster(path, ftype)
+            else:
+                print("Master frame has to be either flat, dark or bias")
+                print("Try again:")
+                print("          mosstack master <path to file> <flat, dark or bias>")
+                exit()
+
+        elif argv[0] == "stack":
+            # AstroStack stack <srcname>
+            srclist = ("light", "dark", "bias", "flat", "rgb", "calib", "reg")
+            if argv[1] in srclist:
+                section = argv[1]
+                self.stack(section)
+            else:
+                print("Invalid argument: " + argv[1])
+                print("<itype> has to be one of: " + str(srclist))
+
+        elif argv[0] == "debayer":
+            # AstroStack debayer <srcname>
+
+            if argv[1]:
+                fphase = argv[1]
+                self.debayer(fphase)
+
+            else:
+                print("Scrname not defined. Try 'mosstack debayer calib' or 'mosstack debayer light'\nExiting...")
+                exit()
+
+        elif argv[0] == "register":
+            # AstroStack register <srcname>
+
+            if argv[1]:
+                fphase = argv[1]
+                self.register(fphase)
+            else:
+                print("Srcname not defined. Exiting...")
+                exit()
+
+        elif argv[0] == "subtract":
+            # AstroStack subtract <srcname> <calibname>
+
+            if argv[1]:
+                section = argv[1]
+                if argv[2]:
+                    calib = argv[2]
+                    self.subtract(section, calib)
+                else:
+                    print("Calibname not defined. Exiting...")
+                    exit()
+            else:
+                print("Srcname not defined. Exiting...")
+                exit()
+
+        elif argv[0] == "divide":
+            # AstroStack divide <srcname> <calibname>
+
+            if argv[1]:
+                section = argv[1]
+                if argv[2]:
+                    calib = argv[2]
+                    self.divide(section, calib)
+                else:
+                    print("Calibname not defined. Exiting...")
+                    exit()
+            else:
+                print("Srcname not defined. Exiting...")
+                exit()
+
+        elif argv[0] == "frames":
+
+            if len(argv) == 2:
+                self.listframes(argv[1])
+            else:
+                print("Invalid input. Try mosstack frames <frame type>")
+                exit()
+
+        elif argv[0] == "remove":
+
+            if len(argv) == 3:
+                self.remove(argv[1], argv[2])
+            else:
+                print("Invalid input. Try mosstack remove <frame type> <frame id>")
+                exit()
+
+        elif argv[0] == "reference":
+
+            if len(argv) == 2:
+                try:
+                    self.setRef(argv[1])
+                    print("Reference frame changed to " + argv[1])
+                except KeyError:
+                    print("Frame id " + argv[1] + " not found.")
+            else:
+                print("Invalid input. Try mosstack reference <frame id>")
+
+        else:
+            print("Invalid operation: " + argv[0])
+            print(self.shorthelp)
+            exit()
+
+    @staticmethod
+    def absolutepath(path, directory=False):
+        """
+        Check if path is relative and if so, return absolute path.
+
+        Raise IOError if path does not exist.
+        """
+
+        if directory:
+            check = os.path.isdir
+        else:
+            check = os.path.isfile
+
+        if check(path):
+            return path
+
+        if check(os.path.join(os.getcwd(), path)):
+            return os.path.join(os.getcwd(), path)
+
+        else:
+            raise IOError()
 
     def setproject(self, project):
         """
@@ -424,3 +660,31 @@ You can use either name or number as operation 'list' shows them.
 
         batch = Batch(project=self.project, ftype=ftype)
         batch.addmaster(path, ftype)
+
+    def listframes(self, ftype):
+        """
+        List frames by ftype.
+        """
+
+        batch = Batch(project=self.project, ftype=ftype)
+        for i in batch.frames:
+            print(i + ": " + batch.frames[i].rawpath)
+
+    def remove(self, ftype, frameId):
+        """
+        Remove frame from project
+        """
+
+        batch = Batch(project=self.project, ftype=ftype)
+        batch.removeFrame(frameId)
+
+    def setRef(self, frameId):
+        """
+        Set the reference frame. Possible only for light frames since there's no sense changing reference from other
+        """
+
+        batch = Batch(project=self.project, ftype="light")
+        try:
+            batch.setRef(frameId)
+        except KeyError:
+            raise
