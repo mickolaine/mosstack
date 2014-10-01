@@ -33,8 +33,9 @@ class Batch(object):
             self.fphase = fphase
 
         try:
-            self.refId = project.get("Reference images", key=self.ftype)  # Number of reference frame
+            self.refId = project.get("Reference", key=self.ftype)  # Number of reference frame
         except KeyError:
+
             self.refId = "1"
 
         try:
@@ -43,6 +44,7 @@ class Batch(object):
             for key in files:
                 frame = Frame(self.project, infopath=files[key], fphase=self.fphase)
                 self.frames[key] = frame
+            self.setRef(self.refId)
 
         except KeyError:
             #print("Error")
@@ -60,7 +62,7 @@ class Batch(object):
             self.frames[self.refId].isref = False
             self.refId = refId
             self.frames[self.refId].isref = True
-            self.project.set("Reference images", self.ftype, str(self.refId))
+            self.project.set("Reference", self.ftype, str(self.refId))
         except KeyError:
             raise
 
@@ -175,6 +177,12 @@ class Batch(object):
 
         self.addfiles(rawfiles, ftype)
 
+        # Set reference frame key if not set already. Defaults to the first frame added.
+        try:
+            self.project.get("Reference", ftype)
+        except KeyError:
+            self.project.set("Reference", ftype, list(self.frames.keys())[0])
+
     def addfiles(self, allfiles, ftype):
         """
         Add list of files to Batch
@@ -245,3 +253,8 @@ class Batch(object):
 
         self.project.remove(self.ftype, frameId)
         del self.frames[frameId]
+
+        # If reference frame is removed, choose a new one.
+        if frameId == self.refId:
+            self.setRef(list(self.frames.keys())[0])
+            print("Reference frame " + frameId + " removed. New reference frame is " + self.refId + ".")

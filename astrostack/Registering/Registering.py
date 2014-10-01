@@ -9,8 +9,6 @@ Created on 2.10.2013
 
 """
 
-from .. Registering.Groth import Groth
-
 
 class Registering:
     """
@@ -26,7 +24,7 @@ class Registering:
     """
 
     def __init__(self):
-        self.reg = Groth()
+        self.tform = None
 
     def register(self, frame):
         """
@@ -37,12 +35,13 @@ class Registering:
         """
 
         # find stars
-
+        self.match_stars(frame)
 
         # calculate transform
+        self.tform.calculate_transform(frame)
 
         # do the transform
-
+        return self.tform.affine_transform4(frame)
 
     def register_old(self, imagelist, project):
         """

@@ -264,7 +264,8 @@ You can use either name or number as operation 'list' shows them.
 
         # Set default values.
         self.debayerwrap = Debayer.VNGCython
-        self.registerwrap = Registering.Groth_Skimage
+        self.matcher = Registering.Groth
+        self.transformer = Registering.SkTransform
         self.stackerwrap = Stacker.SigmaMedian
 
     def start(self, argv):
@@ -285,7 +286,7 @@ You can use either name or number as operation 'list' shows them.
                 project = Config.Project()
                 project.initproject(argv[1])
                 Config.Global.set("Default", "Project", argv[1])
-                print("New project started: \n" + Config.Global.get("Default", "Path") + argv[1] + ".project")
+                print("New project started: \n" + Config.Global.get("Default", "Path") + "/" + argv[1] + ".project")
                 exit()
             except IndexError:
                 print("Project name not specified. Try \"mosstack help\" and see what went wrong.")
@@ -336,12 +337,14 @@ You can use either name or number as operation 'list' shows them.
         elif argv[0] == "list":
 
             if len(argv) == 1:
-                print("Settings to list are \n debayer\n register\n stack")
+                print("Settings to list are \n debayer\n matcher\n transformer\n stack")
             else:
                 if argv[1] == "debayer":
                     options = Debayer.__all__
-                elif argv[1] == "register":
-                    options = Registering.__all__
+                elif argv[1] == "matcher":
+                    options = Registering.matcher
+                elif argv[1] == "transformer":
+                    options = Registering.transformer
                 elif argv[1] == "stack":
                     options = Stacker.__all__
                 else:
@@ -511,7 +514,8 @@ You can use either name or number as operation 'list' shows them.
         """
         self.project = project
         if project.get("Default", "debayer") not in Debayer.__all__ or \
-           project.get("Default", "register") not in Registering.__all__ or \
+           project.get("Default", "matcher") not in Registering.matcher or \
+           project.get("Default", "transformer") not in Registering.transformer or \
            project.get("Default", "stack") not in Stacker.__all__:
             print("Invalid entries in project file. Using default")
             return
@@ -521,8 +525,9 @@ You can use either name or number as operation 'list' shows them.
         except ImportError:
             print("Looks like OpenCL isn't working. Refer to manual.")
             print("Setting debayer algorithm to pure Python module (slow but working).")
-            self.debayerwrap = Debayer.BilinearCython
-        self.registerwrap = eval("Registering." + project.get("Default", "register"))
+            self.debayerwrap = Debayer.VNGCython
+        self.matcher = eval("Registering." + project.get("Default", "matcher") + "()")
+        self.transformer = eval("Registering." + project.get("Default", "transformer") + "()")
         self.stackerwrap = eval("Stacker." + project.get("Default", "stack"))
 
     def register(self, fphase):
@@ -531,7 +536,16 @@ You can use either name or number as operation 'list' shows them.
         """
 
         batch = Batch(self.project, ftype="light", fphase=fphase)
-        batch.registerAll(self.registerwrap())
+        #batch.registerAll(self.registerwrap())
+        self.matcher.tform = self.transformer
+
+        # Reference frame first
+        batch.frames[batch.refId].register(self.matcher)
+
+        for i in batch.frames:
+            if i == batch.refId:
+                continue
+            batch.frames[i].register(self.matcher)
 
     def debayer(self, fphase):
         """

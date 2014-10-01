@@ -51,6 +51,8 @@ class Frame(object):
         self.focallength = None
         self.bayer       = None
         self.dlmulti     = None
+        self.step1       = False
+        self.step2       = False
 
         self.wdir = Config.Global.get("Default", "Path")
         self.name = self.project.get("Default", "Project name")
@@ -171,7 +173,7 @@ class Frame(object):
         #self.update_ui()
         return
 
-    def register(self, register, ref=False):
+    def register(self, register):  # , ref=False):
         """
         Register the frame. Project tells how.
 
@@ -181,7 +183,7 @@ class Frame(object):
         """
 
         self.state["register"] = 1
-        self.data = register.register_single(self, ref=ref)
+        self.data = register.register(self)
         self.fphase = "reg"
         self.state["register"] = 2
         self.write()

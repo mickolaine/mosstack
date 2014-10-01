@@ -541,10 +541,14 @@ class Ui(Ui_MainWindow, QObject):
         """
         Run everything related to registering
         """
-        if self.buttonRegister.checkedButton().text() == self.radioButtonGrothIM.text():
-            self.registerwrap = Registering.Groth_ImageMagick()
-        elif self.buttonRegister.checkedButton().text() == self.radioButtonGrothSK.text():
-            self.registerwrap = Registering.Groth_Skimage()
+        #if self.buttonRegister.checkedButton().text() == self.radioButtonGrothIM.text():
+        #    self.registerwrap = Registering.Groth_ImageMagick()
+        #elif self.buttonRegister.checkedButton().text() == self.radioButtonGrothSK.text():
+        #    self.registerwrap = Registering.Groth_Skimage()
+
+        if self.buttonRegister.checkedButton().text() == self.radioButtonGrothSK.text():
+            self.registerwrap = Registering.Groth()
+            self.registerwrap.tform = Registering.SkTransform()
 
         # First register the reference frame. This has to be done before anything else
         self.threadpool.start(GenericThread(self.batch["light"].register,

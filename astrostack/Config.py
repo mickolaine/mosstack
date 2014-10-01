@@ -417,7 +417,8 @@ class Project(Config):
         Set default settings
         """
         self.set("Default", "debayer", "VNGCython")
-        self.set("Default", "register", "Groth_Skimage")
+        self.set("Default", "matcher", "Groth")
+        self.set("Default", "transformer", "SkTransform")
         self.set("Default", "stack", "SigmaMedian")
 
 
