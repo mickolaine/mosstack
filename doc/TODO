@@ -2,9 +2,10 @@ List of TODO's too big to be in a single line comment
 
 + DONE: Clean scripts/mosstack to include only the necessary and move all the
   functionality to UserInterface.py
-- Change both GUI and CLI to use the same methods
-- Registering should be fully independent from other parts of the program.
-  Remove ImageMagick's affine transform if necessary
++ DONE: Change both GUI and CLI to use the same methods
++ DONE: Registering should be fully independent from other parts of the
+  program.
++ DISABLED: Remove ImageMagick's affine transform if necessary
 - Add support for python-magic
 + DONE: Implement reference frame
 + DONE: Implement removal of frames from project

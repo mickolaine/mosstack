@@ -170,7 +170,6 @@ class Frame(object):
         self.write()
         self.state["debayer"] = 2
 
-        #self.update_ui()
         return
 
     def register(self, register):  # , ref=False):
@@ -183,13 +182,13 @@ class Frame(object):
         """
 
         self.state["register"] = 1
-        self.data = register.register(self)
+        data = register.register(self)
         self.fphase = "reg"
         self.state["register"] = 2
-        self.write()
-
-        #self.update_ui()
-
+        if data is not None:
+            self.data = data
+            self.write()
+            del data
         return
 
     @staticmethod
@@ -218,7 +217,6 @@ class Frame(object):
             frame._load_tiff(path=path)
             frame.extractinfo()
             frame.writeinfo()
-            #frame._path = splitext(frame._path)[0] + ".fits"
             frame.write()
 
         return frame
@@ -297,6 +295,7 @@ class Frame(object):
         self.write(skimage=True)
         self._release_data()
 
+    '''
     def getpath(self, genname):
         """
         Return path by some other genname than self.genname. Read from .info
@@ -306,6 +305,7 @@ class Frame(object):
             return self.frameinfo.get("Paths", genname)
         except:
             return self.wdir + self.name + "_" + str(self.number) + "_" + genname + ".fits"
+    '''
 
     def readinfo(self):
         """
@@ -585,6 +585,7 @@ class Frame(object):
             call(["convert", self.path(fformat="pgm"), self.path()])
             print("Conversion successful!")
 
+    '''
     def _convert(self, srcpath):
         """
         Convert the raw file into FITS via PGM.
@@ -619,6 +620,7 @@ class Frame(object):
             print("Unable to find file in given path: " + srcpath + ". Find out what's wrong and try again.")
             print("Can't continue. Exiting.")
             exit()
+    '''
 
     def _load_fits(self, path=None):
         """
@@ -749,9 +751,3 @@ class Frame(object):
         self._write_fits()
         if tiff:
             self._write_tiff(skimage=skimage)
-
-    def update_ui(self):
-        """
-        Update the user interface. Empty for now, but inheriting classes might replace this to something useful
-        """
-        pass

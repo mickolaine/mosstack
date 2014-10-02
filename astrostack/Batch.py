@@ -86,6 +86,7 @@ class Batch(object):
 
         print("Debayered images saved with generic name 'rgb'.")
 
+    '''
     def registerAll(self, register):
         """
         Register and transform images.
@@ -97,6 +98,7 @@ class Batch(object):
         register.register(self.frames, self.project)
 
         print("Registered images saved with generic name 'reg'.")
+    '''
 
     def stack(self, stacker):
         """

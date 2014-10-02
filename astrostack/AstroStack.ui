@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1072</width>
-    <height>861</height>
+    <height>857</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -36,6 +36,13 @@
       <property name="sizeConstraint">
        <enum>QLayout::SetDefaultConstraint</enum>
       </property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Project settings</string>
+        </property>
+       </widget>
+      </item>
       <item row="1" column="0">
        <widget class="QToolBox" name="toolBox">
         <property name="sizePolicy">
@@ -59,7 +66,7 @@
            <x>0</x>
            <y>0</y>
            <width>200</width>
-           <height>489</height>
+           <height>486</height>
           </rect>
          </property>
          <attribute name="label">
@@ -81,8 +88,8 @@
          <widget class="QLabel" name="label_master">
           <property name="geometry">
            <rect>
-            <x>100</x>
-            <y>0</y>
+            <x>10</x>
+            <y>160</y>
             <width>81</width>
             <height>20</height>
            </rect>
@@ -94,82 +101,73 @@
          <widget class="QWidget" name="">
           <property name="geometry">
            <rect>
-            <x>7</x>
-            <y>20</y>
-            <width>151</width>
-            <height>108</height>
+            <x>10</x>
+            <y>180</y>
+            <width>71</width>
+            <height>81</height>
            </rect>
           </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <layout class="QVBoxLayout" name="verticalLayout_2" stretch="1,1,1">
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout">
-             <item>
-              <widget class="QPushButton" name="pushLight">
-               <property name="text">
-                <string>Light</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushDark">
-               <property name="text">
-                <string>Dark</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushBias">
-               <property name="text">
-                <string>Bias</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushFlat">
-               <property name="text">
-                <string>Flat</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
+            <widget class="QPushButton" name="pushButtonMasterDark">
+             <property name="text">
+              <string>Dark</string>
+             </property>
+            </widget>
            </item>
            <item>
-            <widget class="QWidget" name="widget_4" native="true"/>
+            <widget class="QPushButton" name="pushButtonMasterBias">
+             <property name="text">
+              <string>Bias</string>
+             </property>
+            </widget>
            </item>
            <item>
-            <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,1,1,1">
-             <item>
-              <widget class="QWidget" name="widget_3" native="true">
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushButtonMasterDark">
-               <property name="text">
-                <string>Dark</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushButtonMasterBias">
-               <property name="text">
-                <string>Bias</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="pushButtonMasterFlat">
-               <property name="text">
-                <string>Flat</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
+            <widget class="QPushButton" name="pushButtonMasterFlat">
+             <property name="text">
+              <string>Flat</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QWidget" name="">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>20</y>
+            <width>73</width>
+            <height>106</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <widget class="QPushButton" name="pushLight">
+             <property name="text">
+              <string>Light</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushDark">
+             <property name="text">
+              <string>Dark</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushBias">
+             <property name="text">
+              <string>Bias</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushFlat">
+             <property name="text">
+              <string>Flat</string>
+             </property>
+            </widget>
            </item>
           </layout>
          </widget>
@@ -180,7 +178,7 @@
            <x>0</x>
            <y>0</y>
            <width>200</width>
-           <height>489</height>
+           <height>486</height>
           </rect>
          </property>
          <attribute name="label">
@@ -268,7 +266,7 @@
            <x>0</x>
            <y>0</y>
            <width>200</width>
-           <height>489</height>
+           <height>486</height>
           </rect>
          </property>
          <attribute name="label">
@@ -333,7 +331,7 @@
            <x>0</x>
            <y>0</y>
            <width>200</width>
-           <height>489</height>
+           <height>486</height>
           </rect>
          </property>
          <attribute name="label">
@@ -342,30 +340,78 @@
          <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
-            <x>0</x>
-            <y>10</y>
-            <width>161</width>
-            <height>73</height>
+            <x>10</x>
+            <y>40</y>
+            <width>81</width>
+            <height>31</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayoutRegister">
            <item>
-            <widget class="QRadioButton" name="radioButtonGrothIM">
+            <widget class="QRadioButton" name="radioButtonGroth">
              <property name="text">
-              <string>Groth + ImageMagick</string>
+              <string>Groth</string>
              </property>
              <attribute name="buttonGroup">
-              <string notr="true">buttonRegister</string>
+              <string notr="true">buttonMatcher</string>
+             </attribute>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+         <widget class="QLabel" name="label_9">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>20</y>
+            <width>101</width>
+            <height>16</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Star matching</string>
+          </property>
+         </widget>
+         <widget class="QLabel" name="label_10">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>90</y>
+            <width>161</width>
+            <height>16</height>
+           </rect>
+          </property>
+          <property name="text">
+           <string>Image transformations</string>
+          </property>
+         </widget>
+         <widget class="QWidget" name="layoutWidget_2">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>110</y>
+            <width>121</width>
+            <height>48</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayoutRegister_2">
+           <item>
+            <widget class="QRadioButton" name="radioButtonScikit">
+             <property name="text">
+              <string>Scikit-image</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">buttonTransformer</string>
              </attribute>
             </widget>
            </item>
            <item>
-            <widget class="QRadioButton" name="radioButtonGrothSK">
+            <widget class="QRadioButton" name="radioButtonImagick">
              <property name="text">
-              <string>Groth + Scikit</string>
+              <string>ImageMagick</string>
              </property>
              <attribute name="buttonGroup">
-              <string notr="true">buttonRegister</string>
+              <string notr="true">buttonTransformer</string>
              </attribute>
             </widget>
            </item>
@@ -378,7 +424,7 @@
            <x>0</x>
            <y>0</y>
            <width>200</width>
-           <height>489</height>
+           <height>486</height>
           </rect>
          </property>
          <attribute name="label">
@@ -456,7 +502,7 @@
            </item>
           </layout>
          </widget>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
             <x>10</x>
@@ -485,7 +531,7 @@
            <x>0</x>
            <y>0</y>
            <width>200</width>
-           <height>489</height>
+           <height>486</height>
           </rect>
          </property>
          <attribute name="label">
@@ -547,17 +593,10 @@
         </widget>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="text">
-         <string>Project settings</string>
-        </property>
-       </widget>
-      </item>
      </layout>
     </item>
     <item row="0" column="1">
-     <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0,0" rowminimumheight="0,0,30,0">
+     <layout class="QGridLayout" name="gridLayout" rowstretch="0,0,0" rowminimumheight="0,0,30">
       <property name="sizeConstraint">
        <enum>QLayout::SetMaximumSize</enum>
       </property>
@@ -596,7 +635,7 @@
       </item>
       <item row="2" column="0">
        <widget class="QWidget" name="widget_2" native="true">
-        <widget class="QWidget" name="">
+        <widget class="QWidget" name="layoutWidget">
          <property name="geometry">
           <rect>
            <x>0</x>
@@ -671,7 +710,7 @@
         <rect>
          <x>220</x>
          <y>0</y>
-         <width>851</width>
+         <width>841</width>
          <height>131</height>
         </rect>
        </property>
@@ -689,7 +728,7 @@
         <string>Master frames</string>
        </property>
       </widget>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>10</x>
@@ -808,8 +847,9 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonRegister"/>
+  <buttongroup name="buttonMatcher"/>
   <buttongroup name="buttonDebayer"/>
   <buttongroup name="buttonStack"/>
+  <buttongroup name="buttonTransformer"/>
  </buttongroups>
 </ui>

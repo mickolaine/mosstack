@@ -137,7 +137,7 @@ class QBatch(Batch, QWidget):
         Register a single frame
         """
 
-        self.frames[frame].register(register, ref=ref)
+        self.frames[frame].register(register)
 
         self.refresh.emit()
 

@@ -1,53 +1,59 @@
 from __future__ import division
 from subprocess import call
-from re import sub
 from shutil import copyfile
 
 
 class ImTransform(object):
 
     @staticmethod
-    def affine_transform(image, ref):
+    def calculate_transform(frame):
         """
-        Transforms image according to image.pairs.
+        Calculates affine transformation. Actually does nothing since all the work is in affine_transform. Exists for
+        compability reasons.
+        """
+
+    @staticmethod
+    def affine_transform(frame):
+        """
+        Transforms image according to frame.pairs.
 
         Transformation is done with ImageMagick's "convert -distort Affine" from command line.
         New image will have genname "reg".
 
         Arguments:
-        image - Frame type object to transform
+        frame - Frame type object to transform
         ref - Number for reference image
         """
 
-        if sub("\D", "", image.number) == ref:  # For RGB-images i.number holds more than number. Strip that
+        if frame.isref:
             print("Not transforming the reference frame.")
-            oldpath = image.path()
-            image.genname = "reg"
-            newpath = image.path()
+            oldpath = frame.path()
+            frame.genname = "reg"
+            newpath = frame.path()
             copyfile(oldpath, newpath)
-            return
+            return None
 
         # Preparations. Create string of coordinate pairs the way ImageMagick wants it
-        if image.points is None or True:
+        if frame.points is None or True:
             points = "'"
             n = 0
-            for i in image.pairs:
+            for i in frame.pairs:
                 if n > 12:          # max number of control points is 12
                     break
-                points = points + "{},{},{},{} ".format(int(i[0][0]), image.y - int(i[0][1]),
-                                                        int(i[1][0]), image.y - int(i[1][1]))
+                points = points + "{},{},{},{} ".format(int(i[0][0]), frame.y - int(i[0][1]),
+                                                        int(i[1][0]), frame.y - int(i[1][1]))
                 n += 1
             points += "'"
-            image.points = points
+            frame.points = points
         else:
-            points = image.points
+            points = frame.points
 
-        print("Starting affine transform for frame number " + image.number)
+        print("Starting affine transform for frame number " + frame.number)
         # Actual transforming
-        image.write_tiff()
-        oldpath = image.rgbpath(fileformat="tiff")
-        image.genname = "reg"
-        newpath = image.rgbpath()
+        frame.write_tiff()
+        oldpath = frame.rgbpath(fileformat="tiff")
+        frame.genname = "reg"
+        newpath = frame.rgbpath()
         if len(oldpath) == 3:
             for i in [0, 1, 2]:
                 command = "convert " + oldpath[i] + " -distort Affine " + points + " " + newpath[i]
@@ -59,5 +65,6 @@ class ImTransform(object):
             call([command], shell=True)
             call(["rm " + oldpath], shell=True)
 
-        image.combine(newpath)
+        frame.combine(newpath)
         print("Done")
+        return None

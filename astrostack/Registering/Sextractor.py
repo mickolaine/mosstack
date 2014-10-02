@@ -6,15 +6,9 @@ Created on 2.10.2013
 
 """
 
-#from .. Registering.Registering import Registering
 from subprocess import call, check_output
 from .. Config import Global
-#from math import sqrt, log, fabs
-#from operator import itemgetter
 from os.path import splitext, isfile
-#from re import sub
-#from shutil import copyfile
-#import datetime   # For profiling
 
 
 class Sextractor:
@@ -35,7 +29,7 @@ class Sextractor:
         self.image = image
         self.sextractor = Global.get("Programs", "sextractor")
         self.path = image.wdir
-        self.imagepath = image.getpath("orig")
+        self.imagepath = image.frameinfo.get("Paths", "orig")
         self.catname = splitext(self.image.infopath)[0] + ".cat"
         self.confname = splitext(self.image.infopath)[0] + ".sex"
 

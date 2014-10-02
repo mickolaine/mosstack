@@ -81,8 +81,11 @@ class Ui(Ui_MainWindow, QObject):
         self.pushButtonMasterFlat.clicked.connect(self.addMasterFlat)
 
         self.buttonDebayer.setExclusive(True)
-        self.buttonRegister.setExclusive(True)
+        self.buttonMatcher.setExclusive(True)
+        self.buttonTransformer.setExclusive(True)
         self.buttonStack.setExclusive(True)
+
+        self.radioButtonImagick.setEnabled(False)
 
         # LineEdits
 
@@ -163,8 +166,10 @@ class Ui(Ui_MainWindow, QObject):
                       "VNGCython": 2,
                       "BilinearOpenCl": 0,
                       "VNGOpenCL": 0,
-                      "GrothIM": 0,
-                      "GrothSK": 2,
+                      "Groth": 2,
+                      "Scikit": 2,
+                      "Minimum": 0,
+                      "Maximum": 0,
                       "Mean": 0,
                       "Median": 0,
                       "SigmaMedian": 2,
@@ -189,9 +194,11 @@ class Ui(Ui_MainWindow, QObject):
         self.radioButtonBilinearCL.setChecked(values["BilinearOpenCl"])
         self.radioButtonVNGCL.setChecked(values["VNGOpenCL"])
 
-        self.radioButtonGrothIM.setChecked(values["GrothIM"])
-        self.radioButtonGrothSK.setChecked(values["GrothSK"])
+        self.radioButtonGroth.setChecked(values["Groth"])
+        self.radioButtonScikit.setChecked(values["Scikit"])
 
+        self.radioButtonMinimum.setChecked(values["Minimum"])
+        self.radioButtonMaximum.setChecked(values["Maximum"])
         self.radioButtonMean.setChecked(values["Mean"])
         self.radioButtonMedian.setChecked(values["Median"])
         self.radioButtonSMedian.setChecked(values["SigmaMedian"])
@@ -218,8 +225,10 @@ class Ui(Ui_MainWindow, QObject):
                   "VNGCython": self.radioButtonVNGCyt.isChecked(),
                   "BilinearOpenCl": self.radioButtonBilinearCL.isChecked(),
                   "VNGOpenCL": self.radioButtonVNGCL.isChecked(),
-                  "GrothIM": self.radioButtonGrothIM.isChecked(),
-                  "GrothSK": self.radioButtonGrothSK.isChecked(),
+                  "Groth": self.radioButtonGroth.isChecked(),
+                  "Scikit": self.radioButtonScikit.isChecked(),
+                  "Minimum": self.radioButtonMinimum.isChecked(),
+                  "Maximum": self.radioButtonMaximum.isChecked(),
                   "Mean": self.radioButtonMean.isChecked(),
                   "Median": self.radioButtonMedian.isChecked(),
                   "SigmaMedian": self.radioButtonSMedian.isChecked(),
@@ -513,8 +522,8 @@ class Ui(Ui_MainWindow, QObject):
             self.threadpool.start(GenericThread(self.batch["light"].calibrate, i, Stacker.Mean(), bias=lightbias,
                                                                                                   dark=lightdark,
                                                                                                   flat=lightflat))
-        self.threadpool.setMaxThreadCount(1)
-        self.threadpool.start(GenericThread(self.batch["light"].stack, Stacker.Mean()))
+        #self.threadpool.setMaxThreadCount(1)
+        #self.threadpool.start(GenericThread(self.batch["light"].stack, Stacker.Mean()))
         self.threadpool.waitForDone()
         self.threadpool.setMaxThreadCount(self.threads)
 
@@ -541,14 +550,14 @@ class Ui(Ui_MainWindow, QObject):
         """
         Run everything related to registering
         """
-        #if self.buttonRegister.checkedButton().text() == self.radioButtonGrothIM.text():
-        #    self.registerwrap = Registering.Groth_ImageMagick()
-        #elif self.buttonRegister.checkedButton().text() == self.radioButtonGrothSK.text():
-        #    self.registerwrap = Registering.Groth_Skimage()
 
-        if self.buttonRegister.checkedButton().text() == self.radioButtonGrothSK.text():
+        if self.buttonMatcher.checkedButton().text() == self.radioButtonGroth.text():
             self.registerwrap = Registering.Groth()
+
+        if self.buttonTransformer.checkedButton().text() == self.radioButtonScikit.text():
             self.registerwrap.tform = Registering.SkTransform()
+        elif self.buttonTransformer.checkedButton().text() == self.radioButtonImagick.text():
+            self.registerwrap.tform = Registering.ImTransform()
 
         # First register the reference frame. This has to be done before anything else
         self.threadpool.start(GenericThread(self.batch["light"].register,

@@ -323,16 +323,21 @@ You can use either name or number as operation 'list' shows them.
             elif argv[1] == "debayer":
                 options = Debayer.__all__
                 self.set("Debayer", options, argv[2])
-            elif argv[1] == "register":
-                options = Registering.__all__
-                self.set("Register", options, argv[2])
+            elif argv[1] == "matcher":
+                options = Registering.matcher
+                self.set("Matcher", options, argv[2])
+            elif argv[1] == "transformer":
+                options = Registering.transformer
+                self.set("Transformer", options, argv[2])
             elif argv[1] == "stack":
                 options = Stacker.__all__
                 self.set("Stack", options, argv[2])
+            elif argv[1] == "kappa":
+                self.project.set("Default", "Kappa", argv[2])
 
             else:
                 print("Don't know how to set " + argv[1])
-                print("Possible options to set are \n project\n debayer\n register\n stack")
+                print("Possible options to set are \n project\n debayer\n matcher\n transformer\n stack")
 
         elif argv[0] == "list":
 
@@ -536,7 +541,7 @@ You can use either name or number as operation 'list' shows them.
         """
 
         batch = Batch(self.project, ftype="light", fphase=fphase)
-        #batch.registerAll(self.registerwrap())
+
         self.matcher.tform = self.transformer
 
         # Reference frame first
@@ -549,23 +554,30 @@ You can use either name or number as operation 'list' shows them.
 
     def debayer(self, fphase):
         """
-        Debayer project files under specified section. Use debayering algorithm TODO:
+        Debayer project files under specified section.
         """
 
         # Create new batch with ftype hardcoded. No need to debayer other than light
         batch = Batch(self.project, ftype="light", fphase=fphase)
-        batch.debayerAll(self.debayerwrap())
+
+        for i in batch.frames:
+            batch.frames[i].debayer(self.debayerwrap())
+        #batch.debayerAll(self.debayerwrap())
 
     def stack(self, genname):
         """
-        Stack project files under specified section. Stacker read from TODO: do this
+        Stack project files under specified section.
         """
 
         if genname in ("bias", "dark", "flat"):
             batch = Batch(self.project, ftype=genname)
         else:
             batch = Batch(self.project, fphase=genname)
-        batch.stack(self.stackerwrap())
+
+        if self.project.get("Default", "Stack") == "SigmaMedian" or self.project.get("Default", "Stack") == "SigmaClip":
+            batch.stack(self.stackerwrap(kappa=int(self.project.get("Default", "Kappa"))))
+        else:
+            batch.stack(self.stackerwrap())
 
     def subtract(self, genname, calib):
         """
@@ -632,7 +644,7 @@ You can use either name or number as operation 'list' shows them.
                 exit()
 
         if number <= len(options):
-            print("Setting \"" + setting + "\" changed to value \"" + value + "\"")
+            #print("Setting \"" + setting + "\" changed to value \"" + value + "\"")
             self.project.set("Default", setting, value)
             print("Setting " + setting + " set to " + value)
             #self.project.write()

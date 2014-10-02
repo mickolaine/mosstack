@@ -41,7 +41,7 @@ class Registering:
         self.tform.calculate_transform(frame)
 
         # do the transform
-        return self.tform.affine_transform4(frame)
+        return self.tform.affine_transform(frame)
 
     def register_old(self, imagelist, project):
         """
