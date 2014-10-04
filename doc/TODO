@@ -6,7 +6,7 @@ List of TODO's too big to be in a single line comment
 + DONE: Registering should be fully independent from other parts of the
   program.
 + DISABLED: Remove ImageMagick's affine transform if necessary
-- Add support for python-magic
++ DONE: Add support for python-magic
 + DONE: Implement reference frame
 + DONE: Implement removal of frames from project
 + DONE: Fix id assigning for frames in batch. Now it calculates number of

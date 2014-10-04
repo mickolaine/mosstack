@@ -354,7 +354,7 @@ You can use either name or number as operation 'list' shows them.
                     options = Stacker.__all__
                 else:
                     print("No such setting " + argv[1])
-                    print("Possible settings are \n debayer\n register\n stack")
+                    print("Possible settings are \n debayer\n matcher\n transformer\n stack")
                     exit()
                 self.list(argv[1], options)
 
@@ -400,7 +400,7 @@ You can use either name or number as operation 'list' shows them.
 
         elif argv[0] == "stack":
             # AstroStack stack <srcname>
-            srclist = ("light", "dark", "bias", "flat", "rgb", "calib", "reg")
+            srclist = ("light", "dark", "bias", "flat", "rgb", "calib", "reg", "crop")
             if argv[1] in srclist:
                 section = argv[1]
                 self.stack(section)
@@ -458,6 +458,21 @@ You can use either name or number as operation 'list' shows them.
             else:
                 print("Srcname not defined. Exiting...")
                 exit()
+
+        elif argv[0] == "crop":
+
+            if len(argv) == 6:
+                try:
+                    xrange = int(argv[2]), int(argv[3])
+                    yrange = int(argv[4]), int(argv[5])
+                except ValueError:
+                    print("Values " + argv[2] + ", " + argv[3] + ", " + argv[4] +
+                          " and " + argv[5] + " should be integers.")
+
+                self.crop(argv[1], xrange, yrange)
+
+            else:
+                print("Invalid input. Please refer to mosstack help.")
 
         elif argv[0] == "frames":
 
@@ -686,6 +701,16 @@ You can use either name or number as operation 'list' shows them.
 
         batch = Batch(project=self.project, ftype=ftype)
         batch.addmaster(path, ftype)
+
+    def crop(self, fphase, xrange, yrange):
+        """
+        Crop frames according to given coordinates.
+        """
+
+        batch = Batch(project=self.project, ftype="light", fphase=fphase)
+
+        for i in batch.frames:
+            batch.frames[i].crop(xrange, yrange)
 
     def listframes(self, ftype):
         """

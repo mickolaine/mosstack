@@ -191,6 +191,32 @@ class Frame(object):
             del data
         return
 
+    def crop(self, xrange, yrange):
+        """
+        Crop the data by given coordinates. Save cropped data to self.data and write to disc with fphase="crop".
+
+        Assume data is 3 dimensional. TODO: Make it work with 2d data as well
+
+        Cropping is reasonable to do only for aligned data. Either with data that's already aligned or after registering
+
+        Arguments:
+        xrange: (x_0, x_1)
+        yrange: (y_0, y_1)
+        """
+
+        #crop data
+        data = self.data[0:2, yrange[0]:yrange[1], xrange[0]:xrange[1]]
+        self.data = data
+
+        self.fphase = "crop"
+        self.write()
+
+        #alter metadata
+        self.x = self.data.shape[2]
+        self.y = self.data.shape[1]
+
+        self.writeinfo()
+
     @staticmethod
     def createmaster(project, path, ftype):
         """
@@ -276,7 +302,7 @@ class Frame(object):
             return "tiff"
         if ms.split()[0] == "FITS":
             return "fits"
-        if call(["dcraw", "-i", path]):
+        if not call(["dcraw", "-i", path]):
             return "raw"
         return ms
 

@@ -1,5 +1,13 @@
 v0.6
 - Added new stacking methods: Maximum, Minimum
+- Added Kappa for Sigma stackers in GUI and CLI
+- Added crop method for CLI
+- ImageMagick affine transformations disabled as non-working. Code still
+  exists.
+- Changing reference frame works in GUI and CLI.
+- Removal of frames possible from GUI and CLI.
+- Monochrome support for any RAW image DCRaw knows. RGB support still for Bayer
+  filter RGGB. This means most consumer DSLR's.
 
 v0.5.2 2014-09-07
 - Can now add a finished master frame to a project. Only works in CLI. The

@@ -166,7 +166,7 @@ class Batch(object):
         rawfiles = []
 
         for i in allfiles:
-            if splitext(i)[1] in (".cr2", ".CR2", ".nef", ".NEF"):
+            if Frame.identify(path + i) in ("tiff", "fits", "raw"):
                 rawfiles.append(path + i)
 
         if len(rawfiles) != 0:
