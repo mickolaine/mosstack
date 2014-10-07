@@ -58,7 +58,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>3</number>
         </property>
         <widget class="QWidget" name="pageFrames">
          <property name="geometry">
@@ -662,6 +662,13 @@
             </property>
             <property name="text">
              <string>Reference</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonCrop">
+            <property name="text">
+             <string>Crop</string>
             </property>
            </widget>
           </item>

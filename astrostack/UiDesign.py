@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'astrostack/AstroStack.ui'
 #
-# Created: Thu Oct  2 18:23:06 2014
+# Created: Mon Oct  6 19:42:03 2014
 #      by: PyQt4 UI code generator 4.11.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -317,6 +317,9 @@ class Ui_MainWindow(object):
         self.pushButtonMakeRef = QtGui.QPushButton(self.layoutWidget6)
         self.pushButtonMakeRef.setObjectName(_fromUtf8("pushButtonMakeRef"))
         self.horizontalLayout.addWidget(self.pushButtonMakeRef)
+        self.pushButtonCrop = QtGui.QPushButton(self.layoutWidget6)
+        self.pushButtonCrop.setObjectName(_fromUtf8("pushButtonCrop"))
+        self.horizontalLayout.addWidget(self.pushButtonCrop)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.pushButtonRun = QtGui.QPushButton(self.layoutWidget6)
@@ -400,7 +403,7 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menuAbout.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.toolBox.setCurrentIndex(0)
+        self.toolBox.setCurrentIndex(3)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -457,6 +460,7 @@ class Ui_MainWindow(object):
         self.pushButtonRemoveFrame.setText(_translate("MainWindow", "-", None))
         self.pushButtonMakeRef.setToolTip(_translate("MainWindow", "Selected frame will be made the reference frame", None))
         self.pushButtonMakeRef.setText(_translate("MainWindow", "Reference", None))
+        self.pushButtonCrop.setText(_translate("MainWindow", "Crop", None))
         self.pushButtonRun.setText(_translate("MainWindow", "Run", None))
         self.label_8.setText(_translate("MainWindow", "Master frames", None))
         self.checkBoxBias.setText(_translate("MainWindow", "Bias", None))

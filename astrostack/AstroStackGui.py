@@ -3,9 +3,10 @@ Graphical user interface for pyAstroStack. This file holds all the functionality
 """
 
 from PyQt4.QtCore import *
-from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox, QAbstractItemView, QItemSelectionModel,QSortFilterProxyModel
+from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox, QAbstractItemView, QLabel, QRubberBand
 from ast import literal_eval
 from subprocess import CalledProcessError
+from astropy.io import fits
 from . UiDesign import Ui_MainWindow
 from . settings import Ui_Dialog
 from . Config import Project, Global, Setup
@@ -13,6 +14,7 @@ from . QBatch import QBatch
 from . import Registering
 from . import Debayer
 from . import Stacker
+from . imageDialog import Ui_Dialog as imageDialog
 
 try:
     from PyQt4.QtCore import Qstring
@@ -38,6 +40,7 @@ class Ui(Ui_MainWindow, QObject):
         self.inputDialog = QInputDialog()
         self.messageBox = QMessageBox()
         self.swindow = Settings()
+        self.idialog = ImageDialog()
 
         self.threadpool = QThreadPool(self)
         self.threads = 4
@@ -48,6 +51,7 @@ class Ui(Ui_MainWindow, QObject):
         self.batch = {}
         self.pname = None
         self.project = None
+        self.coords = None
 
         self.selectedId = None
         self.selectedFtype = None
@@ -79,6 +83,7 @@ class Ui(Ui_MainWindow, QObject):
         self.pushButtonMasterBias.clicked.connect(self.addMasterBias)
         self.pushButtonMasterDark.clicked.connect(self.addMasterDark)
         self.pushButtonMasterFlat.clicked.connect(self.addMasterFlat)
+        self.pushButtonCrop.clicked.connect(self.crop)
 
         self.buttonDebayer.setExclusive(True)
         self.buttonMatcher.setExclusive(True)
@@ -131,6 +136,14 @@ class Ui(Ui_MainWindow, QObject):
             self.threads = new_values["processes"]
             Global.set("Programs", "sextractor", self.values["sexpath"])
             Global.set("Default", "path", self.values["tempdir"])
+
+    def crop(self):
+
+        dialog = QDialog()
+        self.idialog.setupUi(dialog)
+        self.idialog.setupContent(self.batch[self.selectedFtype].frames[self.selectedId])
+        if dialog.exec():
+            self.coords = self.idialog.coords
 
     def about(self):
         """
@@ -399,6 +412,7 @@ class Ui(Ui_MainWindow, QObject):
         """
         Update frame list view.
         """
+
         self.tablemodel = []
         for i in self.batch:
             self.tablemodel += self.batch[i].framearray
@@ -577,6 +591,15 @@ class Ui(Ui_MainWindow, QObject):
         """
         Run everything related to stacking
         """
+
+        if self.coords is not None:
+            for i in self.batch["light"].frames:
+                xrange = (self.coords[0], self.coords[1])
+                yrange = (self.coords[2], self.coords[3])
+                self.threadpool.start(GenericThread(self.batch["light"].frames[i].crop, xrange, yrange))
+
+        self.threadpool.waitForDone()
+
         if self.radioButtonMaximum.isChecked():
             self.stackingwrap = Stacker.Maximum()
         elif self.radioButtonMinimum.isChecked():
@@ -597,6 +620,83 @@ class Ui(Ui_MainWindow, QObject):
         self.messageBox.information(self.messageBox, 'Stacking done!',
                                     'Result image saved in ' + self.batch["light"].master.path() + "\n" +
                                     'and ' + self.batch["light"].master.path(fformat="tiff"))
+
+
+class ImageDialog(imageDialog):
+
+    def __init__(self):
+        super(imageDialog, self).__init__()
+
+    def setupContent(self, frame):
+        """
+
+        """
+
+        pixmap = frame.getQPixmap()
+        self.label = ImageLabel(self.scrollAreaWidgetContents_2)
+        self.label.setGeometry(QRect(0, 0, 881, 711))
+        self.label.setText(_fromUtf8(""))
+        self.label.setObjectName(_fromUtf8("label"))
+        self.label.setPixmap(pixmap)
+        self.label.refresh.connect(self.setCoords)
+
+    def setCoords(self):
+        """
+
+        """
+
+        x0, x1, y0, y1 = self.label.getCoords()
+
+        if x0 > x1:
+            temp = x0
+            x0 = x1
+            x1 = temp
+        if y0 > y1:
+            temp = y0
+            y0 = y1
+            y1 = temp
+
+        self.coords = (x0*4, x1*4, y0*4, y1*4)
+
+        self.lineEdit_x0.setText(str(x0*4))
+        self.lineEdit_x1.setText(str(x1*4))
+        self.lineEdit_y0.setText(str(y0*4))
+        self.lineEdit_y1.setText(str(y1*4))
+
+
+class ImageLabel(QLabel):
+
+    refresh = pyqtSignal()
+
+    def __init__(self, parent=None):
+
+        QLabel.__init__(self, parent)
+        self.rubberBand = QRubberBand(QRubberBand.Rectangle, self)
+        self.origin = QPoint()
+        self.coords = (0, 0, 0, 0)
+
+    def mousePressEvent(self, event):
+
+        if event.button() == Qt.LeftButton:
+
+            self.origin = QPoint(event.pos())
+            self.rubberBand.setGeometry(QRect(self.origin, QSize()))
+            self.rubberBand.show()
+
+    def mouseMoveEvent(self, event):
+
+        if not self.origin.isNull():
+            self.rubberBand.setGeometry(QRect(self.origin, event.pos()).normalized())
+
+    def mouseReleaseEvent(self, event):
+
+        if event.button() == Qt.LeftButton:
+            #self.rubberBand.hide()
+            self.coords = (self.origin.x(), event.pos().x(), self.origin.y(), event.pos().y())
+            self.refresh.emit()
+
+    def getCoords(self):
+        return self.coords
 
 
 class Settings(Ui_Dialog):

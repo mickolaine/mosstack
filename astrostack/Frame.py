@@ -205,7 +205,8 @@ class Frame(object):
         """
 
         #crop data
-        data = self.data[0:2, yrange[0]:yrange[1], xrange[0]:xrange[1]]
+        print("Cropping frame number " + self.number)
+        data = self.data[:, yrange[0]:yrange[1], xrange[0]:xrange[1]]
         self.data = data
 
         self.fphase = "crop"
@@ -733,7 +734,7 @@ class Frame(object):
             im_version = "6.7"
         else:
             im_version = "6.8"
-
+        print(self.data.shape)
         if self.data.shape[0] == 1:
             imagedata = np.flipud(np.int16(self.data[0] - 32768))
             image = Im.fromarray(imagedata)
@@ -776,4 +777,5 @@ class Frame(object):
 
         self._write_fits()
         if tiff:
+            print("One")
             self._write_tiff(skimage=skimage)
