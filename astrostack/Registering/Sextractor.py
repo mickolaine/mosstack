@@ -32,6 +32,8 @@ class Sextractor:
         self.imagepath = image.frameinfo.get("Paths", "orig")
         self.catname = splitext(self.image.infopath)[0] + ".cat"
         self.confname = splitext(self.image.infopath)[0] + ".sex"
+        self.image.project.addfile(self.catname)
+        self.image.project.addfile(self.confname)
 
         self.coord = None
 

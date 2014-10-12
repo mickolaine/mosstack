@@ -122,7 +122,7 @@ class Frame(object):
         self.state["prepare"] = 2
         #self.update_ui()
 
-    def calibrate(self, stacker, bias=None, dark=None, flat=None):
+    def calibrate(self, stacker, bias=None, dark=None, flat=None, biaslevel=None):
         """
         Calibrate the frame. Project tells how.
 
@@ -139,6 +139,11 @@ class Frame(object):
 
         if bias is not None:
             data = stacker.subtract(data, bias.data)
+        elif biaslevel is not None:
+            try:
+                data = data - float(biaslevel)
+            except ValueError:
+                pass
 
         if dark is not None:
             data = stacker.subtract(data, dark.data)
@@ -164,7 +169,7 @@ class Frame(object):
         """
 
         self.state["debayer"] = 1
-
+        print("Debayering frame " + self.number)
         self.data = debayer.debayer(self.data[0])
         self.fphase = "rgb"
         self.write()
@@ -445,6 +450,7 @@ class Frame(object):
         if self.infopath is None:
             self.infopath = self.wdir + "/" + self.name + "_" + self.ftype + "_" + str(self.number) + ".info"
         self.frameinfo = Config.Frame(self.infopath)
+        self.project.addfile(self.infopath)
 
         self.frameinfo.set("Paths", "Raw", str(self.rawpath))
         self.frameinfo.set("Default", "Number", str(self.number))
@@ -609,7 +615,9 @@ class Frame(object):
                 print("Unable to continue.")
         else:
             move(self.rawpath[:-3] + "pgm", self.path(fformat="pgm"))
+            self.project.addfile(self.path(fformat="pgm"))
             call(["convert", self.path(fformat="pgm"), self.path()])
+            self.project.addfile(self.path())
             print("Conversion successful!")
 
     '''
@@ -723,6 +731,7 @@ class Frame(object):
             print("No data set! Exiting...")
             exit()
         fits.writeto(self.path(), np.uint16(self._data), hdu.header, clobber=True)
+        self.project.addfile(self.path(), final=True)
         self._release_data()
 
     def _write_tiff(self, skimage=True):
@@ -734,7 +743,7 @@ class Frame(object):
             im_version = "6.7"
         else:
             im_version = "6.8"
-        print(self.data.shape)
+
         if self.data.shape[0] == 1:
             imagedata = np.flipud(np.int16(self.data[0] - 32768))
             image = Im.fromarray(imagedata)
@@ -752,6 +761,7 @@ class Frame(object):
             call(["convert", rgbpath[0], rgbpath[1], rgbpath[2],
                   "-channel", "RGB", "-depth", "16", "-combine", self.path(fformat="tiff")])
             call(["rm", rgbpath[0], rgbpath[1], rgbpath[2]])
+        self.project.addfile(self.path(fformat="tiff"), final=True)
 
     def write_tiff(self):
         """
@@ -764,6 +774,7 @@ class Frame(object):
         for i in [0, 1, 2]:
             image.append(Im.fromarray(np.flipud(np.int16(self.data[i]))))
             image[i].save(rgbpath[i], format="tiff")
+            self.project.addfile(rgbpath[i])
 
         self._release_data()
 

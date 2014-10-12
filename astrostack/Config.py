@@ -16,6 +16,7 @@ from subprocess import check_output, CalledProcessError
 from sys import version_info
 from os.path import expanduser, exists, split
 from os import makedirs
+from ast import literal_eval
 
 
 class ConfigAbstractor:
@@ -364,6 +365,7 @@ class Project(Config):
         self.sex  = Global.get("Programs", "SExtractor")
         self.path = Global.get("Default", "Path")
 
+    '''
     @staticmethod
     def input(string):
         """
@@ -379,6 +381,7 @@ class Project(Config):
         else:
             print(version)
             print("It appears there's a new version of Python...")
+    '''
 
     def readproject(self):
         """
@@ -388,6 +391,47 @@ class Project(Config):
             raise NameError("Project file not set, yet trying to access one. This shouldn't happen.")
         if os.path.exists(self.projectfile):
             self.conf.read(self.projectfile)
+
+    def addfile(self, file, final=False):
+        """
+        Add file to project. Used for deleting all the temporary files after project is done
+        """
+
+        try:
+            tlist = literal_eval(self.get("Files", "Temp"))
+            flist = literal_eval(self.get("Files", "Final"))
+        except KeyError:
+            tlist = []
+            flist = []
+
+        if final:
+            if file not in flist:
+                flist.append(file)
+        else:
+            if file not in tlist:
+                tlist.append(file)
+
+        self.set("Files", "Temp", str(tlist))
+        self.set("Files", "Final", str(flist))
+
+    def filelist(self, temp=False):
+        """
+        List all files related to project
+
+        Arguments:
+        boolean temp: Set True to get only temporary files
+        """
+
+        try:
+            tlist = literal_eval(self.get("Files", "Temp"))
+            flist = literal_eval(self.get("Files", "Final"))
+        except KeyError:
+            return ()
+
+        if temp:
+            return tlist
+        else:
+            return tlist + flist
 
     def initproject(self, pname):
         """
@@ -411,6 +455,7 @@ class Project(Config):
         self.set("Setup", "Path", Global.get("Default", "Path"))
         self.setdefaults()
         self.write(self.projectfile)
+        self.addfile(self.projectfile, final=True)
 
     def setdefaults(self):
         """

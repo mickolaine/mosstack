@@ -6,8 +6,11 @@ v0.6
   exists.
 - Changing reference frame works in GUI and CLI.
 - Removal of frames possible from GUI and CLI.
-- Monochrome support for any RAW image DCRaw knows. RGB support still for Bayer
-  filter RGGB. This means most consumer DSLR's.
+- Monochrome support for any RAW image DCRaw knows. RGB support still only for
+  Bayer filter RGGB. This means most consumer DSLR's.
+- Added feature for cropping image prior to stacking.
+- Added master frame works in GUI as well.
+- Added size and clean commands to cli.
 
 v0.5.2 2014-09-07
 - Can now add a finished master frame to a project. Only works in CLI. The

@@ -398,6 +398,17 @@ You can use either name or number as operation 'list' shows them.
                 print("          mosstack master <path to file> <flat, dark or bias>")
                 exit()
 
+        elif argv[0] == "biaslevel":
+
+            try:
+                level = float(argv[2])
+            except IndexError:
+                print("Biaslevel not defined. Try mosstack biaslevel <ftype> <level>")
+            except ValueError:
+                print("Value " + argv[2] + " not understood. Try an integer or a decimal number eg. 21 or 30.2")
+
+            self.biaslevel(argv[1], level)
+
         elif argv[0] == "stack":
             # AstroStack stack <srcname>
             srclist = ("light", "dark", "bias", "flat", "rgb", "calib", "reg", "crop")
@@ -500,6 +511,35 @@ You can use either name or number as operation 'list' shows them.
                     print("Frame id " + argv[1] + " not found.")
             else:
                 print("Invalid input. Try mosstack reference <frame id>")
+
+        elif argv[0] == "size":
+
+            size = 0
+            for i in self.project.filelist():
+                size += os.path.getsize(i)
+            divisions = 0
+            while size >= 1.0:
+                divisions += 1
+                size /= 1024
+                if divisions == 3:
+                    break
+
+            if divisions == 0:
+                unit = "B"
+            elif divisions == 1:
+                unit = "kiB"
+            elif divisions == 2:
+                unit = "MiB"
+            elif divisions == 3:
+                unit = "GiB"
+
+            print("Size of all the files on project is {0:.2f} {1}.".format(size, unit))
+
+        elif argv[0] == "clean":
+
+            for i in self.project.filelist(temp=True):
+                if os.path.isfile(i):
+                    os.remove(i)
 
         else:
             print("Invalid operation: " + argv[0])
@@ -608,6 +648,16 @@ You can use either name or number as operation 'list' shows them.
         else:
             batch = Batch(self.project, ftype=genname)
         batch.subtract(calib, self.stackerwrap())
+
+    def biaslevel(self, ftype, level):
+        """
+        Subtract given biaslevel from frames
+        """
+
+        batch = Batch(self.project, ftype=ftype)
+
+        for i in batch.frames:
+            batch.frames[i].calibrate(self.stackerwrap(), biaslevel=level)
 
     def divide(self, genname, calib):
         """

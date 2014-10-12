@@ -66,6 +66,7 @@ class Batch(object):
         except KeyError:
             raise
 
+    '''
     def debayerAll(self, debayer):
         """
         Debayer CFA-images into RGB.
@@ -86,7 +87,7 @@ class Batch(object):
 
         print("Debayered images saved with generic name 'rgb'.")
 
-    '''
+
     def registerAll(self, register):
         """
         Register and transform images.
