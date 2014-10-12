@@ -536,10 +536,17 @@ You can use either name or number as operation 'list' shows them.
             print("Size of all the files on project is {0:.2f} {1}.".format(size, unit))
 
         elif argv[0] == "clean":
-
+            print("Cleaning up project files.")
             for i in self.project.filelist(temp=True):
                 if os.path.isfile(i):
                     os.remove(i)
+
+            print("Files:")
+
+            for i in self.project.filelist():
+                print(i)
+
+            print("are not removed. They must be removed manually.")
 
         else:
             print("Invalid operation: " + argv[0])
@@ -633,6 +640,9 @@ You can use either name or number as operation 'list' shows them.
             batch.stack(self.stackerwrap(kappa=int(self.project.get("Default", "Kappa"))))
         else:
             batch.stack(self.stackerwrap())
+
+        if genname == "reg":
+            print("\nProject finished. Remove temporary files with mosstack clean if needed.")
 
     def subtract(self, genname, calib):
         """

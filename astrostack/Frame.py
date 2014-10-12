@@ -154,6 +154,7 @@ class Frame(object):
         self.data = data
         self.fphase = "calib"
         self.write()
+        self.project.addfile(self.path())
         self.state["calibrate"] = 2
 
         #self.update_ui()
@@ -173,6 +174,7 @@ class Frame(object):
         self.data = debayer.debayer(self.data[0])
         self.fphase = "rgb"
         self.write()
+        self.project.addfile(self.path())
         self.state["debayer"] = 2
 
         return
@@ -193,6 +195,7 @@ class Frame(object):
         if data is not None:
             self.data = data
             self.write()
+            self.project.addfile(self.path())
             del data
         return
 
@@ -216,6 +219,7 @@ class Frame(object):
 
         self.fphase = "crop"
         self.write()
+        self.project.addfile(self.path())
 
         #alter metadata
         self.x = self.data.shape[2]
@@ -731,7 +735,7 @@ class Frame(object):
             print("No data set! Exiting...")
             exit()
         fits.writeto(self.path(), np.uint16(self._data), hdu.header, clobber=True)
-        self.project.addfile(self.path(), final=True)
+
         self._release_data()
 
     def _write_tiff(self, skimage=True):
@@ -788,5 +792,4 @@ class Frame(object):
 
         self._write_fits()
         if tiff:
-            print("One")
             self._write_tiff(skimage=skimage)

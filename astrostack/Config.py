@@ -428,6 +428,20 @@ class Project(Config):
         except KeyError:
             return ()
 
+        newlist = []
+        for i in tlist:
+            if os.path.exists(i):
+                newlist.append(i)
+        tlist = newlist
+        self.set("Files", "Temp", str(tlist))
+
+        newlist = []
+        for i in flist:
+            if os.path.exists(i):
+                newlist.append(i)
+        flist = newlist
+        self.set("Files", "Final", str(flist))
+
         if temp:
             return tlist
         else:

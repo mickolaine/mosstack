@@ -113,6 +113,7 @@ class Batch(object):
         self.master = Frame(self.project, ftype=self.ftype, number="master")
         self.master.data = stacker.stack(self.frames, self.project)
         self.master.write(tiff=True)
+        self.project.addfile(self.master.path(), final=True)
         dim, self.master.x, self.master.y = self.master.data.shape
         self.master.writeinfo()
         self.project.set("Masters", self.ftype, self.master.infopath)
