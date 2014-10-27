@@ -135,6 +135,7 @@ class Batch(object):
             if self.frames[i].fphase not in ("bias", "dark", "flat"):
                 self.frames[i].fphase = "calib"
             self.frames[i].write()
+            self.project.addfile(self.frames[i].path())
 
         print("Calibrated images saved with generic name 'calib'.")
 
@@ -152,6 +153,7 @@ class Batch(object):
             if self.frames[i].fphase not in ("bias", "dark", "flat"):
                 self.frames[i].fphase = "calib"
             self.frames[i].write()
+            self.project.addfile(self.frames[i].path())
 
         print("Calibrated images saved with generic name 'calib'.")
 

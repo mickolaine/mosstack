@@ -18,3 +18,14 @@ mosstack divide calib flat
 mosstack debayer calib
 mosstack register rgb
 mosstack stack reg
+
+
+
+mosstack init Andromeda
+mosstack dir /media/Dee/Astrokuvat/2014-09-30/Andromeda/ light
+mosstack dir /media/Dee/Astrokuvat/2014-09-30/Bias/ bias
+mosstack stack bias
+mosstack subtract light bias
+mosstack debayer calib
+mosstack register rgb
+mosstack stack reg

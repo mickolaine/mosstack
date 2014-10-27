@@ -57,7 +57,7 @@ class Ui(Ui_MainWindow, QObject):
         self.selectedFtype = None
         self.infotablemodel = None
 
-        self.values = {"tempdir": "", "sexpath": "/usr/bin/sex", "processes": 1}
+        self.configurations = {"tempdir": "", "sexpath": "/usr/bin/sex", "processes": 1}
 
     def setupManual(self, MainWindow):
         """
@@ -119,7 +119,7 @@ class Ui(Ui_MainWindow, QObject):
         self.swindow.setupUi(dialog)
 
         try:
-            self.values = {"tempdir": Global.get("Default", "path"),
+            self.configurations = {"tempdir": Global.get("Default", "path"),
                            "sexpath": Global.get("Programs", "sextractor"),
                            "processes": self.threads}
         except KeyError:
@@ -127,15 +127,15 @@ class Ui(Ui_MainWindow, QObject):
                 sexpath = Setup.findsex()
             except CalledProcessError:
                 sexpath = ""
-            self.values = {"tempdir": "", "sexpath": sexpath, "processes": 1}
+            self.configurations = {"tempdir": "", "sexpath": sexpath, "processes": 1}
 
-        self.swindow.setupContent(values=self.values)
+        self.swindow.setupContent(values=self.configurations)
         if dialog.exec():
             new_values = self.swindow.getValues()
 
             self.threads = new_values["processes"]
-            Global.set("Programs", "sextractor", self.values["sexpath"])
-            Global.set("Default", "path", self.values["tempdir"])
+            Global.set("Programs", "sextractor", self.configurations["sexpath"])
+            Global.set("Default", "path", self.configurations["tempdir"])
 
     def crop(self):
 
@@ -252,7 +252,7 @@ class Ui(Ui_MainWindow, QObject):
             values["Kappa"] = float(self.lineEditKappa.text())
         except ValueError:
             values["Kappa"] = 3.0
-        print(values["Kappa"])
+        #print(values["Kappa"])
         return values
 
     def loadProject(self):
@@ -354,6 +354,7 @@ class Ui(Ui_MainWindow, QObject):
 
         # Add files to batch
         number = 0
+        self.threadpool.setMaxThreadCount(self.threads)
         for path in files:
             # If batch does not exist, create one
             if ftype not in self.batch:
@@ -598,6 +599,9 @@ class Ui(Ui_MainWindow, QObject):
                 yrange = (self.coords[2], self.coords[3])
                 self.threadpool.start(GenericThread(self.batch["light"].frames[i].crop, xrange, yrange))
 
+        if "Kappa" not in self.values:
+            self.values["Kappa"] = self.kappa
+
         self.threadpool.waitForDone()
 
         if self.radioButtonMaximum.isChecked():
@@ -720,37 +724,38 @@ class Settings(Ui_Dialog):
         self.lineEditTemp.editingFinished.connect(self.lineTempChanged)
 
         if values is None:
-            self.values = dict()
+            self.configurations = dict()
         else:
-            self.values = values
+            self.configurations = values
 
-        self.lineEditTemp.setText(self.values["tempdir"])
-        self.lineEditSex.setText(self.values["sexpath"])
-        self.comboBox.setCurrentIndex(self.values["processes"] - 1)
+        self.lineEditTemp.setText(self.configurations["tempdir"])
+        self.lineEditSex.setText(self.configurations["sexpath"])
+        self.comboBox.setCurrentIndex(self.configurations["processes"] - 1)
 
     def browseTempDialog(self):
-        self.values["tempdir"] = self.fileDialog.getExistingDirectory(caption="Select directory for temporary files")
-        self.lineEditTemp.setText(self.values["tempdir"])
+        self.configurations["tempdir"] = self.fileDialog.getExistingDirectory(
+                                                                        caption="Select directory for temporary files")
+        self.lineEditTemp.setText(self.configurations["tempdir"])
 
     def browseSexPath(self):
-        self.values["sexpath"] = self.fileDialog.getOpenFileName(caption="Select SExtractor binary",
+        self.configurations["sexpath"] = self.fileDialog.getOpenFileName(caption="Select SExtractor binary",
                                                                  directory="/usr/bin/")
-        self.lineEditSex.setText(self.values["sexpath"])
+        self.lineEditSex.setText(self.configurations["sexpath"])
 
     def lineSexChanged(self):
-        self.values["sexpath"] = self.lineEditSex.text()
+        self.configurations["sexpath"] = self.lineEditSex.text()
 
     def lineTempChanged(self):
-        self.values["tempdir"] = self.lineEditTemp.text()
+        self.configurations["tempdir"] = self.lineEditTemp.text()
 
     def comboChange(self):
         try:
-            self.values["processes"] = int(self.comboBox.currentText())
+            self.configurations["processes"] = int(self.comboBox.currentText())
         except ValueError:
             pass
 
     def getValues(self):
-        return self.values
+        return self.configurations
 
 
 class GenericTableModel(QAbstractTableModel):

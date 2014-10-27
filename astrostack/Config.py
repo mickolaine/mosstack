@@ -17,6 +17,8 @@ from sys import version_info
 from os.path import expanduser, exists, split
 from os import makedirs
 from ast import literal_eval
+from queue import Queue
+from threading import Thread
 
 
 class ConfigAbstractor:
@@ -209,10 +211,16 @@ class Config:
         self.conffile = conffile
         self.conf = configparser.ConfigParser()
 
-        if os.path.exists(self.conffile):
-            return
+        self.pool = Queue()
+        self.worker = Thread(target=self._set, daemon=True)
+        self.worker.setDaemon(True)
+        self.worker.start()
 
-        self.write(self.conffile)
+        if os.path.exists(self.conffile):
+            self.conf.read(self.conffile)
+
+        else:
+            self.write(self.conffile)
 
     def get(self, section, key=None):
         """
@@ -229,7 +237,10 @@ class Config:
         If key or section is not found, KeyError is raised
         """
 
-        self.conf.read(self.conffile)
+        # Start with writing all the previous commits
+        self.pool.join()
+
+        #self.conf.read(self.conffile)
 
         if section not in self.conf:
             raise KeyError("Section not found!")
@@ -244,6 +255,8 @@ class Config:
         """
         Set key: value under section in frame info
 
+        Actually just puts the values into queue.
+
         Arguments:
         section
         key
@@ -253,14 +266,29 @@ class Config:
         Nothing
         """
 
-        self.conf.read(self.conffile)
+        #debug
+        #print("Call with: " + section + ", " + key + ", " + value)
 
-        if section not in self.conf:
-            self.conf[section] = {}
-        #print("Writing " + section + ", " + key + ", " + value)
-        self.conf[section][key] = value
-        #print("Setting " + key + " in section " + section + " changed to " + value)
-        self.write(self.conffile)
+        self.pool.put([section, key, value])
+        self.pool.join()
+
+    def _set(self):
+        """
+        Get values from pool and do the actual writing
+        """
+
+        while True:
+            section, key, value = self.pool.get()
+
+            #self.conf.read(self.conffile)
+
+            if section not in self.conf:
+                self.conf[section] = {}
+
+            self.conf[section][key] = value
+
+            self.write(self.conffile)
+            self.pool.task_done()
 
     def remove(self, section, key):
         """
@@ -269,7 +297,7 @@ class Config:
         return True if successful, False if key or section not found
         """
 
-        self.conf.read(self.conffile)
+        #self.conf.read(self.conffile)
 
         try:
             state = self.conf.remove_option(section, key)
@@ -307,6 +335,11 @@ class Project(Config):
         Arguments:
         pname - project name
         """
+
+        self.pool = Queue()
+        self.worker = Thread(target=self._set)
+        self.worker.setDaemon(True)
+        self.worker.start()
 
         try:
             self.sex   = Global.get("Programs", "SExtractor")
@@ -459,7 +492,7 @@ class Project(Config):
         if os.path.exists(self.projectfile):
 
             print("Trying to initialize a new project, but the file already exists.")
-            if self.input("Type y to rewrite: ") != "y":
+            if input("Type y to rewrite: ") != "y":
                 print("Try again using a file not already in use.")
                 exit()
             else:
@@ -470,6 +503,7 @@ class Project(Config):
         self.setdefaults()
         self.write(self.projectfile)
         self.addfile(self.projectfile, final=True)
+        self.pool.join()
 
     def setdefaults(self):
         """
