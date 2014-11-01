@@ -13,19 +13,4 @@ List of TODO's too big to be in a single line comment
 + DONE: Implement removal of frames from project
 + DONE: Fix id assigning for frames in batch. Now it calculates number of
   frames and takes n+1. This will fail if you remove frames
-
-
-
-0.7
-
-- Redesign Config.py and the whole configuration system:
-  On 0.6 it works:
-   - Config._set() reads file, does its changes, writes file, things remain in memory
-   - Config.get() makes sure all _set():s are committed, reads file, returns, things remain in memory
-  Notice how file gets read on every commit and request even though everything stays in memory. Queue and Thread
-  do get around this (starting from 0.6), but with more sensible design those wouldn't necessarily be needed.
-  It should work:
-   - Load information from file in __init__() and keep it in memory
-   - get() returns information from memory
-   - set() changes information in memory AND writes it to file AND keeps it in memory
-   - No simultaneous accesses to file will happen since there is only one Config object per file
++ DONE: Config.py multithreads

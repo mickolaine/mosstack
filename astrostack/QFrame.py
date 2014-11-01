@@ -5,6 +5,7 @@ PyQt4 specific class. Program will run just fine on command line without PyQt bu
 from . Frame import Frame
 from PyQt4 import QtGui
 from PyQt4 import Qt
+from PyQt4 import QtCore
 import numpy as np
 from PIL import Image, ImageQt
 
@@ -35,19 +36,26 @@ class QFrame(Frame):
         ch = ch - np.amin(ch)
         data = ch / np.amax(ch) * 255
         idata = data[0]
-        idata = np.swapaxes(idata, 0, 1)
+        print(idata.shape)
+        #idata = np.swapaxes(idata, 0, 1)
+        #idata = np.rot90(idata, 1)
+        print(idata.shape)
 
         pimage = Image.fromarray(np.int16(idata))
+        print(pimage.size)
+        w, h = pimage.size
+        h = int(h / 4)
+        w = int(w / 4)
+        print(w, h)
 
         pimage = pimage.convert("P")
-
-        w, h = idata.shape
+        print(pimage.size)
         imageqt = ImageQt.ImageQt(pimage)
-
         qimage = QtGui.QImage(imageqt)
-        qimage = qimage.scaled(w * .25, h * .25, aspectRatioMode=Qt.Qt.IgnoreAspectRatio,
-                                                 transformMode=Qt.Qt.SmoothTransformation)
-
+        print(qimage.size())
+        #qimage = qimage.scaled(w, h, aspectRatioMode=Qt.Qt.KeepAspectRatioByExpanding,
+        #                             transformMode=Qt.Qt.SmoothTransformation)
+        print(qimage.size())
         return QtGui.QPixmap.fromImage(qimage)
 
     def update_ui(self):

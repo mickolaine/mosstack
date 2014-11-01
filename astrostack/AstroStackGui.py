@@ -595,8 +595,10 @@ class Ui(Ui_MainWindow, QObject):
 
         if self.coords is not None:
             for i in self.batch["light"].frames:
-                xrange = (self.coords[0], self.coords[1])
-                yrange = (self.coords[2], self.coords[3])
+                xmax = self.batch["light"].frames[i].x
+                ymax = self.batch["light"].frames[i].y
+                xrange = (xmax - self.coords[1], xmax - self.coords[0])
+                yrange = (ymax - self.coords[3], ymax - self.coords[2])
                 self.threadpool.start(GenericThread(self.batch["light"].frames[i].crop, xrange, yrange))
 
         if "Kappa" not in self.values:
@@ -638,10 +640,16 @@ class ImageDialog(imageDialog):
 
         pixmap = frame.getQPixmap()
         self.label = ImageLabel(self.scrollAreaWidgetContents_2)
-        self.label.setGeometry(QRect(0, 0, 881, 711))
+
+        #self.label.setGeometry(QRect(0, 0, frame.x * .25, frame.y * .25))
+        #self.label.setGeometry(QRect(0, 0, frame.x, frame.y))
         self.label.setText(_fromUtf8(""))
         self.label.setObjectName(_fromUtf8("label"))
         self.label.setPixmap(pixmap)
+        size = pixmap.size()
+        w = size.width()
+        h = size.height()
+        self.label.setGeometry(QRect(0, 0, w, h))
         self.label.refresh.connect(self.setCoords)
 
     def setCoords(self):
@@ -660,12 +668,13 @@ class ImageDialog(imageDialog):
             y0 = y1
             y1 = temp
 
-        self.coords = (x0*4, x1*4, y0*4, y1*4)
+        #self.coords = (x0 * 4, x1 * 4, y0 * 4, y1 * 4)
+        self.coords = (x0, x1, y0, y1)
 
-        self.lineEdit_x0.setText(str(x0*4))
-        self.lineEdit_x1.setText(str(x1*4))
-        self.lineEdit_y0.setText(str(y0*4))
-        self.lineEdit_y1.setText(str(y1*4))
+        self.lineEdit_x0.setText(str(x0))
+        self.lineEdit_x1.setText(str(x1))
+        self.lineEdit_y0.setText(str(y0))
+        self.lineEdit_y1.setText(str(y1))
 
 
 class ImageLabel(QLabel):
@@ -696,7 +705,13 @@ class ImageLabel(QLabel):
 
         if event.button() == Qt.LeftButton:
             #self.rubberBand.hide()
-            self.coords = (self.origin.x(), event.pos().x(), self.origin.y(), event.pos().y())
+
+            x0 = self.origin.x()
+            x1 = event.pos().x()
+            y0 = self.origin.y()
+            y1 = event.pos().y()
+
+            self.coords = (x0, x1, y0, y1)
             self.refresh.emit()
 
     def getCoords(self):
