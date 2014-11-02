@@ -214,6 +214,7 @@ class Frame(object):
 
         #crop data
         print("Cropping frame number " + self.number)
+
         data = self.data[:, yrange[0]:yrange[1], xrange[0]:xrange[1]]
         self.data = data
 

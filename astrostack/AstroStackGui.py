@@ -597,8 +597,8 @@ class Ui(Ui_MainWindow, QObject):
             for i in self.batch["light"].frames:
                 xmax = self.batch["light"].frames[i].x
                 ymax = self.batch["light"].frames[i].y
-                xrange = (xmax - self.coords[1], xmax - self.coords[0])
-                yrange = (ymax - self.coords[3], ymax - self.coords[2])
+                xrange = (self.coords[0], self.coords[1])
+                yrange = (self.coords[2], self.coords[3])
                 self.threadpool.start(GenericThread(self.batch["light"].frames[i].crop, xrange, yrange))
 
         if "Kappa" not in self.values:
@@ -635,7 +635,7 @@ class ImageDialog(imageDialog):
 
     def setupContent(self, frame):
         """
-
+        Set up contents of dialog
         """
 
         pixmap = frame.getQPixmap()
@@ -648,17 +648,21 @@ class ImageDialog(imageDialog):
         self.label.setScaledContents(True)
         self.label.setPixmap(pixmap)
         size = pixmap.size()
-        w = size.width()
-        h = size.height()
-        self.label.setGeometry(QRect(0, 0, w*.25, h*.25))
+        self.w = size.width()
+        self.h = size.height()
+        self.label.setGeometry(QRect(0, 0, self.w*.25, self.h*.25))
         self.label.refresh.connect(self.setCoords)
 
     def setCoords(self):
         """
-
+        Set coordinates given from rubberband selection
         """
 
         x0, x1, y0, y1 = self.label.getCoords()
+        x0 = x0 * 4
+        x1 = x1 * 4
+        y0 = self.h - y0 * 4
+        y1 = self.h - y1 * 4
 
         if x0 > x1:
             temp = x0
@@ -669,9 +673,7 @@ class ImageDialog(imageDialog):
             y0 = y1
             y1 = temp
 
-        #self.coords = (x0 * 4, x1 * 4, y0 * 4, y1 * 4)
         self.coords = (x0, x1, y0, y1)
-
         self.lineEdit_x0.setText(str(x0))
         self.lineEdit_x1.setText(str(x1))
         self.lineEdit_y0.setText(str(y0))

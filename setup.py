@@ -6,7 +6,7 @@ import numpy
 
 setup(
     name='mosstack',
-    version='0.6dev',
+    version='0.6~rc1',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=['astrostack', 'astrostack.Debayer', 'astrostack.Registering', 'astrostack.Stacker'],

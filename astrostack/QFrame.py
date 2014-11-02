@@ -35,34 +35,9 @@ class QFrame(Frame):
         ch = ch - np.amin(ch)
         data = ch / np.amax(ch) * 255
 
-        idata = QFrame.align_32bit(data[0])
-
-
-        #idata = np.swapaxes(idata, 0, 1)
-        #idata = np.rot90(idata, 1)
+        idata = QFrame.align_32bit(np.flipud(data[0]))
 
         pimage = Image.fromarray(np.int16(idata)).convert("P")
-        #pimage = pimage.convert("P")
-        #print(pimage.size)
-        #pimage.save("/home/micko/debug_pimage2.tiff")
-
-        #imageqt = ImageQt.ImageQt(pimage)
-
-        #__data = pimage.tobytes()
-        #palette = pimage.getpalette()
-        #colortable = []
-        #for i in range(0, len(palette), 3):
-        #    colortable.append(self._rgb(*palette[i:i + 3]))
-        #qimage = QtGui.QImage(__data, pimage.size[0], pimage.size[1], QtGui.QImage.Format_Indexed8)
-
-
-        #print(imageqt.size())
-        #imageqt.save("/home/micko/debug_imageqt.jpg")
-        #qimage = QtGui.QImage(imageqt)
-        #qimage.save("/home/micko/debug_qimage.jpg")
-
-        #qimage = qimage.scaled(w, h, aspectRatioMode=Qt.Qt.KeepAspectRatioByExpanding,
-        #                             transformMode=Qt.Qt.SmoothTransformation)
 
         return QtGui.QPixmap.fromImage(ImageQt.ImageQt(pimage))
 
@@ -92,16 +67,6 @@ class QFrame(Frame):
             if yc != 0:
                 return data[:-yc, :]
         return data
-
-    @staticmethod
-    def _rgb(r, g, b, a=255):
-        """
-        From Pillow PIL.ImageQt
-        """
-
-        # use qRgb to pack the colors, and then turn the resulting long
-        # into a negative integer with the same bitpattern.
-        return (QtGui.qRgba(r, g, b, a) & 0xffffffff)
 
     def update_ui(self):
         """
