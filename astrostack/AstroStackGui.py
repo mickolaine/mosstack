@@ -645,11 +645,12 @@ class ImageDialog(imageDialog):
         #self.label.setGeometry(QRect(0, 0, frame.x, frame.y))
         self.label.setText(_fromUtf8(""))
         self.label.setObjectName(_fromUtf8("label"))
+        self.label.setScaledContents(True)
         self.label.setPixmap(pixmap)
         size = pixmap.size()
         w = size.width()
         h = size.height()
-        self.label.setGeometry(QRect(0, 0, w, h))
+        self.label.setGeometry(QRect(0, 0, w*.25, h*.25))
         self.label.refresh.connect(self.setCoords)
 
     def setCoords(self):
