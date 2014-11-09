@@ -1,0 +1,311 @@
+\documentclass[twoside,a4paper]{refart}
+\usepackage{makeidx}
+\usepackage{ifthen}
+
+\def\bs{\char'134 } % backslash in \tt font.
+\newcommand{\ie}{i.\,e.,}
+\newcommand{\eg}{e.\,g..}
+\DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
+
+\title{Mikko's Open Source Stacker for astronomical images}
+\author{Mikko Laine}
+
+\date{2014-09-08}
+\emergencystretch1em  %
+
+\pagestyle{myfootings}
+\markboth{Mikko's Open Source Stacker for astronomical images}%
+         {Mikko's Open Source Stacker for astronomical images}
+
+\makeindex 
+
+\setcounter{tocdepth}{2}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+	\textit{Mosstack} is an open source program for calibrating,
+	aligning and stacking astronomical photographs taken with a DSLR
+	camera. This manual explains in detail all the technologies and
+	algorithms used in Mosstack as well as all the commands and
+	features of the program.
+\end{abstract}
+
+
+% Place holder for more text
+
+\tableofcontents
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+
+\subsection{Astrophotography}
+\label{astrophotography}
+
+\newpage
+
+\section{Manual}
+\label{manual}
+\index{manual}
+
+\subsection{General}
+\index{general}
+
+Mosstack started as a command line interface (CLI) program. Initially it was because I had no experience on programming
+graphical user interfaces, but soon I realized the power of CLI. Now that I writing this (0.6~rc1 just came out) I have 
+to say that doing a GUI right from the beginning would have made things a lot easier. GUI has it's own difficulties, but
+CLI has to be built from scratch and many different user errors has to be dealt with.
+
+Nevertheless benefits of CLI became apparent during testing and debugging. I can now write simple scripts about the
+stacking process. Also automating the process is possible with CLI scripts. By controlling the camera with computer
+scripts I can easily take calibration photos and process them ready with just a click. This kind of features are of course 
+possible to make for GUI as well but it would reguire for me to anticipate what users want.
+
+\subsection{Command line interface}
+\label{cli}
+
+Command line interface (CLI) is actually just command line arguments parsed with \texttt{mosstack} executable. The command
+\texttt{mosstack} does nothing by itself except prints short help. Anything user wishes to do is done with command line
+arguments. There's a list of arguments in section \ref{list of commands} and each individual command is explained in sections
+following that.
+
+All commands are done on the active project. Project can be initialized with command \texttt{init} (section \ref{init}) and
+active project can be changed with the command \texttt{set} (section \ref{set}). There can be multiple projects in progress,
+but only one instance of \texttt{mosstack} is supported at the time. CLI version of Mosstack does not multithread at the
+moment (version 0.6), but the GUI version \texttt{mosstackgui} does.
+
+The current project file is always printed when \texttt{mosstack} is run.
+
+\subsubsection{CLI usage}
+\label{cli usage}
+\index{CLI usage}
+
+All commands for \texttt{mosstack} follow the same pattern:
+
+\begin{verbatim}
+ mosstack <command> <arguments>
+\end{verbatim}
+
+There are couple of variations about \texttt{<arguments>}. All possible arguments are explained in sections after \ref{list of commands}.
+Here are a couple examples:
+
+\begin{verbatim}
+ mosstack dir /path/to/photos/2014-10-22/Andromeda light
+\end{verbatim}
+
+Argument \texttt{dir} means adding a whole directory of files in to the active project. Mosstack tries to recognize every file
+in the directory and adds each one it can decode with dcraw so be sure there are no extra files you don't wish to add.
+
+Argument \texttt{dir} is followed by an Unix path and finally the type of frames. Supported keywords are light, bias, dark and
+flat.
+
+Another example:
+
+\begin{verbatim}
+ mosstack subtract light bias
+\end{verbatim}
+
+The argument \texttt{subtract} is used for calibrating the frames. In this example the stacked ''master'' bias frame is
+subtracted from all the light frames. Before this command the master bias has to be ready and there has to be light frames
+in the project.
+
+
+\subsubsection{List of commands}
+\label{list of commands}
+\index{list of commands}
+
+\begin{tabular}{|l|l|}
+\hline
+help        & print help \\ \hline
+init        & initialize a new project \\ \hline
+list        & list settings \\ \hline
+set         & change settings \\ \hline
+dir         & add whole directory of images\\ \hline
+file        & add a single image\\ \hline
+debayer     & debayer frames\\ \hline
+register    & register frames\\ \hline
+stack       & stack frames\\ \hline
+subtract    & subtract image from a set\\ \hline
+divide      & divide set by an image\\ \hline
+bias        & subtract constant int from a set \\ \hline
+master      & add master frame \\ \hline
+size        & show projects size on disc \\ \hline
+clean       & remove temporary files from project \\ \hline
+
+\end{tabular}
+
+\subsubsection{help}
+\label{help}
+
+Print the long help. Long help is mostly the section \ref{cli} from this manual. My plan is to make it generate
+straight from this \LaTeX document.
+
+How to run: 
+
+\begin{verbatim}
+ mosstack help
+\end{verbatim}
+
+
+
+\subsubsection{init}
+\label{init}
+
+Initialize the project. Mosstack always does everything for the active project and this command is used to create
+one.
+
+For example
+
+\begin{verbatim}
+ mosstack init Andromeda
+\end{verbatim}
+
+creates a new .project file in mosstack's working directory. This file holds information about progress of the
+project as well as locations to all the files project uses.
+
+Each diffrerent data set should be a separate project. One project can be used to stack the same data in different
+ways, for example a maximum stack to find satellite trails and a sigma median stack to do the ''real'' final image.
+A project leaves all the temporary files behind so changing settings and continuing on any point of the process should
+be possible.
+
+Since all the temporary data is left behind, in the end user should clean that with command \texttt{clean} \ref{clean}.
+
+\subsubsection{list}
+\label{list}
+List settings. Running just
+
+\begin{verbatim}
+ mosstack list
+\end{verbatim}
+
+gives a list of possible settings. At the moment there are four settings:
+\begin{itemize}
+ \item debayer - How to debayer CFA images (see Sections \ref{debayering} and \ref{debayeringmath})
+ \item matcher - How to find matching stars on different photos (see Sections \ref{registering} and \ref{registeringmath})
+ \item transformer - How to perform affine transformations.
+ \item stack - How to calculate image stacks (see Sections \ref{stacking} and \ref{stackingmath})
+\end{itemize}
+
+Running
+
+\begin{verbatim}
+ mosstack list <setting>
+\end{verbatim}
+
+for example
+
+\begin{verbatim}
+ mosstack list debayer
+\end{verbatim}
+
+gives a list of different debayering algorithms available. The current setting is also printed.
+
+\subsubsection{set}
+\label{set}
+
+Change settings or the active project.
+
+Command
+\begin{verbatim}
+ mosstack set project <project name>
+\end{verbatim}
+
+changes active project to given name. Project has to be initiated and the .project file has to be in working directory.
+The option \texttt{<project name>} is given without path or suffix, exactly the same way it was written to command 
+\texttt{init}. There's no other way to see available projects than to \texttt{ls *.project} in mosstack's working 
+directory.
+
+Settings are changed with options seen with command \texttt{list} as described in section \ref{list}. First see what
+options there are available with
+
+\begin{verbatim}
+ mosstack list <setting>
+\end{verbatim}
+
+and change them with
+
+\begin{verbatim}
+ mosstack set <setting> <option>
+\end{verbatim}
+
+For example
+
+\begin{verbatim}
+ mosstack list debayer
+\end{verbatim}
+
+prints out
+
+\begin{verbatim}
+Options for the setting "debayer" are:
+
+1.  BilinearOpenCl
+2.  VNGOpenCl
+3.  BilinearCython
+4.  VNGCython
+
+Current setting is "VNGCython".
+
+\end{verbatim}
+
+Now the setting can be change with either one of
+
+\begin{verbatim}
+ mosstack set debayer VNGOpenCl
+ mosstack set debayer 2
+\end{verbatim}
+
+The text has to be written exactly as in the example, so number might be a better choice. Although for scripting the
+text is better choice since it's not guaranteed that the options are always in the same order. They should be, but
+there's nothing to check that.
+
+\subsubsection{dir}
+\subsubsection{file}
+\subsubsection{debayer}
+\label{debayering}
+\subsubsection{register}
+\label{registering}
+\subsubsection{stack}
+\label{stacking}
+\subsubsection{subtract}
+\subsubsection{divide}
+\subsubsection{bias}
+\subsubsection{master}
+\subsubsection{size}
+\subsubsection{clean}
+\label{clean}
+
+
+
+
+\subsection{Graphical user interface}
+
+\newpage
+\section{Mathematics}
+\label{mathematics}
+
+The reason for writing the manual on \LaTeX is this section. A big part of this project for me is to understand myself the
+consepts and mechanisms of stacking. How it all works? Writing it out is one more challenge for me. \emph{If you can't 
+explain it simply, you don't understand it well enough}. This quote has been credited to Einstein, but seems like there's
+no source to back that up. Whoever said it is on to something.
+
+
+
+\subsection{Debayering}
+\label{debayeringmath}
+
+\subsection{Registering}
+\label{registeringmath}
+
+\subsection{Stacking}
+\label{stackingmath}
+
+\printindex
+
+\end{document}
