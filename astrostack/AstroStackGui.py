@@ -142,6 +142,8 @@ class Ui(Ui_MainWindow, QObject):
         dialog = QDialog()
         self.idialog.setupUi(dialog)
         self.idialog.setupContent(self.batch[self.selectedFtype].frames[self.selectedId])
+        # Quick&dirty fix to make the whole image visible without resizing
+        dialog.resize(self.idialog.w + 40, self.idialog.h + 70)
         if dialog.exec():
             self.coords = self.idialog.coords
 
@@ -648,9 +650,9 @@ class ImageDialog(imageDialog):
         self.label.setScaledContents(True)
         self.label.setPixmap(pixmap)
         size = pixmap.size()
-        self.w = size.width()
-        self.h = size.height()
-        self.label.setGeometry(QRect(0, 0, self.w*.25, self.h*.25))
+        self.w = size.width()*.25
+        self.h = size.height()*.25
+        self.label.setGeometry(QRect(0, 0, self.w, self.h))
         self.label.refresh.connect(self.setCoords)
 
     def setCoords(self):

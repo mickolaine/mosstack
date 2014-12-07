@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'astrostack/imageDialog.ui'
 #
-# Created: Tue Oct  7 18:58:08 2014
+# Created: Sun Dec  7 14:09:04 2014
 #      by: PyQt4 UI code generator 4.11.1
 #
 # WARNING! All changes made in this file will be lost!
@@ -26,14 +26,20 @@ except AttributeError:
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName(_fromUtf8("Dialog"))
-        Dialog.resize(892, 754)
+        Dialog.resize(893, 754)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(Dialog.sizePolicy().hasHeightForWidth())
+        Dialog.setSizePolicy(sizePolicy)
         self.gridLayout = QtGui.QGridLayout(Dialog)
+        self.gridLayout.setSizeConstraint(QtGui.QLayout.SetNoConstraint)
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.scrollArea_2 = QtGui.QScrollArea(Dialog)
         self.scrollArea_2.setWidgetResizable(True)
         self.scrollArea_2.setObjectName(_fromUtf8("scrollArea_2"))
         self.scrollAreaWidgetContents_2 = QtGui.QWidget()
-        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 878, 706))
+        self.scrollAreaWidgetContents_2.setGeometry(QtCore.QRect(0, 0, 879, 706))
         self.scrollAreaWidgetContents_2.setObjectName(_fromUtf8("scrollAreaWidgetContents_2"))
         self.label = QtGui.QLabel(self.scrollAreaWidgetContents_2)
         self.label.setGeometry(QtCore.QRect(0, 0, 881, 711))

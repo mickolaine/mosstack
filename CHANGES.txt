@@ -1,4 +1,4 @@
-v0.6
+v0.6.0 2014-12-07 -- Cropping and project handling
 - Added new stacking methods: Maximum, Minimum
 - Added Kappa for Sigma stackers in GUI and CLI
 - Added crop method for CLI

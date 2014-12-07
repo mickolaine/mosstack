@@ -6,7 +6,7 @@ import numpy
 
 setup(
     name='mosstack',
-    version='0.6_rc1',
+    version='0.6.0',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=['astrostack', 'astrostack.Debayer', 'astrostack.Registering', 'astrostack.Stacker'],
@@ -20,10 +20,10 @@ setup(
                              "astrostack/Debayer/_VNGCython.pyx",
                              "astrostack/Stacker/_math.pyx"]),
     data_files=[
-        ("share/mosstack/", ["data/mosstack.xpm"]),
+        ("share/mosstack/", ["data/mosstack.xpm", "doc/LaTeX/manual.pdf"]),
         ("share/applications/", ["data/mosstack.desktop"])
     ],
-    url='https://bitbucket.org/mikko_laine/pyastrostack/',
+    url='https://sites.google.com/site/mosstack',
     license='LICENSE.txt',
     description='Stacking software for astronomical images',
     long_description=open('README.txt').read(),

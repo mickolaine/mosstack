@@ -6,14 +6,23 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>892</width>
+    <width>893</width>
     <height>754</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <property name="sizeConstraint">
+    <enum>QLayout::SetNoConstraint</enum>
+   </property>
    <item row="0" column="0">
     <widget class="QScrollArea" name="scrollArea_2">
      <property name="widgetResizable">
@@ -24,7 +33,7 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>878</width>
+        <width>879</width>
         <height>706</height>
        </rect>
       </property>

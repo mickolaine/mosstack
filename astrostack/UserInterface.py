@@ -49,204 +49,459 @@ program does that step. Most commands work with pattern
 
 where <operation> and <arguments> are something from following list.
 
-<operation> | <arguments>
--------------------------
-help        |
-init        | <project name>
-set         | <setting> <option>
-dir         | <path to dir> <image type>
-file        | <path to file> <image type>
-master      | <path to file> <image type>
-debayer     | <generic name>
-register    | <generic name>
-stack       | <generic name>
-subtract    | <generic name> <master>
-divide      | <generic name> <master>
+  help        print help
+  ----------- -------------------------------------
+  init        initialize a new project
+  list        list settings
+  set         change settings
+  dir         add whole directory of images
+  file        add a single image
+  frames      list frames
+  remove      remove frame
+  reference   change reference frame
+  debayer     debayer frames
+  register    register frames
+  crop        crop frames
+  stack       stack frames
+  subtract    subtract image from a set
+  divide      divide set by an image
+  biaslevel   subtract constant int from a set
+  master      add master frame
+  size        show projects size on disc
+  clean       remove temporary files from project
 
 
 Full documentation of operations
 =========
 
-help
-------------
-No arguments. Prints full help string which is about the same than this
-portion of documentation.
+### help
 
-init
-------------
-Initializes a new project. Project has to be initialized before anything else.
-Mosstack uses the project file to store information about the photo frames
-and development of the process. Project file will have an extension
-``project``, but as an argument init takes only project name without extension.
+Print the long help. Long help is mostly the section [cli] from this
+manual. My plan is to make it generate straight from this LaTeXdocument.
 
-Example:
+How to run:
 
-    ``astrostack init Andromeda``
+     mosstack help
 
-This will initialize a new project called Andromeda. Most files will be named
-after this name. If the project already exists, program will inform and ask
-how to proceed.
+### init
 
-Initialization also sets the project active. Active project name is stored in
-$HOME/.config/mosstack/settings.
+Initialize the project. Mosstack always does everything for the active
+project and this command is used to create one.
 
-set project
-------------
-Set the specified project name as the active project. Active project name is
-stored in $HOME/.config/mosstack/settings.
+For example
 
-Example:
+     mosstack init Andromeda
 
-    ``mosstack set project Andromeda``
+creates a new .project file in mosstack’s working directory. This file
+holds information about progress of the project as well as locations to
+all the files project uses.
 
-Activating the project means all the commands will be run using information of
-that project file. User can have many simultaneous projects in his working
-directory.
+Each diffrerent data set should be a separate project. One project can
+be used to stack the same data in different ways, for example a maximum
+stack to find satellite trails and a sigma median stack to do the ”real”
+final image. A project leaves all the temporary files behind so changing
+settings and continuing on any point of the process should be possible.
 
-dir
-------------
-Add all supported raw photos in specified directory into active project. In
-addition to path this also requires type of the frames as an argument.
-Program understands the types light, bias, dark and flat. Easiest way to add
-files in the project is to separate these types to their own directories.
+Since all the temporary data is left behind, in the end user should
+clean that with command `clean` [clean].
 
-Example:
+### list
 
-    ``mosstack dir /media/data/Astro/2013-11-25/Andromeda/ light``
-    ``mosstack dir /media/data/Astro/2013-11-25/flat/ flat``
+List settings. Running just
 
-file
-------------
-Add specified raw photo into active project. In addition to file path this also
-requires type of the frame as an argument. Program understands the types light,
-bias, dark and flat.
+     mosstack list
 
-Example:
+gives a list of possible settings. At the moment there are four
+settings:
 
-    ``mosstack file /media/data/Astro/2013-11-25/Andromeda/IMG_5423.CR2``
+-   debayer - How to debayer CFA images (see Sections [debayering] and
+    [debayeringmath])
 
-master
-------------
-Add a finished master frame for bias, dark or flat. Accepts FITS or TIFF files.
-This is a nice feature if you do several images with the same data.
+-   matcher - How to find matching stars on different photos (see
+    Sections [registering] and [registeringmath])
 
-Example:
+-   transformer - How to perform affine transformations.
 
-    ``mosstack master /media/data/astrostack/Andro_bias_master_orig.fits bias``
+-   stack - How to calculate image stacks (see Sections [stacking] and
+    [stackingmath])
 
-subtract
-------------
-Subtract master frame from specified batch of images pixel by pixel. A master
-frame of some kind is required for this operation. Master means a stacked
-frame.
+Running
 
-Usage:
+     mosstack list <setting>
 
-    ``mosstack subtract <batch> <master>``
+for example
 
-Example:
+     mosstack list debayer
 
-    ``mosstack subtract light dark``
+gives a list of different debayering algorithms available. The current
+setting is also printed.
 
-This example takes all frames identified by light and subtracts master dark
-from them one by one. After operation there are images identified by name
-"calib" in the work directory. Note that if you subtract or divide batch named
-calib, the images will be overwritten.
+### set
 
-divide
-------------
-Divide a batch of frames by a specified master frame pixel by pixel. A master
-frame is required for this operation. Master means a stacked frame.
+Change settings or the active project.
 
-Usage:
+Command
 
-    ``mosstack divide <batch> <master>``
+     mosstack set project <project name>
 
-Example:
+changes active project to given name. Project has to be initiated and
+the .project file has to be in working directory. The option
+`<project name>` is given without path or suffix, exactly the same way
+it was written to command `init`. There’s no other way to see available
+projects than to `ls *.project` in mosstack’s working directory.
 
-    ``mosstack divide light flat``
+Settings are changed with options seen with command `list` as described
+in section [list]. First see what options there are available with
 
-This example takes all frames identified by light and divides them by master
-dark from them one by one. After operation there are images identified by name
-"calib" in the work directory. Note that if you subtract or divide batch named
-calib, the images will be overwritten.
+     mosstack list <setting>
 
-Debayer
-------------
-Debayer CFA-images into RGB. At this moment program supports only images taken
-with Canon 1100D or a camera with similar Bayer matrix. Output files will be
-separate files and identified by "rgb" followed by one letter to tell the
-channel.
+and change them with
 
-Usage:
+     mosstack set <setting> <option>
 
-    ``mosstack debayer <batch>``
+For example
 
-Example:
+     mosstack list debayer
 
-    ``mosstack debayer calib``
+prints out
 
-register
-------------
-Register (locate and match stars, calculate and perform affine transformation)
-the frames. All registering will be done against a specified reference frame.
-Output files will be identified with "reg".
+    Options for the setting "debayer" are:
 
-Usage:
+    1.  BilinearOpenCl
+    2.  VNGOpenCl
+    3.  BilinearCython
+    4.  VNGCython
 
-    ``mosstack register <batch>``
+    Current setting is "VNGCython".
 
-Example:
+Now the setting can be change with either one of
 
-    ``mosstack register rgb``
+     mosstack set debayer VNGOpenCl
+     mosstack set debayer 2
 
-stack
-------------
-Stack frames in specified batch. At the moment the stacking will consume a lot
-of memory. This will be fixed in later versions of the software. Output files
-will be identified either with "master" (if batch name is bias, dark or flat)
-or "final" (if batch name is anything else).
+The text has to be written exactly as in the example, so number might be
+a better choice. Although for scripting the text is better choice since
+it’s not guaranteed that the options are always in the same order. They
+should be, but there’s nothing to check that.
 
-Usage:
+### dir
 
-    ``mosstack stack <batch>``
+Add whole directory of files to the project. Command works by listing
+contents of a Unix path, absolute or relative, and checking each file
+with `dcraw -i`. If file is recognized as a DSLR Raw photo, it is added
+to project. Frame type (light, bias, dark or flat) must also be defined.
 
-Example:
+Example
 
-    ``mosstack stack bias``
-    ``mosstack stack reg``
+     mosstack dir /path/to/photos/2014-10-22/Andromeda light
 
-list
-------------
-List available settings and their options. Prelude to full ui. These can also
-be manually edited in the project file.
+adds all files in path */path/to/photos/2014-10-22/Andromeda* to project
+as light frames. Path can also be a relative path:
 
-Usage
+     mosstack dir 2014-10-22/Bias bias
 
-    ``mosstack list <setting>``
+Be sure not to give wild cards \* in your path since this is not ”add
+multiple files” but ”add directory”.
 
-Examples:
+### file
 
-List of settings to adjust
-    ``mosstack list``
+Add a file to active project. Does not support wild cards (0.6, maybe
+later will) so each file must be added one at a time. Like this:
 
-List of options for setting
-    ``mosstack list debayer``
+     mosstack file /path/.../2014-10-22/Andro/IMG_5423.cr2 light
 
-set
-------------
-Set can also be used to adjust settings. See operation 'list' to see them
+As with `dir` command, the path can be either relative or absolute and
+command must end with frame type (light, dark, bias, flat).
 
-Usage
+The file will be tested with `dcraw -i` and if DCRaw can decode it, it
+will be added to project.
 
-    ``mosstack set <setting> <option>``
+### frames
 
-Examples:
+List all the frames of given type. This is required for commands
+`remove` and `reference`.
 
-    ``mosstack set debayer Bilinear``
-    ``mosstack set debayer 2``
+Command is run with:
 
-You can use either name or number as operation 'list' shows them.
+     mosstack frames <ftype>
+
+where `<ftype>` is frame type to list.
+
+Example: List all the light frames:
+
+     mosstack frames light
+
+### remove
+
+Remove frame from the project. Use command `frames` to list frames and
+see their identifying numbers.
+
+Command is run with:
+
+     mosstack remove <ftype> <number>
+
+where `<ftype>` is frame type and `<number>` the identifying number for
+the frame.
+
+Example: Check light frames and remove number 12.
+
+     mosstack frames light
+     mosstack remove light 12
+
+### reference
+
+Change the reference frame. When adding frames the first one is always
+selected the reference frame. This means all the other frames are
+matched to its stars and aligned as such.
+
+Command is run with:
+
+     mosstack reference <number>
+
+where `<number>` is identifying number for the frame. Check with command
+`frames`. The frame type is not defined since setting reference frame is
+sensible only for light frames. This will operate on light only.
+
+### debayer {#debayering}
+
+Batch of frames will be debayered. Debayering process is explained in
+Section [debayeringmath].
+
+Command is run with
+
+     mosstack debayer <fphase>
+
+where `<phase>` is identifier for the batch.
+
+Example: Run debayer for light frames
+
+     mosstack debayer light
+
+Example: Run debayer for calibrated light frames saved with identifier
+*calib*
+
+     mosstack debayer calib
+
+Debayer will save batch with identifier *rgb*.
+
+There are two different language for debayering algorithms. These
+operations are quite processor intensive so pure Python isn’t a good
+choice. NumPy itself can’t help either. There are two implementations:
+Cython and PyOpenCL.
+
+Cython uses CPU to do the math. There’s no multithreading and the
+process takes about 10 seconds for a 12Mpix data on AMD FX-6300. This
+uses only one core so multithreading could be possible. It’s just not
+implemented yet on CLI.
+
+PyOpenCL uses GPU for the math. This is *fast*. It takes about 0.2
+seconds to debayer a frame. Except that there is a 5 second overhead for
+manipulating the NumPy array to right alignment, transferring the data
+to GPU and back. It might be possible to manipulate the data on GPU and
+take some overhead off, but this is the situation at version 0.6.
+Nevertheless it’s faster than same with Cython.
+
+Support for OpenCL doesn’t work out of the box with Ubuntu. With Gentoo
+it works reasonably well with programs from official distribution, but
+with Ubuntu 14.04 requires 3rd party packages.
+
+Multithreading does not work at all with PyOpenCL. Not even in GUI.
+Seems like it’s just not possible. It might be possible to multithread
+all the overhead stuff and just queue math itself, but there’s no plans
+for that yet.
+
+### register {#registering}
+
+Batch of frames will be registered. This means aligning them for
+stacking. All of the current registering methods work the same:
+
+-   find stars
+
+-   match stars
+
+-   calculate affine transformation
+
+-   do the affine transformation
+
+Further information about registering process is explained in Section
+[registeringmath].
+
+Command is run with
+
+     mosstack register <fphase>
+
+where `<fphase>` is identifier for the batch.
+
+Example: Run register for calibrated and debayered light frames saved
+with identifier *rgb*
+
+     mosstack register rgb
+
+Register will save the batch with identifier *reg*.
+
+Currently there’s no choice on the algorithms.
+
+### crop {#cropping}
+
+Batch of registered images will be cropped by given XY-range.
+Coordinates are given as pixels from upper left corner. I recommend
+doing all the croppings with the graphical user interface.
+
+Command is run with:
+
+     mosstack crop <fphase> x0, x1, y0, y1
+
+where x0, x1, y0 and y1 are coordinates limiting a rectangular area and
+`<fphase>` identifier for frames to crop. Mostly this is *reg* since
+only aligned images are good for cropping.
+
+Example: Crop a rectangle limited by corners (300, 200) and (1800, 1300)
+
+     mosstack crop reg 300 1800 200 1300
+
+Images are saved with identifier *crop*
+
+### stack {#stacking}
+
+Batch of frames will be stacked with the selected stacking algorithm.
+Note that the batch should be aligned before this.
+
+Command is run with
+
+     mosstack stack <fphase>
+
+where `<fphase>` is identifier for the batch. For light frames this
+usually is *reg*, but for calibration frames just the name *dark*,
+*flat* or *bias*.
+
+Example: Run stack for registered frames saved with identifier *reg*
+
+     mosstack stack reg
+
+The result image will be saved with identifier *master*. Full name of
+the resulting files are printed after successful stacking.
+
+Note that stacking algorithm can be changed during project. If you want
+to stack calibration frames with average value and light frames with eg.
+sigma median, just use `set` to change stacker before running stack. See
+tutorial [tutorial] for examples.
+
+### subtract
+
+Subrtact frame from all the frames in batch. This is used with bias and
+dark frame calibration.
+
+Command is run with:
+
+     mosstack subtract <batch> <calib>
+
+where `<batch>` is identifier for batch to subtract from and `<calib>`
+identifier for master calibration frame. Note that the requested master
+must exist, or the command will fail.
+
+Example: Subtract master bias from dark frames.
+
+     mosstack subtract dark bias
+
+Resulting light images will be saved with identifier *calib*. Calibrated
+dark and flat will be overwritten with the same name.
+
+Example: Stack bias frames, calibrate and stack dark frames and
+calibrate light frames.
+
+     mosstack stack bias
+     mosstack subtract dark bias
+     mosstack stack dark
+     mosstack subtract light bias
+     mosstack subtract calib dark
+
+Note that first time you subtract from light frames the identifier is
+*light* but after that it’s *calib*. Operating on *light* always takes
+the original files. Use this if you want to undo subtractions.
+
+### divide
+
+Divide frame from all the frames in batch. This is used with flat frame
+calibration.
+
+Command is run with:
+
+     mosstack divide <batch> <calib>
+
+where `<batch>` is identifier for batch to subtract from and `<calib>`
+identifier for master calibration frame. There really is no reason to do
+anything but dividing light (identifier *light* or *calib*) with master
+flat frame.
+
+Example: Divide calibrated light frames with master flat frame.
+
+     mosstack divide calib flat
+
+Result will be saved with identifier *calib*.
+
+### biaslevel
+
+Set *bias level* for batch. This works like bias frame calibration, but
+subtracts a constant value from all the pixels.
+
+Command is run with:
+
+     mosstack bias <batch> <value>
+
+where `<batch>` is identifier for the batch and `<value>` is the value
+to subtract from pixels.
+
+Example: Subtract bias level 21 from light frames.
+
+     mosstack bias light 21
+
+The resulting batch will be saved with identifier *calib*, just like if
+they were calibrated with bias frame.
+
+### master
+
+Add a pre-existing master frame to the project. With this you don’t need
+to remake the calibration frames for all projects from same photo
+session.
+
+Command is run with:
+
+     mosstack master <path> <type>
+
+where `<path>` is a Unix path to file and `<type>` is type of the
+calibration frame (*dark*, *flat* or *bias*).
+
+Example: Add master flat frame to the project.
+
+     mosstack master /path/to/saved/flat_2014-10-20.fits flat
+
+Formats Fits and Tiff are supported.
+
+### size
+
+Tell the size of all the files in project. Mosstack creates a lot of
+temporary files required only for the next step in processing. Depending
+on the number and size of source files, a project can easily take
+several gigabytes of space.
+
+Command is run with:
+
+     mosstack size
+
+That’s it. It prints out the size in the most convinient unit. Most
+likely that will be GiB, but for small projects maybe MiB.
+
+### clean
+
+Remove all the temporary files. This is a useful command to run after
+the project is done. `Clean` removes all the temprary files leaving only
+ones labeled *master* and the project file. Everything can be easily run
+again without adding all the files.
+
+Command is run with:
+
+     mosstack clean
+
 
     """
 
