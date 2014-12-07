@@ -1,14 +1,68 @@
 from __future__ import division
 import numpy as np
-from scipy.ndimage.interpolation import affine_transform
 from skimage import transform as tf
-import datetime   # For profiling
-from re import sub
-from shutil import copyfile
 
 
 class SkTransform(object):
+    """
+    Affine transformation calculations and the transformation itself. Contains static methods and should be used
+    as a static class.
+    """
 
+    @staticmethod
+    def calculate_transform(frame):
+        """
+        Calculates affine transformation.
+
+        Write result to frame.tform
+        """
+        if frame.isref:
+            print("No need to calculate for reference frame.")
+            return
+
+        print("Starting affine transform for frame number " + frame.number)
+        primary = []
+        secondary = []
+        m = 0
+
+        for i in frame.pairs:
+            if m > 11 or i[2] < 20:
+                break
+            primary.append([i[0][0], i[0][1], 0])
+            secondary.append([i[1][0], i[1][1], 0])
+            m += 1
+        primary = np.array(primary)
+        secondary = np.array(secondary)
+
+        try:
+            frame.tform = tf.estimate_transform(ttype="affine", dst=primary, src=secondary)
+        except IndexError:
+            pass
+
+    @staticmethod
+    def affine_transform(frame):
+        """
+        Do the affine transformation
+
+        Return transformed data. For the reference image return data itself.
+        """
+
+        if frame.isref:
+            print("Copying the reference frame.")
+
+            return frame.data
+
+        imagedata = frame.data
+        data = []
+        for i in range(len(imagedata)):
+            amax = np.amax(imagedata[i])
+            data.append(tf.warp(np.float32(imagedata[i]) / np.amax(imagedata[i]), inverse_map=frame.tform))
+            data[i] /= np.amax(data[i]) / amax
+
+        return np.array(data)
+
+
+    '''
     @staticmethod
     def affine_transform(image, ref):
         """
@@ -172,3 +226,4 @@ class SkTransform(object):
 
         #return A[:2,:2]
         return A
+    '''

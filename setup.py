@@ -1,4 +1,4 @@
-#from setuptools import setup, find_packages
+# from setuptools import setup, find_packages
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize
@@ -6,31 +6,31 @@ import numpy
 
 setup(
     name='mosstack',
-    version='0.5.2',
+    version='0.6.0',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=['astrostack', 'astrostack.Debayer', 'astrostack.Registering', 'astrostack.Stacker'],
-#    packages=find_packages(),
+    #    packages=find_packages(),
     scripts=['scripts/mosstack', 'scripts/mosstackgui'],
     include_dirs=[numpy.get_include()],
-#   cmdclass = cmdclass,
-#    ext_modules=ext_modules,
+    #   cmdclass = cmdclass,
+    #    ext_modules=ext_modules,
     ext_modules = cythonize(["astrostack/Registering/_step2.pyx",
                              "astrostack/Debayer/_BilinearCython.pyx",
                              "astrostack/Debayer/_VNGCython.pyx",
                              "astrostack/Stacker/_math.pyx"]),
     data_files=[
-        ("share/mosstack/", ["data/mosstack.xpm"]),
+        ("share/mosstack/", ["data/mosstack.xpm", "doc/LaTeX/manual.pdf"]),
         ("share/applications/", ["data/mosstack.desktop"])
     ],
-    url='https://bitbucket.org/mikko_laine/pyastrostack/',
+    url='https://sites.google.com/site/mosstack',
     license='LICENSE.txt',
     description='Stacking software for astronomical images',
     long_description=open('README.txt').read(),
-#    install_requires=[
-#        "Pillow >= 2.2.1",
-#        "NumPy >= 1.6.0",
-#        "pyopencl >= 2013",
-#        "astropy >= 0.2.4",
-#    ],
-)
+    #    install_requires=[
+    #        "Pillow >= 2.2.1",
+    #        "NumPy >= 1.6.0",
+    #        "pyopencl >= 2013",
+    #        "astropy >= 0.2.4",
+    #    ],
+    )

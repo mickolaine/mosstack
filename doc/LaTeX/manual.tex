@@ -1,0 +1,735 @@
+\documentclass[twoside,a4paper]{refart}
+\usepackage{makeidx}
+\usepackage{ifthen}
+
+\def\bs{\char'134 } % backslash in \tt font.
+\newcommand{\ie}{i.\,e.,}
+\newcommand{\eg}{e.\,g..}
+\DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}}
+
+\title{Mikko's Open Source Stacker for astronomical images}
+\author{Mikko Laine}
+
+\date{2014-12-04}
+\emergencystretch1em  %
+
+\pagestyle{myfootings}
+\markboth{Mikko's Open Source Stacker for astronomical images}%
+         {Mikko's Open Source Stacker for astronomical images}
+
+\makeindex 
+
+\setcounter{tocdepth}{2}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+	\textit{Mosstack} is an open source program for calibrating,
+	aligning and stacking astronomical photographs taken with a DSLR
+	camera. This manual explains in detail all the technologies and
+	algorithms used in Mosstack as well as all the commands and
+	features of the program.
+	
+	This manual is far from finished. I'm going to release it anyways
+	because using the command line interface requires some assistance
+	for most people (including me). 
+\end{abstract}
+
+
+% Place holder for more text
+
+\tableofcontents
+
+\newpage
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+
+
+\subsection{Astrophotography}
+\label{astrophotography}
+This section will cover the basics about astronomical photography
+
+
+\newpage
+
+\section{Manual}
+\label{manual}
+\index{manual}
+
+\subsection{General}
+\index{general}
+
+Mosstack started as a command line interface (CLI) program. Initially it was because I had no experience on programming
+graphical user interfaces, but soon I realized the power of CLI. Now that I writing this (0.6~rc1 just came out) I have 
+to say that doing a GUI right from the beginning would have made things a lot easier. GUI has it's own difficulties, but
+CLI has to be built from scratch and many different user errors has to be dealt with.
+
+Nevertheless benefits of CLI became apparent during testing and debugging. I can now write simple scripts about the
+stacking process. Also automating the process is possible with CLI scripts. By controlling the camera with computer
+scripts I can easily take calibration photos and process them ready with just a click. This kind of features are of course 
+possible to make for GUI as well but it would reguire for me to anticipate what users want.
+
+\subsection{Command line interface}
+\label{cli}
+
+Command line interface (CLI) is actually just command line arguments parsed with \texttt{mosstack} executable. The command
+\texttt{mosstack} does nothing by itself except prints short help. Anything user wishes to do is done with command line
+arguments. There's a list of arguments in section \ref{list of commands} and each individual command is explained in sections
+following that.
+
+All commands are done on the active project. Project can be initialized with command \texttt{init} (section \ref{init}) and
+active project can be changed with the command \texttt{set} (section \ref{set}). There can be multiple projects in progress,
+but only one instance of \texttt{mosstack} is supported at the time. CLI version of Mosstack does not multithread at the
+moment (version 0.6), but the GUI version \texttt{mosstackgui} does.
+
+The current project file is always printed when \texttt{mosstack} is run.
+
+\subsubsection{CLI usage}
+\label{cli usage}
+\index{CLI usage}
+
+All commands for \texttt{mosstack} follow the same pattern:
+
+\begin{verbatim}
+ mosstack <command> <arguments>
+\end{verbatim}
+
+There are couple of variations about \texttt{<arguments>}. All possible arguments are explained in sections after \ref{list of commands}.
+Here are a couple examples:
+ 
+\begin{verbatim}
+ mosstack dir /path/to/photos/2014-10-22/Andromeda light
+\end{verbatim}
+
+Argument \texttt{dir} means adding a whole directory of files in to the active project. Mosstack tries to recognize every file
+in the directory and adds each one it can decode with dcraw so be sure there are no extra files you don't wish to add.
+
+Argument \texttt{dir} is followed by an Unix path and finally the type of frames. Supported keywords are light, bias, dark and
+flat.
+
+Another example:
+
+\begin{verbatim}
+ mosstack subtract light bias
+\end{verbatim}
+
+The argument \texttt{subtract} is used for calibrating the frames. In this example the stacked ''master'' bias frame is
+subtracted from all the light frames. Before this command the master bias has to be ready and there has to be light frames
+in the project.
+
+
+\subsubsection{List of commands}
+\label{list of commands}
+\index{list of commands}
+
+\begin{tabular}{|l|l|}
+\hline
+help        & print help \\ \hline
+init        & initialize a new project \\ \hline
+list        & list settings \\ \hline
+set         & change settings \\ \hline
+dir         & add whole directory of images\\ \hline
+file        & add a single image\\ \hline
+frames      & list frames\\ \hline
+remove      & remove frame \\ \hline 
+reference   & change reference frame \\ \hline
+debayer     & debayer frames\\ \hline
+register    & register frames\\ \hline
+crop        & crop frames\\ \hline
+stack       & stack frames\\ \hline
+subtract    & subtract image from a set\\ \hline
+divide      & divide set by an image\\ \hline
+biaslevel   & subtract constant int from a set \\ \hline
+master      & add master frame \\ \hline
+size        & show projects size on disc \\ \hline
+clean       & remove temporary files from project \\ \hline
+
+\end{tabular}
+
+\subsubsection{help}
+\label{help}
+\index{help}
+
+Print the long help. Long help is mostly the section \ref{cli} from this manual. My plan is to make it generate
+straight from this \LaTeX document.
+
+How to run: 
+
+\begin{verbatim}
+ mosstack help
+\end{verbatim}
+
+
+
+\subsubsection{init}
+\label{init}
+\index{init}
+
+Initialize the project. Mosstack always does everything for the active project and this command is used to create
+one.
+
+For example
+
+\begin{verbatim}
+ mosstack init Andromeda
+\end{verbatim}
+
+creates a new .project file in mosstack's working directory. This file holds information about progress of the
+project as well as locations to all the files project uses.
+
+Each diffrerent data set should be a separate project. One project can be used to stack the same data in different
+ways, for example a maximum stack to find satellite trails and a sigma median stack to do the ''real'' final image.
+A project leaves all the temporary files behind so changing settings and continuing on any point of the process should
+be possible.
+
+Since all the temporary data is left behind, in the end user should clean that with command \texttt{clean} \ref{clean}.
+
+\subsubsection{list}
+\label{list}
+\index{list}
+List settings. Running just
+
+\begin{verbatim}
+ mosstack list
+\end{verbatim}
+
+gives a list of possible settings. At the moment there are four settings:
+\begin{itemize}
+ \item debayer - How to debayer CFA images (see Sections \ref{debayering} and \ref{debayeringmath})
+ \item matcher - How to find matching stars on different photos (see Sections \ref{registering} and \ref{registeringmath})
+ \item transformer - How to perform affine transformations.
+ \item stack - How to calculate image stacks (see Sections \ref{stacking} and \ref{stackingmath})
+\end{itemize}
+
+Running
+
+\begin{verbatim}
+ mosstack list <setting>
+\end{verbatim}
+
+for example
+
+\begin{verbatim}
+ mosstack list debayer
+\end{verbatim}
+
+gives a list of different debayering algorithms available. The current setting is also printed.
+
+\subsubsection{set}
+\label{set}
+\index{set}
+\index{settings}
+
+Change settings or the active project.
+
+Command
+\begin{verbatim}
+ mosstack set project <project name>
+\end{verbatim}
+
+changes active project to given name. Project has to be initiated and the .project file has to be in working directory.
+The option \texttt{<project name>} is given without path or suffix, exactly the same way it was written to command 
+\texttt{init}. There's no other way to see available projects than to \texttt{ls *.project} in mosstack's working 
+directory.
+
+Settings are changed with options seen with command \texttt{list} as described in section \ref{list}. First see what
+options there are available with
+
+\begin{verbatim}
+ mosstack list <setting>
+\end{verbatim}
+
+and change them with
+
+\begin{verbatim}
+ mosstack set <setting> <option>
+\end{verbatim}
+
+For example
+
+\begin{verbatim}
+ mosstack list debayer
+\end{verbatim}
+
+prints out
+
+\begin{verbatim}
+Options for the setting "debayer" are:
+
+1.  BilinearOpenCl
+2.  VNGOpenCl
+3.  BilinearCython
+4.  VNGCython
+
+Current setting is "VNGCython".
+
+\end{verbatim}
+
+Now the setting can be change with either one of
+
+\begin{verbatim}
+ mosstack set debayer VNGOpenCl
+ mosstack set debayer 2
+\end{verbatim}
+
+The text has to be written exactly as in the example, so number might be a better choice. Although for scripting the
+text is better choice since it's not guaranteed that the options are always in the same order. They should be, but
+there's nothing to check that.
+
+\subsubsection{dir}
+\index{dir}
+Add whole directory of files to the project. Command works by listing contents of a Unix path, absolute or relative,
+and checking each file with \texttt{dcraw -i}. If file is recognized as a DSLR Raw photo, it is added to project. Frame
+type (light, bias, dark or flat) must also be defined.
+
+Example
+
+\begin{verbatim}
+ mosstack dir /path/to/photos/2014-10-22/Andromeda light
+\end{verbatim}
+
+adds all files in path \textit{/path/to/photos/2014-10-22/Andromeda} to project as light frames. Path can also be
+a relative path:
+
+\begin{verbatim}
+ mosstack dir 2014-10-22/Bias bias
+\end{verbatim}
+
+Be sure not to give wild cards * in your path since this is not ''add multiple files'' but ''add directory''.
+
+
+\subsubsection{file}
+\index{file}
+Add a file to active project. Does not support wild cards (0.6, maybe later will) so each file must be added one at
+a time. Like this:
+
+\begin{verbatim}
+ mosstack file /path/.../2014-10-22/Andro/IMG_5423.cr2 light
+\end{verbatim}
+
+As with \texttt{dir} command, the path can be either relative or absolute and command must end with frame type (light,
+dark, bias, flat).
+
+The file will be tested with \texttt{dcraw -i} and if DCRaw can decode it, it will be added to project.
+
+\subsubsection{frames}
+\index{frames}
+List all the frames of given type. This is required for commands \texttt{remove} and \texttt{reference}.
+
+Command is run with:
+\begin{verbatim}
+ mosstack frames <ftype>
+\end{verbatim}
+
+where \texttt{<ftype>} is frame type to list.
+
+Example: List all the light frames:
+
+\begin{verbatim}
+ mosstack frames light
+\end{verbatim}
+
+
+\subsubsection{remove}
+\index{remove}
+Remove frame from the project. Use command \texttt{frames} to list frames and see their identifying numbers.
+
+Command is run with:
+\begin{verbatim}
+ mosstack remove <ftype> <number>
+\end{verbatim}
+
+where \texttt{<ftype>} is frame type and \texttt{<number>} the identifying number for the frame.
+
+Example: Check light frames and remove number 12.
+\begin{verbatim}
+ mosstack frames light
+ mosstack remove light 12
+\end{verbatim}
+
+
+\subsubsection{reference}
+\index{reference}
+Change the reference frame. When adding frames the first one is always selected the reference frame.
+This means all the other frames are matched to its stars and aligned as such.
+
+Command is run with:
+\begin{verbatim}
+ mosstack reference <number>
+\end{verbatim}
+
+where \texttt{<number>} is identifying number for the frame. Check with command \texttt{frames}. The frame
+type is not defined since setting reference frame is sensible only for light frames. This will operate
+on light only.
+
+\subsubsection{debayer}
+\label{debayering}
+\index{debayer}
+Batch of frames will be debayered. Debayering process is explained in Section \ref{debayeringmath}.
+
+Command is run with
+\begin{verbatim}
+ mosstack debayer <fphase>
+\end{verbatim}
+
+where \texttt{<phase>} is identifier for the batch.
+
+Example: Run debayer for light frames
+
+\begin{verbatim}
+ mosstack debayer light
+\end{verbatim}
+
+Example: Run debayer for calibrated light frames saved with identifier \textit{calib}
+
+\begin{verbatim}
+ mosstack debayer calib
+\end{verbatim}
+
+Debayer will save batch with identifier \textit{rgb}.
+
+There are two different language for debayering algorithms. These operations are quite processor intensive
+so pure Python isn't a good choice. NumPy itself can't help either. There are two implementations: Cython and 
+PyOpenCL.
+
+Cython uses CPU to do the math. There's no multithreading and the process takes about 10 seconds for a 12\,Mpix
+data on AMD FX-6300. This uses only one core so multithreading could be possible. It's just not implemented
+yet on CLI.
+
+PyOpenCL uses GPU for the math. This is \emph{fast}. It takes about 0.2 seconds to debayer a frame. Except 
+that there is a 5 second overhead for manipulating the NumPy array to right alignment, transferring the 
+data to GPU and back. It might be possible to manipulate the data on GPU and take some overhead off, but
+this is the situation at version 0.6. Nevertheless it's faster than same with Cython.
+
+Support for OpenCL doesn't work out of the box with Ubuntu. With Gentoo it works reasonably well
+with programs from official distribution, but with Ubuntu 14.04 requires 3rd party packages. 
+
+Multithreading does not work at all with PyOpenCL. Not even in GUI. Seems like it's just not possible. It
+might be possible to multithread all the overhead stuff and just queue math itself, but there's no plans
+for that yet.
+
+\subsubsection{register}
+\label{registering}
+\index{register}
+Batch of frames will be registered. This means aligning them for stacking. All of the current registering
+methods work the same:
+\begin{itemize}
+ \item find stars
+ \item match stars
+ \item calculate affine transformation
+ \item do the affine transformation
+\end{itemize}
+
+Further information about registering process is explained in Section \ref{registeringmath}.
+
+Command is run with
+\begin{verbatim}
+ mosstack register <fphase>
+\end{verbatim}
+
+where \texttt{<fphase>} is identifier for the batch.
+
+Example: Run register for calibrated and debayered light frames saved with identifier \textit{rgb}
+\begin{verbatim}
+ mosstack register rgb
+\end{verbatim}
+
+Register will save the batch with identifier \textit{reg}.
+
+Currently there's no choice on the algorithms.
+
+\subsubsection{crop}
+\label{cropping}
+\index{crop}
+Batch of registered images will be cropped by given XY-range. Coordinates are given as pixels from upper
+left corner. I recommend doing all the croppings with the graphical user interface.
+
+Command is run with:
+\begin{verbatim}
+ mosstack crop <fphase> x0, x1, y0, y1
+\end{verbatim}
+
+where x0, x1, y0 and y1 are coordinates limiting a rectangular area and \texttt{<fphase>} identifier for 
+frames to crop. Mostly this is \textit{reg} since only aligned images are good for cropping.
+
+Example: Crop a rectangle limited by corners (300, 200) and (1800, 1300)
+
+\begin{verbatim}
+ mosstack crop reg 300 1800 200 1300
+\end{verbatim}
+
+Images are saved with identifier \textit{crop}
+
+\subsubsection{stack}
+\label{stacking}
+\index{stack}
+Batch of frames will be stacked with the selected stacking algorithm. Note that the batch should be aligned
+before this.
+
+Command is run with
+
+\begin{verbatim}
+ mosstack stack <fphase>
+\end{verbatim}
+
+where \texttt{<fphase>} is identifier for the batch. For light frames this usually is \textit{reg}, but for
+calibration frames just the name \textit{dark}, \textit{flat} or \textit{bias}.
+
+Example: Run stack for registered frames saved with identifier \textit{reg}
+\begin{verbatim}
+ mosstack stack reg
+\end{verbatim}
+
+The result image will be saved with identifier \textit{master}. Full name of the resulting files are printed
+after successful stacking.
+
+Note that stacking algorithm can be changed during project. If you want to stack calibration frames with
+average value and light frames with eg. sigma median, just use \texttt{set} to change stacker before running
+stack. See tutorial \ref{tutorial} for examples.
+
+\subsubsection{subtract}
+\index{subtract}
+Subrtact frame from all the frames in batch. This is used with bias and dark frame calibration.
+
+Command is run with:
+
+\begin{verbatim}
+ mosstack subtract <batch> <calib>
+\end{verbatim}
+
+where \texttt{<batch>} is identifier for batch to subtract from and \texttt{<calib>} identifier for master 
+calibration frame. Note that the requested master must exist, or the command will fail.
+
+Example: Subtract master bias from dark frames.
+
+\begin{verbatim}
+ mosstack subtract dark bias
+\end{verbatim}
+
+Resulting light images will be saved with identifier \textit{calib}. Calibrated dark and flat will be overwritten
+with the same name.
+
+Example: Stack bias frames, calibrate and stack dark frames and calibrate light frames.
+
+\begin{verbatim}
+ mosstack stack bias
+ mosstack subtract dark bias
+ mosstack stack dark
+ mosstack subtract light bias
+ mosstack subtract calib dark
+\end{verbatim}
+
+Note that first time you subtract from light frames the identifier is \textit{light} but after that it's \textit{calib}.
+Operating on \textit{light} always takes the original files. Use this if you want to undo subtractions.
+
+
+
+\subsubsection{divide}
+\index{divide}
+Divide frame from all the frames in batch. This is used with flat frame calibration.
+
+Command is run with:
+
+\begin{verbatim}
+ mosstack divide <batch> <calib>
+\end{verbatim}
+
+where \texttt{<batch>} is identifier for batch to subtract from and \texttt{<calib>} identifier for master 
+calibration frame. There really is no reason to do anything but dividing light (identifier \textit{light}
+or \textit{calib}) with master flat frame.
+
+Example: Divide calibrated light frames with master flat frame.
+
+\begin{verbatim}
+ mosstack divide calib flat
+\end{verbatim}
+
+Result will be saved with identifier \textit{calib}. 
+
+
+\subsubsection{biaslevel}
+\index{biaslevel}
+Set \textit{bias level} for batch. This works like bias frame calibration, but subtracts a constant value
+from all the pixels.
+
+Command is run with:
+\begin{verbatim}
+ mosstack bias <batch> <value>
+\end{verbatim}
+
+where \texttt{<batch>} is identifier for the batch and \texttt{<value>} is the value to subtract from pixels.
+
+Example: Subtract bias level 21 from light frames.
+
+\begin{verbatim}
+ mosstack bias light 21
+\end{verbatim}
+
+The resulting batch will be saved with identifier \textit{calib}, just like if they were calibrated with bias
+frame.
+
+
+\subsubsection{master}
+\index{master}
+Add a pre-existing master frame to the project. With this you don't need to remake the calibration frames for
+all projects from same photo session.
+
+Command is run with:
+\begin{verbatim}
+ mosstack master <path> <type>
+\end{verbatim}
+
+where \texttt{<path>} is a Unix path to file and \texttt{<type>} is type of the calibration frame (\textit{dark},
+\textit{flat} or \textit{bias}).
+
+Example: Add master flat frame to the project.
+
+\begin{verbatim}
+ mosstack master /path/to/saved/flat_2014-10-20.fits flat
+\end{verbatim}
+
+Formats Fits and Tiff are supported.
+
+
+\subsubsection{size}
+\index{size}
+Tell the size of all the files in project. Mosstack creates a lot of temporary files required only for the next
+step in processing. Depending on the number and size of source files, a project can easily take several gigabytes
+of space.
+
+Command is run with:
+\begin{verbatim}
+ mosstack size
+\end{verbatim}
+
+That's it. It prints out the size in the most convinient unit. Most likely that will be GiB, but for small projects
+maybe MiB.
+
+\subsubsection{clean}
+\label{clean}
+\index{clean}
+Remove all the temporary files. This is a useful command to run after the project is done. \texttt{Clean} removes
+all the temprary files leaving only ones labeled \textit{master} and the project file. Everything can be easily
+run again without adding all the files.
+
+Command is run with:
+\begin{verbatim}
+ mosstack clean
+\end{verbatim}
+
+
+
+\subsection{Tutorial}
+\label{tutorial}
+\index{tutorial}
+The best thing about command line interface is the possibilities of scripting and automating stuff. It's possible
+here as well. This section presents some copy \& paste examples on how to use the command line interface of Mosstack.
+
+\subsubsection{Simple project}
+
+The first case is a simple project with default settings and no calibration frames. Replace \texttt{<lightpath>}
+with a Unix path to the light frames wherever it's used.
+
+The workflow is following:
+\begin{itemize}
+ \item Create project. Always do this first since otherwise it tries to use previous project and most likely will
+       fail
+ \item Add files. Use commands \texttt{dir} and \texttt{file}, whatever suits you. At this time wildcards are not
+       supported so adding several files might be a pain. I recommend adding whole directory, but in that case
+       the files must be the only frames in the directory. When scripting, a Bash \textit{for i in ...} loop
+       might be handy.
+ \item Calibrating. Nothing now but this is the right spot to do that.
+ \item Debayer. This decodes the color filter array (CFA) images into three colour (RGB) images. Do this for 
+       color output. Actually do this always if you don't know what it is.
+ \item Register. Match stars and align images accordingly. This is required for a succesful stack. If your frames
+       are already aligned this is only a waste of time.
+ \item Stack. When all the preparations are done, do the stack.
+ \item Postprocessing. Mosstack does not balance colours, do sharpening or adjust tone curves. For all that
+       you need a separate program. I recommend Darktable.
+\end{itemize}
+
+Translated to Mosstack, that is:
+
+\begin{verbatim}
+ mosstack project Andromeda
+ mosstack dir <lightpath>
+ mosstack debayer light
+ mosstack register rgb
+ mosstack stack reg
+\end{verbatim}
+
+\subsubsection{With calibration}
+
+Let's use some bias and flat frames. Use averaging to stack them and sigma median for the light stack. That means
+the settings must be changed during process.
+
+Calibration is explained theoretically in section \ref{calibrationmath}.
+
+Stuff to do for calibration:
+\begin{itemize}
+ \item Change stacker to Mean 
+ \item Stack bias
+ \item Subtract bias from flat
+ \item Stack flat
+ \item Chance stacker to desired option for light frames
+ \item Calibrate light frames
+\end{itemize}
+
+Otherwise this goes along the Simple project
+
+\begin{verbatim}
+ mosstack project Andromeda
+ mosstack dir <lightpath>
+ mosstack dir <biaspath>
+ mosstack dir <flatpath>
+ mosstack set stack Mean
+ mosstack stack bias
+ mosstack subtract flat bias
+ mosstack stack flat
+ mosstack set stack SigmaMedian
+ mosstack subtract light bias
+ mosstack divide calib flat
+ mosstack debayer light
+ mosstack register rgb
+ mosstack stack reg
+\end{verbatim}
+
+As you see, there are many lines more compared to Simple project without calibration.
+
+\subsubsection{More?}
+
+Under construction
+
+\subsection{Graphical user interface}
+
+Under construction
+
+\newpage
+\section{Mathematics}
+\label{mathematics}
+
+The reason for writing the manual on \LaTeX is this section. A big part of this project for me is to understand myself the
+consepts and mechanisms of stacking. How it all works? Writing it out is one more challenge for me. \emph{If you can't 
+explain it simply, you don't understand it well enough}. This quote has been credited to Einstein, but seems like there's
+no source to back that up. Whoever said it is on to something.
+
+\subsection{Calibrating}
+\label{calibrationmath}
+
+\subsection{Debayering}
+\label{debayeringmath}
+
+\subsection{Registering}
+\label{registeringmath}
+
+\subsection{Stacking}
+\label{stackingmath}
+
+\printindex
+
+\end{document}

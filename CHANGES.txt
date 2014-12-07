@@ -1,3 +1,17 @@
+v0.6.0 2014-12-07 -- Cropping and project handling
+- Added new stacking methods: Maximum, Minimum
+- Added Kappa for Sigma stackers in GUI and CLI
+- Added crop method for CLI
+- ImageMagick affine transformations disabled as non-working. Code still
+  exists.
+- Changing reference frame works in GUI and CLI.
+- Removal of frames possible from GUI and CLI.
+- Monochrome support for any RAW image DCRaw knows. RGB support still only for
+  Bayer filter RGGB. This means most consumer DSLR's.
+- Added feature for cropping image prior to stacking.
+- Added master frame works in GUI as well.
+- Added size and clean commands to cli.
+
 v0.5.2 2014-09-07
 - Can now add a finished master frame to a project. Only works in CLI. The
   command is "mosstack master <file> <type>"

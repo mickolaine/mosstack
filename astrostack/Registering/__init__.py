@@ -1,8 +1,12 @@
-__author__ = 'Mikko Laine'
-__all__ = ["Groth_ImageMagick", "Groth_Skimage"]  # , "Sextractor2"]
+#__all__ = ["Groth_ImageMagick", "Groth_Skimage", "Groth", "SkTransform"]
+__all__ = ["Groth", "SkTransform", "ImTransform"]
+matcher = ["Groth"]
+transformer = ["SkTransform"]
 
 from . import *
 
-Groth_ImageMagick = Groth_ImageMagick.Groth_ImageMagick
-Groth_Skimage = Groth_Skimage.Groth_Skimage
-#Sextractor2 = Sextractor2.Sextractor2
+#Groth_ImageMagick = Groth_ImageMagick.Groth_ImageMagick
+#Groth_Skimage = Groth_Skimage.Groth_Skimage
+Groth = Groth.Groth
+SkTransform = SkTransform.SkTransform
+#ImTransform = ImTransform.ImTransform

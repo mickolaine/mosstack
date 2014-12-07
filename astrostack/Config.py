@@ -16,6 +16,9 @@ from subprocess import check_output, CalledProcessError
 from sys import version_info
 from os.path import expanduser, exists, split
 from os import makedirs
+from ast import literal_eval
+from queue import Queue
+from threading import Thread
 
 
 class ConfigAbstractor:
@@ -71,7 +74,6 @@ class Setup:
         I'm not sure how just yet. Or why would someone need to do that.
         """
 
-        #self.conf = ConfigAbstractor()
         self.file = os.getenv("HOME") + file
 
         if not os.path.exists(os.path.split(self.file)[0]):
@@ -87,6 +89,11 @@ class Setup:
                 print("Looking for SExtractor binaries...")
                 try:
                     sexpath = self.findsex()
+                    version_string = check_output([sexpath, "--version"]).split()[2]
+                    if version_string == "2.4.4":
+                        print("SExtractor version 2.4.4 found. This is an old version which contains a serious bug.")
+                        print("Mosstack will not work with this version. Please upgrade SExtractor.")
+                        exit()
                 except CalledProcessError:
                     print("SExtractor executable not found in $PATH.")
                     sexpath = input("Give full path to SExtractor executable, eg. ~/bin/sex")
@@ -98,8 +105,6 @@ class Setup:
                 print(e.args[0])
 
             self.temppath()
-
-        #self.conf.read(self.file)
 
     def temppath(self):
         """
@@ -190,45 +195,6 @@ FLAGS
                 #    raise IOError("File not found:", sexpath)
         return sexpath.decode().strip()
 
-    '''
-    def get(self, section, key=None):
-        """
-        Return project information under defined section
-
-        Arguments:
-        section = string to look for in configuration
-        key     = key to look for in section, not needed
-
-        Returns:
-        dict {key: value}
-        string value, if key defined
-        """
-
-        self.conf.read(self.file)
-
-        if key:
-            return self.conf.conf[section][key]
-        else:
-            return dict(self.conf.conf._sections[section])
-
-    def set(self, section, key, value):
-        """
-        Set key: value under section in project settings
-
-        Arguments:
-        section
-        key
-        value
-
-        Returns:
-        Nothing
-        """
-
-        self.conf.read(self.file)
-        self.conf.save(key, value, section)
-        self.conf.write(self.file)
-    '''
-
 
 class Config:
     """
@@ -245,10 +211,16 @@ class Config:
         self.conffile = conffile
         self.conf = configparser.ConfigParser()
 
-        if os.path.exists(self.conffile):
-            return
+        self.pool = Queue()
+        self.worker = Thread(target=self._set, daemon=True)
+        self.worker.setDaemon(True)
+        self.worker.start()
 
-        self.write(self.conffile)
+        if os.path.exists(self.conffile):
+            self.conf.read(self.conffile)
+
+        else:
+            self.write(self.conffile)
 
     def get(self, section, key=None):
         """
@@ -265,7 +237,10 @@ class Config:
         If key or section is not found, KeyError is raised
         """
 
-        self.conf.read(self.conffile)
+        # Start with writing all the previous commits
+        self.pool.join()
+
+        #self.conf.read(self.conffile)
 
         if section not in self.conf:
             raise KeyError("Section not found!")
@@ -280,6 +255,8 @@ class Config:
         """
         Set key: value under section in frame info
 
+        Actually just puts the values into queue.
+
         Arguments:
         section
         key
@@ -289,14 +266,47 @@ class Config:
         Nothing
         """
 
-        self.conf.read(self.conffile)
+        #debug
+        #print("Call with: " + section + ", " + key + ", " + value)
 
-        if section not in self.conf:
-            self.conf[section] = {}
-        #print("Writing " + section + ", " + key + ", " + value)
-        self.conf[section][key] = value
-        #print("Setting " + key + " in section " + section + " changed to " + value)
-        self.write(self.conffile)
+        self.pool.put([section, key, value])
+        self.pool.join()
+
+    def _set(self):
+        """
+        Get values from pool and do the actual writing
+        """
+
+        while True:
+            section, key, value = self.pool.get()
+
+            #self.conf.read(self.conffile)
+
+            if section not in self.conf:
+                self.conf[section] = {}
+
+            self.conf[section][key] = value
+
+            self.write(self.conffile)
+            self.pool.task_done()
+
+    def remove(self, section, key):
+        """
+        Remove key from section
+
+        return True if successful, False if key or section not found
+        """
+
+        #self.conf.read(self.conffile)
+
+        try:
+            state = self.conf.remove_option(section, key)
+            self.write(self.conffile)
+
+        except configparser.NoSectionError:
+            state = False
+
+        return state
 
     def write(self, file):
         """
@@ -325,6 +335,11 @@ class Project(Config):
         Arguments:
         pname - project name
         """
+
+        self.pool = Queue()
+        self.worker = Thread(target=self._set)
+        self.worker.setDaemon(True)
+        self.worker.start()
 
         try:
             self.sex   = Global.get("Programs", "SExtractor")
@@ -383,6 +398,7 @@ class Project(Config):
         self.sex  = Global.get("Programs", "SExtractor")
         self.path = Global.get("Default", "Path")
 
+    '''
     @staticmethod
     def input(string):
         """
@@ -398,6 +414,7 @@ class Project(Config):
         else:
             print(version)
             print("It appears there's a new version of Python...")
+    '''
 
     def readproject(self):
         """
@@ -407,6 +424,61 @@ class Project(Config):
             raise NameError("Project file not set, yet trying to access one. This shouldn't happen.")
         if os.path.exists(self.projectfile):
             self.conf.read(self.projectfile)
+
+    def addfile(self, file, final=False):
+        """
+        Add file to project. Used for deleting all the temporary files after project is done
+        """
+
+        try:
+            tlist = literal_eval(self.get("Files", "Temp"))
+            flist = literal_eval(self.get("Files", "Final"))
+        except KeyError:
+            tlist = []
+            flist = []
+
+        if final:
+            if file not in flist:
+                flist.append(file)
+        else:
+            if file not in tlist:
+                tlist.append(file)
+
+        self.set("Files", "Temp", str(tlist))
+        self.set("Files", "Final", str(flist))
+
+    def filelist(self, temp=False):
+        """
+        List all files related to project
+
+        Arguments:
+        boolean temp: Set True to get only temporary files
+        """
+
+        try:
+            tlist = literal_eval(self.get("Files", "Temp"))
+            flist = literal_eval(self.get("Files", "Final"))
+        except KeyError:
+            return ()
+
+        newlist = []
+        for i in tlist:
+            if os.path.exists(i):
+                newlist.append(i)
+        tlist = newlist
+        self.set("Files", "Temp", str(tlist))
+
+        newlist = []
+        for i in flist:
+            if os.path.exists(i):
+                newlist.append(i)
+        flist = newlist
+        self.set("Files", "Final", str(flist))
+
+        if temp:
+            return tlist
+        else:
+            return tlist + flist
 
     def initproject(self, pname):
         """
@@ -420,7 +492,7 @@ class Project(Config):
         if os.path.exists(self.projectfile):
 
             print("Trying to initialize a new project, but the file already exists.")
-            if self.input("Type y to rewrite: ") != "y":
+            if input("Type y to rewrite: ") != "y":
                 print("Try again using a file not already in use.")
                 exit()
             else:
@@ -430,14 +502,18 @@ class Project(Config):
         self.set("Setup", "Path", Global.get("Default", "Path"))
         self.setdefaults()
         self.write(self.projectfile)
+        self.addfile(self.projectfile, final=True)
+        self.pool.join()
 
     def setdefaults(self):
         """
         Set default settings
         """
         self.set("Default", "debayer", "VNGCython")
-        self.set("Default", "register", "Groth_Skimage")
+        self.set("Default", "matcher", "Groth")
+        self.set("Default", "transformer", "SkTransform")
         self.set("Default", "stack", "SigmaMedian")
+        self.set("Default", "Kappa", "3")
 
 
 class Global(object):

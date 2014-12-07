@@ -6,15 +6,9 @@ Created on 2.10.2013
 
 """
 
-#from .. Registering.Registering import Registering
 from subprocess import call, check_output
 from .. Config import Global
-#from math import sqrt, log, fabs
-#from operator import itemgetter
 from os.path import splitext, isfile
-#from re import sub
-#from shutil import copyfile
-#import datetime   # For profiling
 
 
 class Sextractor:
@@ -35,9 +29,11 @@ class Sextractor:
         self.image = image
         self.sextractor = Global.get("Programs", "sextractor")
         self.path = image.wdir
-        self.imagepath = image.getpath("orig")
+        self.imagepath = image.frameinfo.get("Paths", "orig")
         self.catname = splitext(self.image.infopath)[0] + ".cat"
         self.confname = splitext(self.image.infopath)[0] + ".sex"
+        self.image.project.addfile(self.catname)
+        self.image.project.addfile(self.confname)
 
         self.coord = None
 
@@ -157,7 +153,12 @@ class Sextractor:
         while x > max or x < min:
             self.createconf()
             self.execsex()
-            x = float(check_output(["tail", "-1", self.catname]).split()[0])
+
+            try:
+                x = float(check_output(["tail", "-1", self.catname]).split()[0])
+            except ValueError:
+                self.config["DETECT_MINAREA"] = str(float(self.config["DETECT_MINAREA"])*.9)
+                self.config["DETECT_THRESH"] = str(float(self.config["DETECT_THRESH"])*.9)
             if x < min:
                 self.config["DETECT_MINAREA"] = str(float(self.config["DETECT_MINAREA"])*.9)
                 self.config["DETECT_THRESH"] = str(float(self.config["DETECT_THRESH"])*.9)

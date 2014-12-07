@@ -83,6 +83,10 @@ the camera is supported.
 Using mosstack
 =========
 
+This section of the README will be removed. Please refer to manual.pdf found
+in program website https://sites.google.com/site/mosstack/ or packaged in
+mosstack's distribution under doc/
+
 The program does nothing automatically. It's designed by the process
 calibrate -> debayer -> align -> stack and user has to call each of these
 individually. User can also skip any of these steps, if for example no

@@ -2,7 +2,7 @@ from . Batch import Batch
 from . QFrame import QFrame
 from PyQt4.QtGui import QWidget
 from PyQt4.QtCore import *
-from os.path import splitext
+from os.path import splitext, split
 
 
 class QBatch(Batch, QWidget):
@@ -58,11 +58,27 @@ class QBatch(Batch, QWidget):
     def getframearray(self):
         temp = []
         for i in self.frames:
-            temp.append([i, self.frames[i].rawpath, self.frames[i].ftype, self.frames[i].state["prepare"],
+            temp.append([i, split(self.frames[i].rawpath)[1], self.frames[i].ftype,
+                                                    self.frames[i].state["prepare"],
                                                     self.frames[i].state["calibrate"],
                                                     self.frames[i].state["debayer"],
                                                     self.frames[i].state["register"]])
         #print(temp)
+        for i in temp:
+
+            # Do this only for states, not for rest of the table
+            for j in (3, 4, 5, 6):
+                if i[j] == 0:
+                    i[j] = "Not started"
+                elif i[j] == 1:
+                    i[j] = "Working..."
+                elif i[j] == 2:
+                    i[j] = "Done!"
+                elif i[j] == -1:
+                    i[j] = "Error"
+                else:
+                    i[j] = "FAIL"
+        #temp = sorted(temp, key=lambda frames: frames[0])
         self._framearray = temp
         return self._framearray
 
@@ -97,8 +113,8 @@ class QBatch(Batch, QWidget):
 
         self.frames[frame].calibrate(stacker, biasframe, darkframe, flatframe)
         print("...Done")
-        self.project.set("Reference images", self.fphase, str(self.refnum))
-        self.frames[str(self.refnum)].isref = True
+
+        self.frames[self.refId].isref = True
         print("Calibrated images saved with generic name 'calib'.")
         self.refresh.emit()
 
@@ -108,13 +124,11 @@ class QBatch(Batch, QWidget):
         """
 
         print("Processing image " + self.frames[frame].path())
-        #t1 = datetime.datetime.now()
+
         self.frames[frame].debayer(debayer)
-        #t2 = datetime.datetime.now()
         print("...Done")
-        #print("Debayering took " + str(t2 - t1) + " seconds.")
-        self.project.set("Reference images", self.fphase, str(self.refnum))
-        self.frames[str(self.refnum)].isref = True
+
+        self.frames[self.refId].isref = True
         print("Debayered images saved with generic name 'rgb'.")
         self.refresh.emit()
 
@@ -123,8 +137,8 @@ class QBatch(Batch, QWidget):
         Register a single frame
         """
 
-        self.frames[frame].register(register, ref=ref)
-        self.project.set("Reference images", self.fphase, str(self.refnum))
+        self.frames[frame].register(register)
+
         self.refresh.emit()
 
     framearray = property(fget=getframearray)

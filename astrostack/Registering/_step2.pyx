@@ -193,7 +193,7 @@ cdef _step2(np.ndarray[DTYPE_t, ndim=2] tri1, np.ndarray[DTYPE_t, ndim=2] tri2):
     newpairs = {}
     for key in pairs:
         if pairs[key] > 2:                      # Should be >1 but I really don't need that much points.
-            newpairs[key] = pairs[key]          # TODO: Check if this works
+            newpairs[key] = pairs[key]
     pairs = newpairs
 
     final = []
@@ -201,6 +201,5 @@ cdef _step2(np.ndarray[DTYPE_t, ndim=2] tri1, np.ndarray[DTYPE_t, ndim=2] tri2):
         final.append((key[0], key[1], pairs[key]))
 
     final = sorted(final, key=itemgetter(2), reverse=True)
-    #print("After voting there are " + str(len(pairs)) + " pairs found")
 
     return final

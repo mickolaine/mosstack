@@ -3,9 +3,10 @@ Graphical user interface for pyAstroStack. This file holds all the functionality
 """
 
 from PyQt4.QtCore import *
-from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox, QAbstractItemView, QItemSelectionModel,QSortFilterProxyModel
+from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox, QAbstractItemView, QLabel, QRubberBand
 from ast import literal_eval
 from subprocess import CalledProcessError
+from astropy.io import fits
 from . UiDesign import Ui_MainWindow
 from . settings import Ui_Dialog
 from . Config import Project, Global, Setup
@@ -13,6 +14,7 @@ from . QBatch import QBatch
 from . import Registering
 from . import Debayer
 from . import Stacker
+from . imageDialog import Ui_Dialog as imageDialog
 
 try:
     from PyQt4.QtCore import Qstring
@@ -38,16 +40,24 @@ class Ui(Ui_MainWindow, QObject):
         self.inputDialog = QInputDialog()
         self.messageBox = QMessageBox()
         self.swindow = Settings()
+        self.idialog = ImageDialog()
 
         self.threadpool = QThreadPool(self)
         self.threads = 4
+
+        self.kappa = 3.0
 
         self.framearray = []
         self.batch = {}
         self.pname = None
         self.project = None
+        self.coords = None
 
-        self.values = {"tempdir": "", "sexpath": "/usr/bin/sex", "processes": 1}
+        self.selectedId = None
+        self.selectedFtype = None
+        self.infotablemodel = None
+
+        self.configurations = {"tempdir": "", "sexpath": "/usr/bin/sex", "processes": 1}
 
     def setupManual(self, MainWindow):
         """
@@ -68,12 +78,23 @@ class Ui(Ui_MainWindow, QObject):
         self.pushFlat.clicked.connect(self.addFlat)
         self.pushBias.clicked.connect(self.addBias)
         self.pushButtonRun.clicked.connect(self.runProgram)
+        self.pushButtonMakeRef.clicked.connect(self.makeRef)
+        self.pushButtonRemoveFrame.clicked.connect(self.delFrame)
+        self.pushButtonMasterBias.clicked.connect(self.addMasterBias)
+        self.pushButtonMasterDark.clicked.connect(self.addMasterDark)
+        self.pushButtonMasterFlat.clicked.connect(self.addMasterFlat)
+        self.pushButtonCrop.clicked.connect(self.crop)
 
         self.buttonDebayer.setExclusive(True)
-        self.buttonRegister.setExclusive(True)
+        self.buttonMatcher.setExclusive(True)
+        self.buttonTransformer.setExclusive(True)
         self.buttonStack.setExclusive(True)
 
-        # TableView
+        self.radioButtonImagick.setEnabled(False)
+
+        # LineEdits
+
+        self.lineEditKappa.editingFinished.connect(self.lineKappaChanged)
 
         # Check setup
         try:
@@ -98,7 +119,7 @@ class Ui(Ui_MainWindow, QObject):
         self.swindow.setupUi(dialog)
 
         try:
-            self.values = {"tempdir": Global.get("Default", "path"),
+            self.configurations = {"tempdir": Global.get("Default", "path"),
                            "sexpath": Global.get("Programs", "sextractor"),
                            "processes": self.threads}
         except KeyError:
@@ -106,15 +127,25 @@ class Ui(Ui_MainWindow, QObject):
                 sexpath = Setup.findsex()
             except CalledProcessError:
                 sexpath = ""
-            self.values = {"tempdir": "", "sexpath": sexpath, "processes": 1}
+            self.configurations = {"tempdir": "", "sexpath": sexpath, "processes": 1}
 
-        self.swindow.setupContent(values=self.values)
+        self.swindow.setupContent(values=self.configurations)
         if dialog.exec():
             new_values = self.swindow.getValues()
 
             self.threads = new_values["processes"]
-            Global.set("Programs", "sextractor", self.values["sexpath"])
-            Global.set("Default", "path", self.values["tempdir"])
+            Global.set("Programs", "sextractor", self.configurations["sexpath"])
+            Global.set("Default", "path", self.configurations["tempdir"])
+
+    def crop(self):
+
+        dialog = QDialog()
+        self.idialog.setupUi(dialog)
+        self.idialog.setupContent(self.batch[self.selectedFtype].frames[self.selectedId])
+        # Quick&dirty fix to make the whole image visible without resizing
+        dialog.resize(self.idialog.w + 40, self.idialog.h + 70)
+        if dialog.exec():
+            self.coords = self.idialog.coords
 
     def about(self):
         """
@@ -149,13 +180,16 @@ class Ui(Ui_MainWindow, QObject):
                       "BilinearCython": 0,
                       "VNGCython": 2,
                       "BilinearOpenCl": 0,
-                      "VNGOPENCL": 0,
-                      "GrothIM": 0,
-                      "GrothSK": 2,
+                      "VNGOpenCL": 0,
+                      "Groth": 2,
+                      "Scikit": 2,
+                      "Minimum": 0,
+                      "Maximum": 0,
                       "Mean": 0,
                       "Median": 0,
                       "SigmaMedian": 2,
-                      "SigmaClip": 0
+                      "SigmaClip": 0,
+                      "Kappa": 3.0
             }
 
         self.checkBoxDarkBias.setCheckState(values["CalibDarkBias"])
@@ -173,15 +207,20 @@ class Ui(Ui_MainWindow, QObject):
         self.radioButtonBilinearCyt.setChecked(values["BilinearCython"])
         self.radioButtonVNGCyt.setChecked(values["VNGCython"])
         self.radioButtonBilinearCL.setChecked(values["BilinearOpenCl"])
-        self.radioButtonVNGCL.setChecked(values["VNGOPENCL"])
+        self.radioButtonVNGCL.setChecked(values["VNGOpenCL"])
 
-        self.radioButtonGrothIM.setChecked(values["GrothIM"])
-        self.radioButtonGrothSK.setChecked(values["GrothSK"])
+        self.radioButtonGroth.setChecked(values["Groth"])
+        self.radioButtonScikit.setChecked(values["Scikit"])
 
+        self.radioButtonMinimum.setChecked(values["Minimum"])
+        self.radioButtonMaximum.setChecked(values["Maximum"])
         self.radioButtonMean.setChecked(values["Mean"])
         self.radioButtonMedian.setChecked(values["Median"])
         self.radioButtonSMedian.setChecked(values["SigmaMedian"])
         self.radioButtonSClip.setChecked(values["SigmaClip"])
+
+        self.lineEditKappa.setText(str(values["Kappa"]))
+        self.values = values
 
     def getValues(self):
         """
@@ -200,14 +239,22 @@ class Ui(Ui_MainWindow, QObject):
                   "BilinearCython": self.radioButtonBilinearCyt.isChecked(),
                   "VNGCython": self.radioButtonVNGCyt.isChecked(),
                   "BilinearOpenCl": self.radioButtonBilinearCL.isChecked(),
-                  "VNGOPENCL": self.radioButtonVNGCL.isChecked(),
-                  "GrothIM": self.radioButtonGrothIM.isChecked(),
-                  "GrothSK": self.radioButtonGrothSK.isChecked(),
+                  "VNGOpenCL": self.radioButtonVNGCL.isChecked(),
+                  "Groth": self.radioButtonGroth.isChecked(),
+                  "Scikit": self.radioButtonScikit.isChecked(),
+                  "Minimum": self.radioButtonMinimum.isChecked(),
+                  "Maximum": self.radioButtonMaximum.isChecked(),
                   "Mean": self.radioButtonMean.isChecked(),
                   "Median": self.radioButtonMedian.isChecked(),
                   "SigmaMedian": self.radioButtonSMedian.isChecked(),
-                  "SigmaClip": self.radioButtonSClip.isChecked()
+                  "SigmaClip": self.radioButtonSClip.isChecked(),
+                  #"Kappa": self.lineEditKappa.text()
                   }
+        try:
+            values["Kappa"] = float(self.lineEditKappa.text())
+        except ValueError:
+            values["Kappa"] = 3.0
+        #print(values["Kappa"])
         return values
 
     def loadProject(self):
@@ -257,7 +304,7 @@ class Ui(Ui_MainWindow, QObject):
         self.project = Project(self.pname)
         self.setValues()
         self.framearray = []
-        tablemodel = FrameTableModel(self.framearray)
+        tablemodel = GenericTableModel(self.framearray)
         self.tableView.setModel(tablemodel)
 
     def setProjectName(self, pname):
@@ -272,7 +319,7 @@ class Ui(Ui_MainWindow, QObject):
         if self.pname is None:
             self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
             return
-        files = QFileDialog.getOpenFileNames(caption="Select light files",
+        files = QFileDialog.getOpenFileNames(caption="Select " + ftype + " files",
                                              filter="Raw photos (*.CR2 *.cr2)")
         self.addFrame(files, ftype)
 
@@ -309,6 +356,7 @@ class Ui(Ui_MainWindow, QObject):
 
         # Add files to batch
         number = 0
+        self.threadpool.setMaxThreadCount(self.threads)
         for path in files:
             # If batch does not exist, create one
             if ftype not in self.batch:
@@ -324,10 +372,50 @@ class Ui(Ui_MainWindow, QObject):
         for i in self.batch[ftype].frames:
             self.threadpool.start(GenericThread(self.batch[ftype].decode, i))
 
+    def addMasterDialog(self, ftype):
+        if self.pname is None:
+            self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
+            return
+        file = QFileDialog.getOpenFileName(caption="Select master file",
+                                            filter="Fits and Tiff (*.FITS *.fits *.tiff *.TIFF *.tif *.TIF)")
+        return self.addMasterFrame(file, ftype)
+
+    def addMasterDark(self):
+        if self.addMasterDialog("dark"):
+            self.checkBoxDark.setCheckable(True)
+            self.checkBoxDark.setCheckState(2)
+            #self.checkBoxDark.setCheckable(False)
+
+    def addMasterBias(self):
+        if self.addMasterDialog("bias"):
+            print("FOOOOOOO")
+            self.checkBoxBias.setCheckable(True)
+            self.checkBoxBias.setCheckState(2)
+            #self.checkBoxBias.setCheckable(False)
+
+    def addMasterFlat(self):
+        if self.addMasterDialog("flat"):
+            self.checkBoxFlat.setCheckable(True)
+            self.checkBoxFlat.setCheckState(2)
+            #self.checkBoxFlat.setCheckable(False)
+
+    def addMasterFrame(self, file, ftype):
+        """
+        Add file to project as master frame of type ftype
+        """
+        try:
+            if ftype not in self.batch:
+                self.batch[ftype] = QBatch(self.project, ftype)
+            self.batch[ftype].addmaster(file, ftype)
+            return True
+        except:
+            return False
+
     def updateTableView(self):
         """
         Update frame list view.
         """
+
         self.tablemodel = []
         for i in self.batch:
             self.tablemodel += self.batch[i].framearray
@@ -344,13 +432,38 @@ class Ui(Ui_MainWindow, QObject):
         Update frame information view to the selected frame Qt.DisplayRole
         """
 
-        id = self.tablemodel.data(selected.sibling(selected.row(), 0), Qt.DisplayRole)
-        ftype = self.tablemodel.data(selected.sibling(selected.row(), 2), Qt.DisplayRole)
-        self.infotablemodel = GenericTableModel(self.batch[ftype].frames[id].infotable())
+        self.selectedId = str(self.tablemodel.data(selected.sibling(selected.row(), 0), Qt.DisplayRole))
+        self.selectedFtype = self.tablemodel.data(selected.sibling(selected.row(), 2), Qt.DisplayRole)
+        self.infotablemodel = GenericTableModel(self.batch[self.selectedFtype].frames[self.selectedId].infotable())
         self.infotablemodel.header_labels = ["Attribute", "Value"]
         self.tableView_2.setModel(self.infotablemodel)
         self.tableView_2.resizeColumnsToContents()
         self.tableView_2.resizeRowsToContents()
+
+    def makeRef(self):
+        """
+        Make selected image the reference frame
+        """
+
+        self.batch[self.selectedFtype].setRef(self.selectedId)
+
+    def delFrame(self):
+        """
+        Delete the selected frame from project.
+        """
+
+        self.batch[self.selectedFtype].removeFrame(self.selectedId)
+        self.updateTableView()
+
+    def lineKappaChanged(self):
+        """
+        Change values["Kappa"]
+        """
+        try:
+            float(self.lineEditKappa.text())
+            self.values["Kappa"] = float(self.lineEditKappa.text())
+        except ValueError:
+            self.messageBox.information(self.messageBox, 'Error', 'You must type a decimal number eg. 3.0')
 
     def runProgram(self):
         """
@@ -426,8 +539,8 @@ class Ui(Ui_MainWindow, QObject):
             self.threadpool.start(GenericThread(self.batch["light"].calibrate, i, Stacker.Mean(), bias=lightbias,
                                                                                                   dark=lightdark,
                                                                                                   flat=lightflat))
-        self.threadpool.setMaxThreadCount(1)
-        self.threadpool.start(GenericThread(self.batch["light"].stack, Stacker.Mean()))
+        #self.threadpool.setMaxThreadCount(1)
+        #self.threadpool.start(GenericThread(self.batch["light"].stack, Stacker.Mean()))
         self.threadpool.waitForDone()
         self.threadpool.setMaxThreadCount(self.threads)
 
@@ -454,20 +567,24 @@ class Ui(Ui_MainWindow, QObject):
         """
         Run everything related to registering
         """
-        if self.buttonRegister.checkedButton().text() == self.radioButtonGrothIM.text():
-            self.registerwrap = Registering.Groth_ImageMagick()
-        elif self.buttonRegister.checkedButton().text() == self.radioButtonGrothSK.text():
-            self.registerwrap = Registering.Groth_Skimage()
+
+        if self.buttonMatcher.checkedButton().text() == self.radioButtonGroth.text():
+            self.registerwrap = Registering.Groth()
+
+        if self.buttonTransformer.checkedButton().text() == self.radioButtonScikit.text():
+            self.registerwrap.tform = Registering.SkTransform()
+        elif self.buttonTransformer.checkedButton().text() == self.radioButtonImagick.text():
+            self.registerwrap.tform = Registering.ImTransform()
 
         # First register the reference frame. This has to be done before anything else
         self.threadpool.start(GenericThread(self.batch["light"].register,
-                                            self.batch["light"].refnum,
+                                            self.batch["light"].refId,
                                             self.registerwrap,
                                             ref=True))
         self.threadpool.waitForDone()
 
         for i in self.batch["light"].frames:
-            if i == self.batch["light"].refnum:
+            if i == self.batch["light"].refId:
                 continue
             self.threadpool.start(GenericThread(self.batch["light"].register, i, self.registerwrap))
 
@@ -478,14 +595,31 @@ class Ui(Ui_MainWindow, QObject):
         Run everything related to stacking
         """
 
-        if self.radioButtonMean.isChecked():
+        if self.coords is not None:
+            for i in self.batch["light"].frames:
+                xmax = self.batch["light"].frames[i].x
+                ymax = self.batch["light"].frames[i].y
+                xrange = (self.coords[0], self.coords[1])
+                yrange = (self.coords[2], self.coords[3])
+                self.threadpool.start(GenericThread(self.batch["light"].frames[i].crop, xrange, yrange))
+
+        if "Kappa" not in self.values:
+            self.values["Kappa"] = self.kappa
+
+        self.threadpool.waitForDone()
+
+        if self.radioButtonMaximum.isChecked():
+            self.stackingwrap = Stacker.Maximum()
+        elif self.radioButtonMinimum.isChecked():
+            self.stackingwrap = Stacker.Minimum()
+        elif self.radioButtonMean.isChecked():
             self.stackingwrap = Stacker.Mean()
         elif self.radioButtonMedian.isChecked():
             self.stackingwrap = Stacker.Median()
         elif self.radioButtonSMedian.isChecked():
-            self.stackingwrap = Stacker.SigmaMedian()
+            self.stackingwrap = Stacker.SigmaMedian(kappa=self.values["Kappa"])
         elif self.radioButtonSClip.isChecked():
-            self.stackingwrap = Stacker.SigmaClip()
+            self.stackingwrap = Stacker.SigmaClip(kappa=self.values["Kappa"])
 
         self.threadpool.start(GenericThread(self.batch["light"].stack, self.stackingwrap))
 
@@ -494,6 +628,99 @@ class Ui(Ui_MainWindow, QObject):
         self.messageBox.information(self.messageBox, 'Stacking done!',
                                     'Result image saved in ' + self.batch["light"].master.path() + "\n" +
                                     'and ' + self.batch["light"].master.path(fformat="tiff"))
+
+
+class ImageDialog(imageDialog):
+
+    def __init__(self):
+        super(imageDialog, self).__init__()
+
+    def setupContent(self, frame):
+        """
+        Set up contents of dialog
+        """
+
+        pixmap = frame.getQPixmap()
+        self.label = ImageLabel(self.scrollAreaWidgetContents_2)
+
+        #self.label.setGeometry(QRect(0, 0, frame.x * .25, frame.y * .25))
+        #self.label.setGeometry(QRect(0, 0, frame.x, frame.y))
+        self.label.setText(_fromUtf8(""))
+        self.label.setObjectName(_fromUtf8("label"))
+        self.label.setScaledContents(True)
+        self.label.setPixmap(pixmap)
+        size = pixmap.size()
+        self.w = size.width()*.25
+        self.h = size.height()*.25
+        self.label.setGeometry(QRect(0, 0, self.w, self.h))
+        self.label.refresh.connect(self.setCoords)
+
+    def setCoords(self):
+        """
+        Set coordinates given from rubberband selection
+        """
+
+        x0, x1, y0, y1 = self.label.getCoords()
+        x0 = x0 * 4
+        x1 = x1 * 4
+        y0 = self.h - y0 * 4
+        y1 = self.h - y1 * 4
+
+        if x0 > x1:
+            temp = x0
+            x0 = x1
+            x1 = temp
+        if y0 > y1:
+            temp = y0
+            y0 = y1
+            y1 = temp
+
+        self.coords = (x0, x1, y0, y1)
+        self.lineEdit_x0.setText(str(x0))
+        self.lineEdit_x1.setText(str(x1))
+        self.lineEdit_y0.setText(str(y0))
+        self.lineEdit_y1.setText(str(y1))
+
+
+class ImageLabel(QLabel):
+
+    refresh = pyqtSignal()
+
+    def __init__(self, parent=None):
+
+        QLabel.__init__(self, parent)
+        self.rubberBand = QRubberBand(QRubberBand.Rectangle, self)
+        self.origin = QPoint()
+        self.coords = (0, 0, 0, 0)
+
+    def mousePressEvent(self, event):
+
+        if event.button() == Qt.LeftButton:
+
+            self.origin = QPoint(event.pos())
+            self.rubberBand.setGeometry(QRect(self.origin, QSize()))
+            self.rubberBand.show()
+
+    def mouseMoveEvent(self, event):
+
+        if not self.origin.isNull():
+            self.rubberBand.setGeometry(QRect(self.origin, event.pos()).normalized())
+
+    def mouseReleaseEvent(self, event):
+
+        if event.button() == Qt.LeftButton:
+            #self.rubberBand.hide()
+
+            x0 = self.origin.x()
+            x1 = event.pos().x()
+            y0 = self.origin.y()
+            y1 = event.pos().y()
+
+            self.coords = (x0, x1, y0, y1)
+            self.refresh.emit()
+
+    def getCoords(self):
+        return self.coords
 
 
 class Settings(Ui_Dialog):
@@ -517,37 +744,38 @@ class Settings(Ui_Dialog):
         self.lineEditTemp.editingFinished.connect(self.lineTempChanged)
 
         if values is None:
-            self.values = dict()
+            self.configurations = dict()
         else:
-            self.values = values
+            self.configurations = values
 
-        self.lineEditTemp.setText(self.values["tempdir"])
-        self.lineEditSex.setText(self.values["sexpath"])
-        self.comboBox.setCurrentIndex(self.values["processes"] - 1)
+        self.lineEditTemp.setText(self.configurations["tempdir"])
+        self.lineEditSex.setText(self.configurations["sexpath"])
+        self.comboBox.setCurrentIndex(self.configurations["processes"] - 1)
 
     def browseTempDialog(self):
-        self.values["tempdir"] = self.fileDialog.getExistingDirectory(caption="Select directory for temporary files")
-        self.lineEditTemp.setText(self.values["tempdir"])
+        self.configurations["tempdir"] = self.fileDialog.getExistingDirectory(
+                                                                        caption="Select directory for temporary files")
+        self.lineEditTemp.setText(self.configurations["tempdir"])
 
     def browseSexPath(self):
-        self.values["sexpath"] = self.fileDialog.getOpenFileName(caption="Select SExtractor binary",
+        self.configurations["sexpath"] = self.fileDialog.getOpenFileName(caption="Select SExtractor binary",
                                                                  directory="/usr/bin/")
-        self.lineEditSex.setText(self.values["sexpath"])
+        self.lineEditSex.setText(self.configurations["sexpath"])
 
     def lineSexChanged(self):
-        self.values["sexpath"] = self.lineEditSex.text()
+        self.configurations["sexpath"] = self.lineEditSex.text()
 
     def lineTempChanged(self):
-        self.values["tempdir"] = self.lineEditTemp.text()
+        self.configurations["tempdir"] = self.lineEditTemp.text()
 
     def comboChange(self):
         try:
-            self.values["processes"] = int(self.comboBox.currentText())
+            self.configurations["processes"] = int(self.comboBox.currentText())
         except ValueError:
             pass
 
     def getValues(self):
-        return self.values
+        return self.configurations
 
 
 class GenericTableModel(QAbstractTableModel):

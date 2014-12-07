@@ -51,6 +51,8 @@ class Frame(object):
         self.focallength = None
         self.bayer       = None
         self.dlmulti     = None
+        self.step1       = False
+        self.step2       = False
 
         self.wdir = Config.Global.get("Default", "Path")
         self.name = self.project.get("Default", "Project name")
@@ -118,9 +120,9 @@ class Frame(object):
 
         self._decode()
         self.state["prepare"] = 2
-        self.update_ui()
+        #self.update_ui()
 
-    def calibrate(self, stacker, bias=None, dark=None, flat=None):
+    def calibrate(self, stacker, bias=None, dark=None, flat=None, biaslevel=None):
         """
         Calibrate the frame. Project tells how.
 
@@ -137,6 +139,11 @@ class Frame(object):
 
         if bias is not None:
             data = stacker.subtract(data, bias.data)
+        elif biaslevel is not None:
+            try:
+                data = data - float(biaslevel)
+            except ValueError:
+                pass
 
         if dark is not None:
             data = stacker.subtract(data, dark.data)
@@ -147,9 +154,10 @@ class Frame(object):
         self.data = data
         self.fphase = "calib"
         self.write()
+        self.project.addfile(self.path())
         self.state["calibrate"] = 2
 
-        self.update_ui()
+        #self.update_ui()
         return
 
     def debayer(self, debayer):
@@ -162,16 +170,16 @@ class Frame(object):
         """
 
         self.state["debayer"] = 1
-
+        print("Debayering frame " + self.number)
         self.data = debayer.debayer(self.data[0])
         self.fphase = "rgb"
         self.write()
+        self.project.addfile(self.path())
         self.state["debayer"] = 2
 
-        self.update_ui()
         return
 
-    def register(self, register, ref=False):
+    def register(self, register):  # , ref=False):
         """
         Register the frame. Project tells how.
 
@@ -181,14 +189,44 @@ class Frame(object):
         """
 
         self.state["register"] = 1
-        self.data = register.register_single(self, ref=ref)
+        data = register.register(self)
         self.fphase = "reg"
         self.state["register"] = 2
-        self.write()
-
-        self.update_ui()
-
+        if data is not None:
+            self.data = data
+            self.write()
+            self.project.addfile(self.path())
+            del data
         return
+
+    def crop(self, xrange, yrange):
+        """
+        Crop the data by given coordinates. Save cropped data to self.data and write to disc with fphase="crop".
+
+        Assume data is 3 dimensional. TODO: Make it work with 2d data as well
+
+        Cropping is reasonable to do only for aligned data. Either with data that's already aligned or after registering
+
+        Arguments:
+        xrange: (x_0, x_1)
+        yrange: (y_0, y_1)
+        """
+
+        #crop data
+        print("Cropping frame number " + self.number)
+
+        data = self.data[:, yrange[0]:yrange[1], xrange[0]:xrange[1]]
+        self.data = data
+
+        self.fphase = "crop"
+        self.write()
+        self.project.addfile(self.path())
+
+        #alter metadata
+        self.x = self.data.shape[2]
+        self.y = self.data.shape[1]
+
+        self.writeinfo()
 
     @staticmethod
     def createmaster(project, path, ftype):
@@ -216,7 +254,6 @@ class Frame(object):
             frame._load_tiff(path=path)
             frame.extractinfo()
             frame.writeinfo()
-            #frame._path = splitext(frame._path)[0] + ".fits"
             frame.write()
 
         return frame
@@ -276,7 +313,7 @@ class Frame(object):
             return "tiff"
         if ms.split()[0] == "FITS":
             return "fits"
-        if call(["dcraw", "-i", path]):
+        if not call(["dcraw", "-i", path]):
             return "raw"
         return ms
 
@@ -295,6 +332,7 @@ class Frame(object):
         self.write(skimage=True)
         self._release_data()
 
+    '''
     def getpath(self, genname):
         """
         Return path by some other genname than self.genname. Read from .info
@@ -304,6 +342,7 @@ class Frame(object):
             return self.frameinfo.get("Paths", genname)
         except:
             return self.wdir + self.name + "_" + str(self.number) + "_" + genname + ".fits"
+    '''
 
     def readinfo(self):
         """
@@ -416,6 +455,7 @@ class Frame(object):
         if self.infopath is None:
             self.infopath = self.wdir + "/" + self.name + "_" + self.ftype + "_" + str(self.number) + ".info"
         self.frameinfo = Config.Frame(self.infopath)
+        self.project.addfile(self.infopath)
 
         self.frameinfo.set("Paths", "Raw", str(self.rawpath))
         self.frameinfo.set("Default", "Number", str(self.number))
@@ -580,9 +620,12 @@ class Frame(object):
                 print("Unable to continue.")
         else:
             move(self.rawpath[:-3] + "pgm", self.path(fformat="pgm"))
+            self.project.addfile(self.path(fformat="pgm"))
             call(["convert", self.path(fformat="pgm"), self.path()])
+            self.project.addfile(self.path())
             print("Conversion successful!")
 
+    '''
     def _convert(self, srcpath):
         """
         Convert the raw file into FITS via PGM.
@@ -617,6 +660,7 @@ class Frame(object):
             print("Unable to find file in given path: " + srcpath + ". Find out what's wrong and try again.")
             print("Can't continue. Exiting.")
             exit()
+    '''
 
     def _load_fits(self, path=None):
         """
@@ -692,6 +736,7 @@ class Frame(object):
             print("No data set! Exiting...")
             exit()
         fits.writeto(self.path(), np.uint16(self._data), hdu.header, clobber=True)
+
         self._release_data()
 
     def _write_tiff(self, skimage=True):
@@ -721,6 +766,7 @@ class Frame(object):
             call(["convert", rgbpath[0], rgbpath[1], rgbpath[2],
                   "-channel", "RGB", "-depth", "16", "-combine", self.path(fformat="tiff")])
             call(["rm", rgbpath[0], rgbpath[1], rgbpath[2]])
+        self.project.addfile(self.path(fformat="tiff"), final=True)
 
     def write_tiff(self):
         """
@@ -733,6 +779,7 @@ class Frame(object):
         for i in [0, 1, 2]:
             image.append(Im.fromarray(np.flipud(np.int16(self.data[i]))))
             image[i].save(rgbpath[i], format="tiff")
+            self.project.addfile(rgbpath[i])
 
         self._release_data()
 
@@ -747,9 +794,3 @@ class Frame(object):
         self._write_fits()
         if tiff:
             self._write_tiff(skimage=skimage)
-
-    def update_ui(self):
-        """
-        Update the user interface. Empty for now, but inheriting classes might replace this to something useful
-        """
-        pass

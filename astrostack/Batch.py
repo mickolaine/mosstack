@@ -33,9 +33,10 @@ class Batch(object):
             self.fphase = fphase
 
         try:
-            self.refnum = int(project.get("Reference images", key=self.ftype))  # Number of reference frame
+            self.refId = project.get("Reference", key=self.ftype)  # Number of reference frame
         except KeyError:
-            self.refnum = "1"
+
+            self.refId = "1"
 
         try:
             files = self.project.get(self.ftype)                       # Paths for the frame info files
@@ -43,11 +44,29 @@ class Batch(object):
             for key in files:
                 frame = Frame(self.project, infopath=files[key], fphase=self.fphase)
                 self.frames[key] = frame
+            self.setRef(self.refId)
 
         except KeyError:
             #print("Error")
             pass
 
+    def setRef(self, refId):
+        """
+        Set the reference frame.
+
+        Arguments:
+        refId: Id of the reference frame. Id is the same as in project file and key in frames dict
+        """
+
+        try:
+            self.frames[self.refId].isref = False
+            self.refId = refId
+            self.frames[self.refId].isref = True
+            self.project.set("Reference", self.ftype, str(self.refId))
+        except KeyError:
+            raise
+
+    '''
     def debayerAll(self, debayer):
         """
         Debayer CFA-images into RGB.
@@ -65,8 +84,9 @@ class Batch(object):
             print("Debayering took " + str(t2 - t1) + " seconds.")
             self.frames[i].fphase = "rgb"
             self.frames[i].write()
-        self.project.set("Reference images", self.fphase, str(self.refnum))
+
         print("Debayered images saved with generic name 'rgb'.")
+
 
     def registerAll(self, register):
         """
@@ -77,8 +97,9 @@ class Batch(object):
         """
 
         register.register(self.frames, self.project)
-        self.project.set("Reference images", self.fphase, str(self.refnum))
+
         print("Registered images saved with generic name 'reg'.")
+    '''
 
     def stack(self, stacker):
         """
@@ -92,6 +113,7 @@ class Batch(object):
         self.master = Frame(self.project, ftype=self.ftype, number="master")
         self.master.data = stacker.stack(self.frames, self.project)
         self.master.write(tiff=True)
+        self.project.addfile(self.master.path(), final=True)
         dim, self.master.x, self.master.y = self.master.data.shape
         self.master.writeinfo()
         self.project.set("Masters", self.ftype, self.master.infopath)
@@ -113,8 +135,8 @@ class Batch(object):
             if self.frames[i].fphase not in ("bias", "dark", "flat"):
                 self.frames[i].fphase = "calib"
             self.frames[i].write()
+            self.project.addfile(self.frames[i].path())
 
-        self.project.set("Reference images", "calib", str(self.refnum))
         print("Calibrated images saved with generic name 'calib'.")
 
     def divide(self, calib, stacker):
@@ -131,7 +153,8 @@ class Batch(object):
             if self.frames[i].fphase not in ("bias", "dark", "flat"):
                 self.frames[i].fphase = "calib"
             self.frames[i].write()
-        self.project.set("Reference images", "calib", str(self.refnum))
+            self.project.addfile(self.frames[i].path())
+
         print("Calibrated images saved with generic name 'calib'.")
 
     def directory(self, path, ftype):
@@ -147,7 +170,7 @@ class Batch(object):
         rawfiles = []
 
         for i in allfiles:
-            if splitext(i)[1] in (".cr2", ".CR2", ".nef", ".NEF"):
+            if Frame.identify(path + i) in ("tiff", "fits", "raw"):
                 rawfiles.append(path + i)
 
         if len(rawfiles) != 0:
@@ -158,22 +181,18 @@ class Batch(object):
             print("No supported RAW files found. All files found are listed here: " + str(allfiles))
             return
 
-        #n = len(self.frames)
-
         self.addfiles(rawfiles, ftype)
 
-        self.project.set("Reference images", ftype, "1")
-        self.frames["1"].isref = True
+        # Set reference frame key if not set already. Defaults to the first frame added.
+        try:
+            self.project.get("Reference", ftype)
+        except KeyError:
+            self.project.set("Reference", ftype, list(self.frames.keys())[0])
 
     def addfiles(self, allfiles, ftype):
         """
         Add list of files to Batch
         """
-
-        #try:
-        #    n = len(self.project.get(ftype).keys())
-        #except KeyError:
-        #    n = 0
 
         for i in allfiles:
             self.addfile(i, ftype)
@@ -188,12 +207,6 @@ class Batch(object):
             frame = Frame(self.project, infopath=file)
             self.frames[str(frame.number)] = frame
             return
-
-        # Check how many frames there are already in the batch. Needed for new index key for frames dict
-        #try:
-        #    n = len(self.project.get(ftype).keys())
-        #except KeyError:
-        #    n = 0
 
         n = self.nextkey()
 
@@ -215,7 +228,7 @@ class Batch(object):
         self.frames[n] = frame
 
     def addmaster(self, file, ftype):
-        """re
+        """
         Add a ready master to batch
         """
 
@@ -238,3 +251,16 @@ class Batch(object):
             keys[i] = int(keys[i])
 
         return str(max(keys) + 1)
+
+    def removeFrame(self, frameId):
+        """
+        Remove frame by id from the project.
+        """
+
+        self.project.remove(self.ftype, frameId)
+        del self.frames[frameId]
+
+        # If reference frame is removed, choose a new one.
+        if frameId == self.refId:
+            self.setRef(list(self.frames.keys())[0])
+            print("Reference frame " + frameId + " removed. New reference frame is " + self.refId + ".")

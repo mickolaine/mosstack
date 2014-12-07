@@ -24,9 +24,26 @@ class Registering:
     """
 
     def __init__(self):
-        pass
+        self.tform = None
 
-    def register(self, imagelist, project):
+    def register(self, frame):
+        """
+        Call everything necessary to register one frame
+
+        Arguments:
+        frame - a Frame-type object
+        """
+
+        # find stars
+        self.match_stars(frame)
+
+        # calculate transform
+        self.tform.calculate_transform(frame)
+
+        # do the transform
+        return self.tform.affine_transform(frame)
+
+    def register_old(self, imagelist, project):
         """
         Calls everything required for total registration process.
 
