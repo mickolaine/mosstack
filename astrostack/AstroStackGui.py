@@ -320,7 +320,7 @@ class Ui(Ui_MainWindow, QObject):
             self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
             return
         files = QFileDialog.getOpenFileNames(caption="Select " + ftype + " files",
-                                             filter="Raw photos (*.CR2 *.cr2)")
+                                            filter="Raw photos (*.CR2 *.cr2 *.arw *.ARW *.nef *.NEF);;All files (*.*)")
         self.addFrame(files, ftype)
 
     def addLight(self):

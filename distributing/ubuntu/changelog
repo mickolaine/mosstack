@@ -1,3 +1,9 @@
+mosstack (0.6.0) trusty; urgency=low
+
+  * New version
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Sun, 07 Dec 2014 21:23:00 +0300
+
 mosstack (0.5-1) trusty; urgency=low
 
   * New version
