@@ -6,6 +6,7 @@ try:
     BilinearOpenCl = BilinearOpenCl.BilinearOpenCl
 #    LRPCl = LRPCl.LRPCl
     VNGOpenCl = VNGOpenCl.VNGOpenCl
+#    VNGOpenCl_test = VNGOpenCl_test.VNGOpenCl_test
 except ImportError:
 #    from . import Bilinear
     from . import BilinearCython

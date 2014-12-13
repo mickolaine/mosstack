@@ -9,6 +9,7 @@ from PIL import Image as Im
 import gc
 import ast
 import magic
+import datetime   # For profiling
 
 
 class Frame(object):
@@ -168,7 +169,7 @@ class Frame(object):
         2. Do the thing
         3. Inform Gui that state has changed
         """
-
+        #t1 = datetime.datetime.now()
         self.state["debayer"] = 1
         print("Debayering frame " + self.number)
         self.data = debayer.debayer(self.data[0])
@@ -176,7 +177,8 @@ class Frame(object):
         self.write()
         self.project.addfile(self.path())
         self.state["debayer"] = 2
-
+        #t2 = datetime.datetime.now()
+        #print(str(t2 - t1))
         return
 
     def register(self, register):  # , ref=False):
