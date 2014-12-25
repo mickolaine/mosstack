@@ -45,7 +45,7 @@ debayering is required or images are already aligned.
 UI is a command line one. User calls mosstack with proper arguments and the
 program does that step. Most commands work with pattern
 
-    ``astrostack <operation> <arguments>``
+    ``mosstack <operation> <arguments>``
 
 where <operation> and <arguments> are something from following list.
 

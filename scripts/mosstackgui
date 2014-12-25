@@ -15,7 +15,7 @@ try:
     from PyQt4.QtGui import QApplication, QMainWindow
 except ImportError:
     print("No PyQt4 found. Check your installation.")
-from astrostack import AstroStackGui
+from mosstack import AstroStackGui
 #try:
 #    from PyQt4.QtCore import Qstring
 #    _fromUtf8 = QString.fromUtf8

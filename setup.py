@@ -6,19 +6,19 @@ import numpy
 
 setup(
     name='mosstack',
-    version='0.6.0',
+    version='0.6.1',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
-    packages=['astrostack', 'astrostack.Debayer', 'astrostack.Registering', 'astrostack.Stacker'],
+    packages=['mosstack', 'mosstack.Debayer', 'mosstack.Registering', 'mosstack.Stacker'],
     #    packages=find_packages(),
     scripts=['scripts/mosstack', 'scripts/mosstackgui'],
     include_dirs=[numpy.get_include()],
     #   cmdclass = cmdclass,
     #    ext_modules=ext_modules,
-    ext_modules = cythonize(["astrostack/Registering/_step2.pyx",
-                             "astrostack/Debayer/_BilinearCython.pyx",
-                             "astrostack/Debayer/_VNGCython.pyx",
-                             "astrostack/Stacker/_math.pyx"]),
+    ext_modules = cythonize(["mosstack/Registering/_step2.pyx",
+                             "mosstack/Debayer/_BilinearCython.pyx",
+                             "mosstack/Debayer/_VNGCython.pyx",
+                             "mosstack/Stacker/_math.pyx"]),
     data_files=[
         ("share/mosstack/", ["data/mosstack.xpm", "doc/LaTeX/manual.pdf"]),
         ("share/applications/", ["data/mosstack.desktop"])

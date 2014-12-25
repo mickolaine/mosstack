@@ -14,7 +14,7 @@ to run different stacking operations according to the project file.
 """
 
 import sys
-from astrostack.UserInterface import UserInterface
+from mosstack.UserInterface import UserInterface
 
 
 def main(argv):
