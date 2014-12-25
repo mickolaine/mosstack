@@ -6,6 +6,7 @@
       <w>addfiles</w>
       <w>addrgb</w>
       <w>astro</w>
+      <w>astropy</w>
       <w>astropy's</w>
       <w>astuple</w>
       <w>bilinear</w>
@@ -74,12 +75,16 @@
       <w>infopath</w>
       <w>initproject</w>
       <w>itype</w>
+      <w>laine</w>
       <w>lencfa</w>
       <w>libraw</w>
       <w>longhelp</w>
       <w>magick</w>
       <w>magick's</w>
       <w>maketriangles</w>
+      <w>mikko</w>
+      <w>mosstack</w>
+      <w>mosstackgui</w>
       <w>newdata</w>
       <w>newfunc</w>
       <w>newlist</w>
@@ -96,6 +101,7 @@
       <w>ppath</w>
       <w>projectfile</w>
       <w>projectname</w>
+      <w>pyopencl</w>
       <w>rawfiles</w>
       <w>rawformat</w>
       <w>rawpath</w>
