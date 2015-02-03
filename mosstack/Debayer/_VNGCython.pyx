@@ -320,4 +320,4 @@ def _debayer(np.ndarray[DTYPE_t, ndim=2] cfa, np.ndarray[DTYPE_t, ndim=2] r,
                     g[i,j] = g13
                     r[i,j] = g13 + (bsum - gsum)/n
 
-    return np.array([r, g, b])
+    return [r, g, b]

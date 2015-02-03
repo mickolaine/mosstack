@@ -6,7 +6,7 @@ import numpy
 
 setup(
     name='mosstack',
-    version='0.6.1',
+    version='0.6.2',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     # packages=['mosstack', 'mosstack.Debayer', 'mosstack.Registering', 'mosstack.Stacker'],

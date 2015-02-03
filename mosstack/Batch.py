@@ -66,41 +66,6 @@ class Batch(object):
         except KeyError:
             raise
 
-    '''
-    def debayerAll(self, debayer):
-        """
-        Debayer CFA-images into RGB.
-
-        Arguments
-        debayer: a Debayer-type object
-        """
-
-        for i in self.frames:
-            print("Processing image " + self.frames[i].path())
-            t1 = datetime.datetime.now()
-            self.frames[i].data = debayer.debayer(self.frames[i].data[0])
-            t2 = datetime.datetime.now()
-            print("...Done")
-            print("Debayering took " + str(t2 - t1) + " seconds.")
-            self.frames[i].fphase = "rgb"
-            self.frames[i].write()
-
-        print("Debayered images saved with generic name 'rgb'.")
-
-
-    def registerAll(self, register):
-        """
-        Register and transform images.
-
-        Arguments
-        register: a Registering-type object
-        """
-
-        register.register(self.frames, self.project)
-
-        print("Registered images saved with generic name 'reg'.")
-    '''
-
     def stack(self, stacker):
         """
         Stack images using given stacker
@@ -111,10 +76,25 @@ class Batch(object):
 
         # Create new empty frame for the result
         self.master = Frame(self.project, ftype=self.ftype, number="master")
+
+        # Call stacker
         self.master.data = stacker.stack(self.frames, self.project)
+
+        # Save file
         self.master.write(tiff=True)
+
+        # Metadata and printouts
         self.project.addfile(self.master.path(), final=True)
         dim, self.master.x, self.master.y = self.master.data.shape
+        totalexposure = 0.0
+        for i in self.frames:
+            try:
+                totalexposure += float(self.frames[i].shutter.split()[0])
+            except ValueError:
+                totalexposure = None
+                break
+
+        self.master.totalexposure = totalexposure
         self.master.writeinfo()
         self.project.set("Masters", self.ftype, self.master.infopath)
         print("Result image saved to " + self.master.path())

@@ -6,7 +6,6 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox, QAbstractItemView, QLabel, QRubberBand
 from ast import literal_eval
 from subprocess import CalledProcessError
-from astropy.io import fits
 from . UiDesign import Ui_MainWindow
 from . settings import Ui_Dialog
 from . Config import Project, Global, Setup
@@ -114,7 +113,6 @@ class Ui(Ui_MainWindow, QObject):
         Open settings window and read values from there.
         """
 
-        #self.swindow = Settings()
         dialog = QDialog()
         self.swindow.setupUi(dialog)
 
@@ -248,13 +246,11 @@ class Ui(Ui_MainWindow, QObject):
                   "Median": self.radioButtonMedian.isChecked(),
                   "SigmaMedian": self.radioButtonSMedian.isChecked(),
                   "SigmaClip": self.radioButtonSClip.isChecked(),
-                  #"Kappa": self.lineEditKappa.text()
                   }
         try:
             values["Kappa"] = float(self.lineEditKappa.text())
         except ValueError:
             values["Kappa"] = 3.0
-        #print(values["Kappa"])
         return values
 
     def loadProject(self):
@@ -309,7 +305,6 @@ class Ui(Ui_MainWindow, QObject):
 
     def setProjectName(self, pname):
         self.projectName.setText(_fromUtf8(pname))
-        #self.projectName.setText(pname)
         self.pname = pname
 
     def addFrameDialog(self, ftype):

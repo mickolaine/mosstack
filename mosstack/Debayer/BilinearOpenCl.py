@@ -83,9 +83,9 @@ class BilinearOpenCl(Debayer):
         cl.enqueue_copy(self.queue, self.g, dest_bufg)
         cl.enqueue_copy(self.queue, self.b, dest_bufb)
 
-        self.r = np.uint16(np.reshape(self.r, (self.y, -1), order='C'))
-        self.g = np.uint16(np.reshape(self.g, (self.y, -1), order='C'))
-        self.b = np.uint16(np.reshape(self.b, (self.y, -1), order='C'))
+        self.r = np.reshape(self.r, (self.y, -1), order='C')
+        self.g = np.reshape(self.g, (self.y, -1), order='C')
+        self.b = np.reshape(self.b, (self.y, -1), order='C')
 
         return np.array([self.r, self.g, self.b])
 
@@ -120,7 +120,8 @@ class BilinearOpenCl(Debayer):
 
         codegreen = codecommon + """
                                                                           // conditions explained
-             if (gid < x || gid%x < 1 || gid%x > x - 1 || gid > len - x)  // upper border, right, left and lower border
+             //if (gid < x || gid%x < 1 || gid%x > x - 1 || gid > len - x)  // upper border, right, left and lower border
+             if (gid < x || gid%x == 0 || gid%x == x-1 || gid > len - x)
              {
                 c[gid] = a[gid];
              }
@@ -130,7 +131,7 @@ class BilinearOpenCl(Debayer):
              }
              else                                                         // Non-green pixels. Should be all the rest
              {
-                c[gid] = (a[gid-1] + a[gid-x] + a[gid+x] + a[gid+1])/4;
+                c[gid] = (a[gid-1] + a[gid-x] + a[gid+x] + a[gid+1])/4.;
              }
         }
 
@@ -149,15 +150,15 @@ class BilinearOpenCl(Debayer):
              }
              else if (""" + b_condition + """)            // Blue pixels
              {
-                c[gid] = (a[gid-1-x] + a[gid+1-x] + a[gid-1+x] + a[gid+1+x])/4;
+                c[gid] = (a[gid-1-x] + a[gid+1-x] + a[gid-1+x] + a[gid+1+x])/4.;
              }
              else if (""" + g_nexttored + """)          // Green pixels, reds on sides
              {
-                c[gid] = (a[gid-x] + a[gid +x]) /2;
+                c[gid] = (a[gid-x] + a[gid +x]) /2.;
              }
              else if (""" + g_nexttoblue + """)          // Green pixel, blues on side
              {
-                c[gid] = (a[gid-1] + a[gid+1]) /2;
+                c[gid] = (a[gid-1] + a[gid+1]) /2.;
              }
              else                                              // You shouldn't end here. Just in case
              {
@@ -174,7 +175,7 @@ class BilinearOpenCl(Debayer):
              }
              else if (""" + r_condition + """)            // Red pixels
              {
-                c[gid] = (a[gid-1-x] + a[gid+1-x] + a[gid-1+x] + a[gid+1+x])/4;
+                c[gid] = (a[gid-1-x] + a[gid+1-x] + a[gid-1+x] + a[gid+1+x])/4.;
              }
              else if (""" + b_condition + """)            // Blue pixels
              {
@@ -182,11 +183,11 @@ class BilinearOpenCl(Debayer):
              }
              else if (""" + g_nexttored + """)          // Green pixels, reds on sides
              {
-                c[gid] = (a[gid-1] + a[gid+1]) /2;
+                c[gid] = (a[gid-1] + a[gid+1]) /2.;
              }
              else if (""" + g_nexttoblue + """)          // Green pixel, blues on side
              {
-                c[gid] = (a[gid-x] + a[gid +x]) /2;
+                c[gid] = (a[gid-x] + a[gid +x]) /2.;
              }
              else                                              // You shouldn't end here. Just in case
              {

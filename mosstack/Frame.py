@@ -52,11 +52,15 @@ class Frame(object):
         self.focallength = None
         self.bayer       = None
         self.dlmulti     = None
+        self.totalexposure = None
         self.step1       = False
         self.step2       = False
+        self.staticpath  = False
 
         self.wdir = Config.Global.get("Default", "Path")
-        self.name = self.project.get("Default", "Project name")
+
+        if project is not None:
+            self.name = self.project.get("Default", "Project name")
 
         # Instance variables required later
         self.rgb       = False      # Is image rgb or monochrome (Boolean)
@@ -121,7 +125,6 @@ class Frame(object):
 
         self._decode()
         self.state["prepare"] = 2
-        #self.update_ui()
 
     def calibrate(self, stacker, bias=None, dark=None, flat=None, biaslevel=None):
         """
@@ -142,7 +145,7 @@ class Frame(object):
             data = stacker.subtract(data, bias.data)
         elif biaslevel is not None:
             try:
-                data = data - float(biaslevel)
+                data -= float(biaslevel)
             except ValueError:
                 pass
 
@@ -158,7 +161,6 @@ class Frame(object):
         self.project.addfile(self.path())
         self.state["calibrate"] = 2
 
-        #self.update_ui()
         return
 
     def debayer(self, debayer):
@@ -169,7 +171,7 @@ class Frame(object):
         2. Do the thing
         3. Inform Gui that state has changed
         """
-        #t1 = datetime.datetime.now()
+
         self.state["debayer"] = 1
         print("Debayering frame " + self.number)
         self.data = debayer.debayer(self.data[0])
@@ -177,8 +179,6 @@ class Frame(object):
         self.write()
         self.project.addfile(self.path())
         self.state["debayer"] = 2
-        #t2 = datetime.datetime.now()
-        #print(str(t2 - t1))
         return
 
     def register(self, register):  # , ref=False):
@@ -214,7 +214,7 @@ class Frame(object):
         yrange: (y_0, y_1)
         """
 
-        #crop data
+        # Crop data
         print("Cropping frame number " + self.number)
 
         data = self.data[:, yrange[0]:yrange[1], xrange[0]:xrange[1]]
@@ -224,7 +224,7 @@ class Frame(object):
         self.write()
         self.project.addfile(self.path())
 
-        #alter metadata
+        # Alter metadata
         self.x = self.data.shape[2]
         self.y = self.data.shape[1]
 
@@ -242,16 +242,16 @@ class Frame(object):
         """
 
         frame = Frame(project, ftype=ftype, number="master")
-        type = Frame.identify(path)
+        fileformat = Frame.identify(path)
         frame._path = path
 
-        if type == "fits":
+        if fileformat == "fits":
             frame.rawtype = "fits"
             frame.staticpath = True
             frame._load_fits(path=path)
             frame.extractinfo()
             frame.writeinfo()
-        elif type == "tiff":
+        elif fileformat == "tiff":
             frame.rawtype = "tiff"
             frame._load_tiff(path=path)
             frame.extractinfo()
@@ -307,6 +307,7 @@ class Frame(object):
         Supported formats are TIFF, FITS and RAW (which means everything recognized by dcraw).
         If not recognized, will return file magic's description
         """
+
         mg = magic.open(magic.NONE)
         mg.load()
         ms = mg.file(path)
@@ -323,6 +324,7 @@ class Frame(object):
         """
         Combine channels from three fits files into one.
         """
+
         hdu = []
         data = []
 
@@ -333,18 +335,6 @@ class Frame(object):
         self.data = np.array(data) - 32768
         self.write(skimage=True)
         self._release_data()
-
-    '''
-    def getpath(self, genname):
-        """
-        Return path by some other genname than self.genname. Read from .info
-        """
-
-        try:
-            return self.frameinfo.get("Paths", genname)
-        except:
-            return self.wdir + self.name + "_" + str(self.number) + "_" + genname + ".fits"
-    '''
 
     def readinfo(self):
         """
@@ -404,20 +394,25 @@ class Frame(object):
         """
 
         if self.rawtype == "fits":
-            #self._load_fits(path=self.rawpath)
             data = self.image.data
+
             if len(data.shape) == 2:
                 self.x, self.y = data.shape
+
             elif len(data.shape) == 3:
                 temp, self.x, self.y = data.shape
+
             self.data = data
             return
+
         if self.rawtype == "tiff":
-            #self._load_tiff()
+
             if len(self._data) == 2:
                 self.x, self.y = self._data.shape
+
             elif len(self._data.shape) == 3:
                 temp, self.x, self.y = self._data.shape
+
             return
 
         rawoutput = check_output(["dcraw", "-i", "-v", self.rawpath]).decode()
@@ -454,6 +449,10 @@ class Frame(object):
         Write frame info to specified file
         """
 
+        if self.project is None:
+            print("Project not set. This might not be a problem if you know what you're doing.")
+            return
+
         if self.infopath is None:
             self.infopath = self.wdir + "/" + self.name + "_" + self.ftype + "_" + str(self.number) + ".info"
         self.frameinfo = Config.Frame(self.infopath)
@@ -476,7 +475,10 @@ class Frame(object):
             self.frameinfo.set("Properties", "X", str(self.x))
             self.frameinfo.set("Properties", "Y", str(self.y))
         except KeyError:
-           pass
+            pass
+
+        if self.totalexposure is not None:
+            self.frameinfo.set("Properties", "Total exposure", str(self.totalexposure))
 
     def infotable(self):
         """
@@ -622,47 +624,11 @@ class Frame(object):
                 print("Unable to continue.")
         else:
             move(self.rawpath[:-3] + "pgm", self.path(fformat="pgm"))
-            self.project.addfile(self.path(fformat="pgm"))
+            if self.project is not None:
+                self.project.addfile(self.path(fformat="pgm"))
+                self.project.addfile(self.path())
             call(["convert", self.path(fformat="pgm"), self.path()])
-            self.project.addfile(self.path())
             print("Conversion successful!")
-
-    '''
-    def _convert(self, srcpath):
-        """
-        Convert the raw file into FITS via PGM.
-
-        There are some problems with TIFF format. That's why via PGM.
-
-        Arguments:
-        srcpath - Full unix path where to find source file
-
-        Return:
-        Nothing. File is created or program crashed. Perhaps this is a good place for try-except...
-        """
-
-        if exists(srcpath):
-
-            if exists(self.path()):
-                print("Image already converted.")
-                return
-
-            print("Converting RAW image...")
-            if call(["dcraw -v -4 -t 0 -D " + srcpath], shell=True):
-                print("Something went wrong... There might be helpful output from Rawtran above this line.")
-                if exists(self.path()):
-                    print("File " + self.path() + " was created but dcraw returned an error.")
-                else:
-                    print("Unable to continue.")
-            else:
-                move(srcpath[:-3] + "pgm", self.path(fformat="pgm"))
-                call(["convert", self.path(fformat="pgm"), self.path()])
-                print("Conversion successful!")
-        else:
-            print("Unable to find file in given path: " + srcpath + ". Find out what's wrong and try again.")
-            print("Can't continue. Exiting.")
-            exit()
-    '''
 
     def _load_fits(self, path=None):
         """
@@ -687,13 +653,13 @@ class Frame(object):
         """
         Load portion of FITS-data into memory. Does not work with TIFF
 
-        Arguments:
-        rangetuple - coordinates of the clipping area (x0, x1, y0, y1)
+        If self.clip is set, load only piece of data.
         """
 
         if self.format != ".fits":
             print("This method works only with FITS files.")
 
+        # If self.clip is set, load only piece of data
         if self.clip:
             y0 = self.clip[0]
             y1 = self.clip[1]
@@ -706,12 +672,15 @@ class Frame(object):
                 self._data = self.image.data[0:3, x0:x1, y0:y1]
             else:
                 self._data = np.array([self.image.data[x0:x1, y0:y1]])
+
+        # Load the whole image
         else:
             self._load_fits()
             if len(self.image.shape) == 3:
                 self._data = self.image.data
             else:
                 self._data = np.array([self.image.data])
+
         if np.amin(self._data) >= 32768:
             self._data -= 32768
 
@@ -719,6 +688,7 @@ class Frame(object):
         """
         Release data from memory and delete even the hdu
         """
+
         if self.hdu is not None:
             self.hdu.close()
         self.image = None

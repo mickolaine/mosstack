@@ -1,3 +1,9 @@
+v0.7
+- Fixed Bilinear methods to match each other
+
+v0.6.2
+- CLI: stack command changed. Now requires two arguments but works.
+
 v0.6.1
 - Fixed Frame selection dialog file types
 
