@@ -29,24 +29,31 @@
       <w>codered</w>
       <w>commandlist</w>
       <w>confname</w>
+      <w>coords</w>
       <w>createconf</w>
       <w>cython</w>
+      <w>darks</w>
       <w>dcraw</w>
       <w>debayer</w>
       <w>debayered</w>
+      <w>debayering</w>
       <w>deldata</w>
       <w>demosaic</w>
       <w>demosaiced</w>
       <w>demosaicing</w>
       <w>dest</w>
+      <w>dlmulti</w>
       <w>dslr</w>
       <w>execsex</w>
       <w>exiftool</w>
       <w>extractinfo</w>
       <w>fargs</w>
+      <w>fformat</w>
+      <w>fileformat</w>
       <w>findsensitivity</w>
       <w>fitspath</w>
       <w>fkwargs</w>
+      <w>focallength</w>
       <w>fphase</w>
       <w>framearray</w>
       <w>frameinfo</w>
@@ -56,10 +63,13 @@
       <w>genname</w>
       <w>getcoordinates</w>
       <w>getdata</w>
+      <w>getgenname</w>
+      <w>getpairs</w>
       <w>getpoints</w>
       <w>greennewpath</w>
       <w>greenpath</w>
       <w>groth</w>
+      <w>idialog</w>
       <w>iformat</w>
       <w>ilist</w>
       <w>imageb</w>
@@ -73,7 +83,11 @@
       <w>imaget</w>
       <w>imagetype</w>
       <w>infopath</w>
+      <w>infotable</w>
+      <w>infotablemodel</w>
       <w>initproject</w>
+      <w>isospeed</w>
+      <w>isref</w>
       <w>itype</w>
       <w>laine</w>
       <w>lencfa</w>
@@ -81,6 +95,7 @@
       <w>longhelp</w>
       <w>magick</w>
       <w>magick's</w>
+      <w>magicks</w>
       <w>maketriangles</w>
       <w>mikko</w>
       <w>mosstack</w>
@@ -102,8 +117,11 @@
       <w>projectfile</w>
       <w>projectname</w>
       <w>pyopencl</w>
+      <w>rangetuple</w>
+      <w>raw's</w>
       <w>rawfiles</w>
       <w>rawformat</w>
+      <w>rawoutput</w>
       <w>rawpath</w>
       <w>raws</w>
       <w>rawtran</w>
@@ -119,24 +137,33 @@
       <w>savefinal</w>
       <w>savemaster</w>
       <w>savergb</w>
+      <w>scikit</w>
       <w>setclip</w>
       <w>setdata</w>
+      <w>setgenname</w>
       <w>setname</w>
+      <w>setpairs</w>
       <w>setpoints</w>
       <w>setproject</w>
       <w>setref</w>
       <w>setsensitivity</w>
+      <w>sexpath</w>
       <w>sextractor</w>
       <w>shorthelp</w>
+      <w>skimage</w>
       <w>sqrt</w>
       <w>srclist</w>
       <w>srcname</w>
       <w>srcpath</w>
+      <w>staticpath</w>
       <w>subpixel</w>
+      <w>swindow</w>
       <w>tablemodel</w>
+      <w>threadpool</w>
       <w>thru</w>
       <w>todo's</w>
       <w>wdir</w>
+      <w>yrange</w>
     </words>
   </dictionary>
 </component>

@@ -6,11 +6,7 @@ import numpy
 
 setup(
     name='mosstack',
-<<<<<<< HEAD
     version='0.6.2',
-=======
-    version='0.6.1',
->>>>>>> Renaming astrostack to mosstack begun
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     # packages=['mosstack', 'mosstack.Debayer', 'mosstack.Registering', 'mosstack.Stacker'],
