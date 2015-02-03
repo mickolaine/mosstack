@@ -45,7 +45,7 @@ debayering is required or images are already aligned.
 UI is a command line one. User calls mosstack with proper arguments and the
 program does that step. Most commands work with pattern
 
-    ``astrostack <operation> <arguments>``
+    ``mosstack <operation> <arguments>``
 
 where <operation> and <arguments> are something from following list.
 
@@ -368,15 +368,14 @@ Note that the batch should be aligned before this.
 
 Command is run with
 
-     mosstack stack <fphase>
+     mosstack stack <ftype> <fphase>
 
-where `<fphase>` is identifier for the batch. For light frames this
-usually is *reg*, but for calibration frames just the name *dark*,
-*flat* or *bias*.
+where `<ftype>` is frame type for the batch and `<fphase>` the phase of
+process, for example `calib` or `reg`.
 
 Example: Run stack for registered frames saved with identifier *reg*
 
-     mosstack stack reg
+     mosstack stack light reg
 
 The result image will be saved with identifier *master*. Full name of
 the resulting files are printed after successful stacking.
@@ -409,9 +408,9 @@ dark and flat will be overwritten with the same name.
 Example: Stack bias frames, calibrate and stack dark frames and
 calibrate light frames.
 
-     mosstack stack bias
+     mosstack stack bias orig
      mosstack subtract dark bias
-     mosstack stack dark
+     mosstack stack dark calib
      mosstack subtract light bias
      mosstack subtract calib dark
 
@@ -665,14 +664,15 @@ Command is run with:
             self.biaslevel(argv[1], level)
 
         elif argv[0] == "stack":
-            # AstroStack stack <srcname>
-            srclist = ("light", "dark", "bias", "flat", "rgb", "calib", "reg", "crop")
-            if argv[1] in srclist:
-                section = argv[1]
-                self.stack(section)
+            # AstroStack stack <frame type> <frame phase>
+            typelist = ("light", "dark", "bias", "flat")
+            phaselist = ("orig", "rgb", "calib", "reg", "crop")
+            if (argv[1] in typelist) and (argv[2] in phaselist):
+                self.stack(argv[1], argv[2])
             else:
-                print("Invalid argument: " + argv[1])
-                print("<itype> has to be one of: " + str(srclist))
+                print("Invalid argument")
+                print("<frame type> has to be one of: " + str(typelist))
+                print("<frame phase> has to be one of: " + str(phaselist))
 
         elif argv[0] == "debayer":
             # AstroStack debayer <srcname>
@@ -881,22 +881,19 @@ Command is run with:
             batch.frames[i].debayer(self.debayerwrap())
         #batch.debayerAll(self.debayerwrap())
 
-    def stack(self, genname):
+    def stack(self, ftype, fphase):
         """
         Stack project files under specified section.
         """
 
-        if genname in ("bias", "dark", "flat"):
-            batch = Batch(self.project, ftype=genname)
-        else:
-            batch = Batch(self.project, fphase=genname)
+        batch = Batch(self.project, ftype=ftype, fphase=fphase)
 
         if self.project.get("Default", "Stack") == "SigmaMedian" or self.project.get("Default", "Stack") == "SigmaClip":
             batch.stack(self.stackerwrap(kappa=int(self.project.get("Default", "Kappa"))))
         else:
             batch.stack(self.stackerwrap())
 
-        if genname == "reg":
+        if fphase == "reg":
             print("\nProject finished. Remove temporary files with mosstack clean if needed.")
 
     def subtract(self, genname, calib):
