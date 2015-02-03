@@ -501,6 +501,13 @@ Command is run with:
 
      mosstack clean
 
+### fix_sex
+
+If you manage to delete SExtractor configuration files from mosstack's
+temporary directory, you can fix it by:
+
+    mosstack fix_sex
+
 
     """
 
@@ -802,6 +809,11 @@ Command is run with:
                 print(i)
 
             print("are not removed. They must be removed manually.")
+
+        elif argv[0] == "fixsex":
+
+            print("Rewriting SExtractor configuration files.")
+            Config.Setup.createSExConf()
 
         else:
             print("Invalid operation: " + argv[0])

@@ -132,7 +132,8 @@ class Setup:
            not exists(Global.get("Default", "Path") + "default.param"):
             self.createSExConf()
 
-    def createSExConf(self):
+    @staticmethod
+    def createSExConf():
         """
         SExtractor requires two configuration files in the temp dir. This creates them. Files are from
         SExtractor distribution package and all rights belong to it's author.
@@ -156,11 +157,11 @@ FLAGS
 2 4 2
 1 2 1"""
 
-        defaultparam = open(Global.get("Default", "Path") + "default.param", 'w')
+        defaultparam = open(Global.get("Default", "Path") + "/default.param", 'w')
         defaultparam.write(param)
         defaultparam.close()
 
-        defaultconv = open(Global.get("Default", "Path") + "default.conv", 'w')
+        defaultconv = open(Global.get("Default", "Path") + "/default.conv", 'w')
         defaultconv.write(conv)
         defaultconv.close()
 
