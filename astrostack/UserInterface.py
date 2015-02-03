@@ -636,6 +636,20 @@ Command is run with:
                 print("File " + argv[1] + " not found. Check your input")
                 exit()
 
+        elif argv[0] == "files":
+
+            itype = argv[-1]
+            if len(argv[1:-1]) == 0:
+                print ("No files given?")
+                exit()
+            for p in argv[1:-1]:
+                try:
+                    path = UserInterface.absolutepath(p)
+                    self.addfile(path, itype)
+                except IOError:
+                    print("File " + p + " not found. Check your input")
+                    exit()
+
         elif argv[0] == "master":
 
             try:
