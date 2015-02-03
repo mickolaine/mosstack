@@ -501,12 +501,12 @@ Command is run with:
 
      mosstack clean
 
-### fix_sex
+### fixsex
 
 If you manage to delete SExtractor configuration files from mosstack's
 temporary directory, you can fix it by:
 
-    mosstack fix_sex
+    mosstack fixsex
 
 
     """
