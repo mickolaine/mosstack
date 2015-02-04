@@ -1,5 +1,11 @@
 List of TODO's too big to be in a single line comment
 
+0.7
+- Rewrite of Command line interface
+- Hot pixels detection and removal
+
+
+
 0.6
 
 + DONE: Clean scripts/mosstack to include only the necessary and move all the
