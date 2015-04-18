@@ -125,7 +125,7 @@ class BilinearOpenCl(Debayer):
              {
                 c[gid] = a[gid];
              }
-             else if (""" + g_condition + """)                     // Green pixels.
+             else if (""" + g_condition + """)                            // Green pixels.
              {
                 c[gid] = a[gid];
              }

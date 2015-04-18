@@ -6,12 +6,12 @@ import numpy
 
 setup(
     name='mosstack',
-    version='0.6.2',
+    version='0.7dev',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     # packages=['mosstack', 'mosstack.Debayer', 'mosstack.Registering', 'mosstack.Stacker'],
     packages=find_packages(),
-    scripts=['scripts/mosstack', 'scripts/mosstackgui'],
+    scripts=['scripts/mosstack', 'scripts/mosstackgui', 'scripts/mosstack_new'],
     include_dirs=[numpy.get_include()],
     #   cmdclass = cmdclass,
     #    ext_modules=ext_modules,

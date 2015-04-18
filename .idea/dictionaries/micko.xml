@@ -12,6 +12,7 @@
       <w>bilinear</w>
       <w>bluenewpath</w>
       <w>bluepath</w>
+      <w>bsum</w>
       <w>bufb</w>
       <w>bufg</w>
       <w>bufr</w>
@@ -53,6 +54,8 @@
       <w>findsensitivity</w>
       <w>fitspath</w>
       <w>fkwargs</w>
+      <w>fmax</w>
+      <w>fmin</w>
       <w>focallength</w>
       <w>fphase</w>
       <w>framearray</w>
@@ -68,7 +71,12 @@
       <w>getpoints</w>
       <w>greennewpath</w>
       <w>greenpath</w>
+      <w>grne</w>
+      <w>grnw</w>
       <w>groth</w>
+      <w>grse</w>
+      <w>grsw</w>
+      <w>gsum</w>
       <w>idialog</w>
       <w>iformat</w>
       <w>ilist</w>
@@ -134,6 +142,7 @@
       <w>refnum</w>
       <w>rgbname</w>
       <w>rgbpath</w>
+      <w>rsum</w>
       <w>savefinal</w>
       <w>savemaster</w>
       <w>savergb</w>
