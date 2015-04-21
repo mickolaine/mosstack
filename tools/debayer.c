@@ -5,13 +5,13 @@
 
 int main(int argc, char *argv[]) {
   
-  fitsfile *fptr, *rfptr, *gfptr, *bfptr;
+  fitsfile *fptr, *rfptr, *gfptr, *bfptr, *rgbfptr;
   char card[FLEN_CARD];
 
   int status = 0;
   int hdutype, naxis, ii;
-  long naxes[2], totpix, fpixel[2];
-  double *r, *g, *b, *pix1, *pix2, *pix3, *pix4, *pix5, sum = 0., meanval = 0., minval = 1.E33, maxval = -1.E33;
+  long naxes[2], totpix, fpixel[2], naxes3d[3], fpixel3d[3];
+  double *r, *g, *b, *pix1, *pix2, *pix3, *pix4, *pix5; //, sum = 0., meanval = 0., minval = 1.E33, maxval = -1.E33;
 
   
   if ( !fits_open_image(&fptr, argv[1], READONLY, &status) ) {
@@ -26,7 +26,11 @@ int main(int argc, char *argv[]) {
     
     int naxes0 = naxes[0];
     int naxes1 = naxes[1];
-    
+
+    naxes3d[0] = naxes[0];
+    naxes3d[1] = naxes[1];
+    naxes3d[2] = 3;
+
     if (status || naxis != 2) {
       printf("Error: NAXIS = %d.  Only 2-D image", naxis);
     }
@@ -50,10 +54,14 @@ int main(int argc, char *argv[]) {
     fits_create_file(&rfptr, "red.fits", &status);
     fits_create_file(&gfptr, "green.fits", &status);
     fits_create_file(&bfptr, "blue.fits", &status);
+    fits_create_file(&rgbfptr, "result.fits", &status);
+
+    fits_create_img(rgbfptr, 16, 3, naxes3d, &status);
 
     fits_copy_header(fptr, rfptr, &status);
     fits_copy_header(fptr, gfptr, &status);
     fits_copy_header(fptr, bfptr, &status);
+    //fits_copy_header(fptr, rgbfptr, &status);
     
     /* start by loading 5 first lines in memory */
     fpixel[1] = 1;
@@ -78,16 +86,19 @@ int main(int argc, char *argv[]) {
 
       vng(pix1, pix2, pix3, pix4, pix5, r, g, b, fpixel[0], fpixel[1], naxes0, naxes1);
       
-      /* Piece of original example. Remove this
-      for (ii = 0; ii < naxes[0]; ii++) {
-	sum += r[ii];                        //* accumlate sum
-	if (r[ii] < minval) minval = r[ii];  //* find min and
-	if (r[ii] > maxval) maxval = r[ii];  //* max values
-      }*/
-
       fits_write_pix(rfptr, TDOUBLE, fpixel, naxes[0], r, &status);
       fits_write_pix(gfptr, TDOUBLE, fpixel, naxes[0], g, &status);
-      fits_write_pix(bfptr, TDOUBLE, fpixel, naxes[0], b, &status); 
+      fits_write_pix(bfptr, TDOUBLE, fpixel, naxes[0], b, &status);
+
+      fpixel3d[2] = 1;
+      fpixel3d[0] = fpixel[0];
+      fpixel3d[1] = fpixel[1];
+
+      fits_write_pix(rgbfptr, TDOUBLE, fpixel3d, naxes3d[0], r, &status);
+      fpixel3d[2] = 2;
+      fits_write_pix(rgbfptr, TDOUBLE, fpixel3d, naxes3d[0], g, &status);
+      fpixel3d[2] = 3;
+      fits_write_pix(rgbfptr, TDOUBLE, fpixel3d, naxes3d[0], b, &status);
       
       free(pix1);
       pix1 = pix2;

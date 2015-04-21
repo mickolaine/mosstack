@@ -1,24 +1,26 @@
-from setuptools import setup, find_packages
-# from distutils.core import setup
-# from distutils.extension import Extension
+from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
 import numpy
 
+ext_modules = cythonize(["mosstack/Registering/_step2.pyx",
+                         "mosstack/Debayer/_BilinearCython.pyx",
+                         "mosstack/Debayer/_VNGCython.pyx",
+                         "mosstack/Stacker/_math.pyx"])
+ext_modules.append(Extension('debayer',
+                             sources=['tools/debayer.c'],
+                             libraries='cfitsio, m',
+                             extra_compile_args="-O2 -march=native -o debayer"))
+
 setup(
     name='mosstack',
-    version='0.7dev',
+    version='0.7.dev0',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
-    # packages=['mosstack', 'mosstack.Debayer', 'mosstack.Registering', 'mosstack.Stacker'],
+
     packages=find_packages(),
     scripts=['scripts/mosstack', 'scripts/mosstackgui', 'scripts/mosstack_new'],
     include_dirs=[numpy.get_include()],
-    #   cmdclass = cmdclass,
-    #    ext_modules=ext_modules,
-    ext_modules=cythonize(["mosstack/Registering/_step2.pyx",
-                           "mosstack/Debayer/_BilinearCython.pyx",
-                           "mosstack/Debayer/_VNGCython.pyx",
-                           "mosstack/Stacker/_math.pyx"]),
+    ext_modules=ext_modules,
     data_files=[
         ("share/mosstack/", ["data/mosstack.xpm", "doc/LaTeX/manual.pdf"]),
         ("share/applications/", ["data/mosstack.desktop"])
