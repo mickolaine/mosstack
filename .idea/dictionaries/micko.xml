@@ -5,10 +5,13 @@
       <w>adddir</w>
       <w>addfiles</w>
       <w>addrgb</w>
+      <w>argc</w>
+      <w>argv</w>
       <w>astro</w>
       <w>astropy</w>
       <w>astropy's</w>
       <w>astuple</w>
+      <w>bfptr</w>
       <w>bilinear</w>
       <w>bluenewpath</w>
       <w>bluepath</w>
@@ -53,6 +56,7 @@
       <w>fformat</w>
       <w>fileformat</w>
       <w>findsensitivity</w>
+      <w>fitsfile</w>
       <w>fitspath</w>
       <w>fkwargs</w>
       <w>fmax</w>
@@ -70,6 +74,7 @@
       <w>getgenname</w>
       <w>getpairs</w>
       <w>getpoints</w>
+      <w>gfptr</w>
       <w>greennewpath</w>
       <w>greenpath</w>
       <w>grne</w>
@@ -79,6 +84,7 @@
       <w>grsw</w>
       <w>gsum</w>
       <w>idialog</w>
+      <w>ifname</w>
       <w>iformat</w>
       <w>ilist</w>
       <w>imageb</w>
@@ -141,6 +147,8 @@
       <w>redpath</w>
       <w>refimg</w>
       <w>refnum</w>
+      <w>rfptr</w>
+      <w>rgbfptr</w>
       <w>rgbname</w>
       <w>rgbpath</w>
       <w>rsum</w>

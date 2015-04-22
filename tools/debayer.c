@@ -4,17 +4,25 @@
 #include "fitsio.h"
 
 int main(int argc, char *argv[]) {
-  
+  const char* infile = argv[1];
+  const char* outfile = argv[2];
+
+  debayer(infile, outfile);
+
+}
+
+int debayer(char* infile, char* outfile) {
+
   fitsfile *fptr, *rfptr, *gfptr, *bfptr, *rgbfptr;
   char card[FLEN_CARD];
 
   int status = 0;
   int hdutype, naxis, ii;
-  long naxes[2], totpix, fpixel[2], naxes3d[3], fpixel3d[3];
-  double *r, *g, *b, *pix1, *pix2, *pix3, *pix4, *pix5; //, sum = 0., meanval = 0., minval = 1.E33, maxval = -1.E33;
+  long naxes[2], totpix, fpixel[2], fpixelread[2], naxes3d[3], fpixel3d[3];
+  double *r, *g, *b, *pix1, *pix2, *pix3, *pix4, *pix5;
 
   
-  if ( !fits_open_image(&fptr, argv[1], READONLY, &status) ) {
+  if ( !fits_open_image(&fptr, infile, READONLY, &status) ) {
 
     if (fits_get_hdu_type(fptr, &hdutype, &status) || hdutype != IMAGE_HDU) {
       printf("Error: this program only works on images, not tables\n");
@@ -30,6 +38,8 @@ int main(int argc, char *argv[]) {
     naxes3d[0] = naxes[0];
     naxes3d[1] = naxes[1];
     naxes3d[2] = 3;
+
+    printf("%ld, %ld, %ld\n", naxes3d[0], naxes3d[1], naxes3d[2]);
 
     if (status || naxis != 2) {
       printf("Error: NAXIS = %d.  Only 2-D image", naxis);
@@ -51,24 +61,20 @@ int main(int argc, char *argv[]) {
     totpix = naxes[0] * naxes[1];
     fpixel[0] = 1;  /* read starting with first pixel in each row */
 
-    fits_create_file(&rfptr, "red.fits", &status);
-    fits_create_file(&gfptr, "green.fits", &status);
-    fits_create_file(&bfptr, "blue.fits", &status);
-    fits_create_file(&rgbfptr, "result.fits", &status);
+    //fits_create_file(&rfptr, "red.fits", &status);
+    //fits_create_file(&gfptr, "green.fits", &status);
+    //fits_create_file(&bfptr, "blue.fits", &status);
+    fits_create_file(&rgbfptr, outfile, &status);
 
-    fits_create_img(rgbfptr, 16, 3, naxes3d, &status);
+    fits_create_img(rgbfptr, -32, 3, naxes3d, &status);
 
-    fits_copy_header(fptr, rfptr, &status);
-    fits_copy_header(fptr, gfptr, &status);
-    fits_copy_header(fptr, bfptr, &status);
+    //fits_copy_header(fptr, rfptr, &status);
+    //fits_copy_header(fptr, gfptr, &status);
+    //fits_copy_header(fptr, bfptr, &status);
     //fits_copy_header(fptr, rgbfptr, &status);
     
-    /* start by loading 5 first lines in memory */
+    /* start by loading 3 first lines in memory */
     fpixel[1] = 1;
-    //fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix1,0, &status);
-    //fpixel[1]++;
-    //fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix2,0, &status);
-    //fpixel[1]++;
     fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix3,0, &status);
     fpixel[1]++;
     fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix4,0, &status);
@@ -77,39 +83,55 @@ int main(int argc, char *argv[]) {
     
     /* process image one row at a time; increment row # in each loop */
     for (fpixel[1] = 1; fpixel[1] <= naxes[1]; fpixel[1]++) {
-	
+
+	  //printf("begin to calculate line %ld\n", fpixel[1]);
+	  //printf("Reserve red %ld\n", naxes[0]);
       r = (double *) malloc(naxes[0] * sizeof(double));
+	  //printf("Reserve green\n");
       g = (double *) malloc(naxes[0] * sizeof(double));
+	  //printf("Reserve blue\n");
       b = (double *) malloc(naxes[0] * sizeof(double));
       
-      int j = 0;
-
+      //int j = 0;
+      //printf("Calculations...\n");
       vng(pix1, pix2, pix3, pix4, pix5, r, g, b, fpixel[0], fpixel[1], naxes0, naxes1);
-      
-      fits_write_pix(rfptr, TDOUBLE, fpixel, naxes[0], r, &status);
-      fits_write_pix(gfptr, TDOUBLE, fpixel, naxes[0], g, &status);
-      fits_write_pix(bfptr, TDOUBLE, fpixel, naxes[0], b, &status);
+      //printf("calculated line %ld\n", fpixel[1]);
 
-      fpixel3d[2] = 1;
       fpixel3d[0] = fpixel[0];
       fpixel3d[1] = fpixel[1];
+      fpixel3d[2] = 1;
 
+      //printf("Writing red\n");
       fits_write_pix(rgbfptr, TDOUBLE, fpixel3d, naxes3d[0], r, &status);
+      //printf("Writing green\n");
       fpixel3d[2] = 2;
       fits_write_pix(rgbfptr, TDOUBLE, fpixel3d, naxes3d[0], g, &status);
+      //printf("Writing blue\n");
       fpixel3d[2] = 3;
       fits_write_pix(rgbfptr, TDOUBLE, fpixel3d, naxes3d[0], b, &status);
-      
+
+      //printf("Freeing memory\n");
       free(pix1);
       pix1 = pix2;
       pix2 = pix3;
       pix3 = pix4;
       pix4 = pix5;
       pix5 = (double *) malloc(naxes[0] * sizeof(double));
-      
-      fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix5,0, &status);
+
+      //printf("%ld, %ld\n", fpixel[1], naxes[1]);
+
+      if(fpixel[1] >= naxes[1] - 2) {
+
+        //printf("skip\n");
+      }
+      else {
+        long fpixelread[2] = {fpixel[0], fpixel[1]+3};
+        fits_read_pix(fptr, TDOUBLE, fpixelread, naxes[0],0, pix5,0, &status);
+        //printf("read line %ld\n", fpixel[1]+3);
+      }
 
     }
+
 
     free(pix1);
     free(pix2);
@@ -121,10 +143,11 @@ int main(int argc, char *argv[]) {
     free(r);
     free(g);
     free(b);
+    //fits_close_file(fptr, &status);
+    //fits_close_file(rfptr, &status);
+    //fits_close_file(gfptr, &status);
     fits_close_file(fptr, &status);
-    fits_close_file(rfptr, &status);
-    fits_close_file(gfptr, &status);
-    fits_close_file(bfptr, &status);
+    fits_close_file(rgbfptr, &status);
       
   }
 
@@ -231,7 +254,8 @@ int vng(double *pix1, double *pix2, double *pix3, double *pix4, double *pix5,
     if ((fpixel1 < 3 | fpixel1 > naxes1 - 3) | (i < 3 | i > naxes0 - 3)) {
       
       r[i] = pix3[i];
-    
+      g[i] = pix3[i];
+      b[i] = pix3[i];
     }
 
     // green pixels
