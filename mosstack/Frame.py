@@ -174,7 +174,8 @@ class Frame(object):
 
         self.state["debayer"] = 1
         print("Debayering frame " + self.number)
-        self.data = debayer.debayer(self.data[0])
+        #self.data = debayer.debayer(self.data[0])
+        self.data = debayer.debayer(self)
         self.fphase = "rgb"
         self.write()
         self.project.addfile(self.path())

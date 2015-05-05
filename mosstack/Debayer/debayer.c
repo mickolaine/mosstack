@@ -1,3 +1,4 @@
+#include <Python.h>
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
@@ -9,6 +10,12 @@ int main(int argc, char *argv[]) {
 
   debayer(infile, outfile);
 
+}
+
+static PyObject* py_debayer(PyObject* self, PyObject* args) {
+    char* infile, outfile;
+    PyArg_ParseTuple(args, "ss", &infile, &outfile);
+    debayer(infile, outfile);
 }
 
 int debayer(char* infile, char* outfile) {
@@ -44,14 +51,13 @@ int debayer(char* infile, char* outfile) {
     if (status || naxis != 2) {
       printf("Error: NAXIS = %d.  Only 2-D image", naxis);
     }
-    
+
+    /* Five lines of data in memory */
     pix1 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
     pix2 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
     pix3 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
     pix4 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
     pix5 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
-    
-    //double *pix[] = {	pix1, pix2, pix3, pix4, pix5 };
     
     if (pix4 == NULL) {
       printf("Memory allocation error\n");
@@ -61,17 +67,10 @@ int debayer(char* infile, char* outfile) {
     totpix = naxes[0] * naxes[1];
     fpixel[0] = 1;  /* read starting with first pixel in each row */
 
-    //fits_create_file(&rfptr, "red.fits", &status);
-    //fits_create_file(&gfptr, "green.fits", &status);
-    //fits_create_file(&bfptr, "blue.fits", &status);
+    /* Create new file */
     fits_create_file(&rgbfptr, outfile, &status);
-
     fits_create_img(rgbfptr, -32, 3, naxes3d, &status);
 
-    //fits_copy_header(fptr, rfptr, &status);
-    //fits_copy_header(fptr, gfptr, &status);
-    //fits_copy_header(fptr, bfptr, &status);
-    //fits_copy_header(fptr, rgbfptr, &status);
     
     /* start by loading 3 first lines in memory */
     fpixel[1] = 1;
@@ -91,8 +90,7 @@ int debayer(char* infile, char* outfile) {
       g = (double *) malloc(naxes[0] * sizeof(double));
 	  //printf("Reserve blue\n");
       b = (double *) malloc(naxes[0] * sizeof(double));
-      
-      //int j = 0;
+
       //printf("Calculations...\n");
       vng(pix1, pix2, pix3, pix4, pix5, r, g, b, fpixel[0], fpixel[1], naxes0, naxes1);
       //printf("calculated line %ld\n", fpixel[1]);
@@ -132,20 +130,16 @@ int debayer(char* infile, char* outfile) {
 
     }
 
-
     free(pix1);
     free(pix2);
     free(pix3);
     free(pix4);
     free(pix5);
-     
       
     free(r);
     free(g);
     free(b);
-    //fits_close_file(fptr, &status);
-    //fits_close_file(rfptr, &status);
-    //fits_close_file(gfptr, &status);
+
     fits_close_file(fptr, &status);
     fits_close_file(rgbfptr, &status);
       
@@ -555,4 +549,14 @@ int vng(double *pix1, double *pix2, double *pix3, double *pix4, double *pix5,
 
 
   }
+}
+
+static PyMethodDef debayer_methods[] = {
+  {"debayer", (PyCFunction)py_debayer, METH_VARARGS, NULL},
+  {NULL, NULL}
+};
+
+void PyInit_debayer()
+{
+  (void) Py_InitModule("debayer", debayer_methods);
 }

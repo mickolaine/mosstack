@@ -15,7 +15,10 @@ class VNGCython(Debayer):
     def __init__(self):
         """Prepare everything for running the debayer-algorithms."""
 
-    def debayer(self, image):
+    def debayer(self, file):
+        self.debayer_image(file.data[0])
+
+    def debayer_image(self, image):
         """
         Bilinear interpolation for debayering CFA
         Now assumes order of GR

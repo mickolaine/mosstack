@@ -18,7 +18,7 @@ class Debayer:
         """Prepare everything for running the debayer-algorithms."""
         pass
 
-    def debayer(self, image):
+    def debayer(self, file):
         """
         Debayer CFA data and return RGB data
 

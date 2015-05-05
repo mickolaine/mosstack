@@ -41,7 +41,10 @@ class VNGOpenCl(Debayer):
         self.init = True
         self.build()
 
-    def debayer(self, image):
+    def debayer(self, file):
+        self.debayer_image(file.data[0])
+
+    def debayer_image(self, image):
         """ VNG interpolation using pyOpenCL.
 
         Arguments:
