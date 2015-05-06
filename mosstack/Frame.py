@@ -261,7 +261,32 @@ class Frame(object):
 
         return frame
 
-    def path(self, fformat="fits"):
+    def getpath(self, fformat="fits", fphase=None):
+        """
+        Return path, which is constructed on the fly
+
+        Will replace self.path
+        """
+
+        if fphase is None:
+            fphase = self.fphase
+
+        if fformat == "fits":
+
+            if self.staticpath:
+                return self._path
+            try:
+                return self.frameinfo.get("Paths", self.fphase)
+            except (KeyError, AttributeError):
+                pass
+
+        if self.number is None:
+            return self.wdir + "/" + self.name + "_" + self.ftype + "_" + fphase + "." + fformat
+        else:
+            return self.wdir + "/" + self.name + "_" + self.ftype \
+                             + "_" + str(self.number) + "_" + fphase + "." + fformat
+
+    def path(self, fformat="fits", ):
         """
         Return path, which is constructed on the fly
         """

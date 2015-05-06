@@ -8,17 +8,36 @@ int main(int argc, char *argv[]) {
   const char* infile = argv[1];
   const char* outfile = argv[2];
 
-  debayer(infile, outfile);
+  debayer_real(infile, outfile);
 
 }
 
-static PyObject* py_debayer(PyObject* self, PyObject* args) {
-    char* infile, outfile;
+static PyObject *DebayerError;
+
+static PyObject* debayer(PyObject* self, PyObject* args) {
+    char *infile, *outfile;
     PyArg_ParseTuple(args, "ss", &infile, &outfile);
-    debayer(infile, outfile);
+    printf("File %s\n", infile);
+    debayer_real(infile, outfile);
 }
 
-int debayer(char* infile, char* outfile) {
+
+static PyMethodDef debayer_methods[] = {
+  {"debayer", debayer, METH_VARARGS, NULL},
+  {NULL, NULL, 0, NULL}
+};
+
+static struct PyModuleDef debayermodule = {
+   PyModuleDef_HEAD_INIT,
+   "debayer",   /* name of module */
+   NULL,        /* module documentation, may be NULL */
+   -1,          /* size of per-interpreter state of the module,
+                   or -1 if the module keeps state in global variables. */
+   debayer_methods
+};
+
+
+int debayer_real(char* infile, char* outfile) {
 
   fitsfile *fptr, *rfptr, *gfptr, *bfptr, *rgbfptr;
   char card[FLEN_CARD];
@@ -46,7 +65,8 @@ int debayer(char* infile, char* outfile) {
     naxes3d[1] = naxes[1];
     naxes3d[2] = 3;
 
-    printf("%ld, %ld, %ld\n", naxes3d[0], naxes3d[1], naxes3d[2]);
+    printf("Original image: %ld, %ld\n", naxes[0], naxes[1]);
+    printf("New image: %ld, %ld, %ld\n", naxes3d[0], naxes3d[1], naxes3d[2]);
 
     if (status || naxis != 2) {
       printf("Error: NAXIS = %d.  Only 2-D image", naxis);
@@ -551,12 +571,16 @@ int vng(double *pix1, double *pix2, double *pix3, double *pix4, double *pix5,
   }
 }
 
-static PyMethodDef debayer_methods[] = {
-  {"debayer", (PyCFunction)py_debayer, METH_VARARGS, NULL},
-  {NULL, NULL}
-};
-
-void PyInit_debayer()
+PyMODINIT_FUNC PyInit_debayer(void)
 {
-  (void) Py_InitModule("debayer", debayer_methods);
+    PyObject *m;
+
+    m = PyModule_Create(&debayermodule);
+    if (m == NULL)
+        return NULL;
+
+    DebayerError = PyErr_NewException("debayer.error", NULL, NULL);
+    Py_INCREF(DebayerError);
+    PyModule_AddObject(m, "error", DebayerError);
+    return m;
 }

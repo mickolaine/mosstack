@@ -8,7 +8,7 @@ modules = cythonize(["mosstack/Registering/_step2.pyx",
                          "mosstack/Stacker/_math.pyx"])
 
 modules.append(Extension("mosstack.Debayer.debayer",
-                         sources=["mosstack/Debayer/debayer.c"],
+                         sources=["mosstack/Debayer/debayermodule.c"],
                          libraries=["cfitsio", "m"],
                          define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '7')])
               )

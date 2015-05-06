@@ -17,4 +17,4 @@ class VNGC(Debayer):
 
         """
 
-        debayer.debayer(image.path)
+        debayer.debayer(image.getpath(), image.getpath(fphase="rgb"))
