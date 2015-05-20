@@ -8,7 +8,7 @@ int main(int argc, char *argv[]) {
   const char* infile = argv[1];
   const char* outfile = argv[2];
 
-  debayer_real(infile, outfile);
+  return debayer_real(infile, outfile);
 
 }
 
@@ -17,8 +17,10 @@ static PyObject *DebayerError;
 static PyObject* debayer(PyObject* self, PyObject* args) {
     char *infile, *outfile;
     PyArg_ParseTuple(args, "ss", &infile, &outfile);
-    printf("File %s\n", infile);
+    //printf("File %s\n", infile);
+    //printf("File %s\n", outfile);
     debayer_real(infile, outfile);
+    return Py_None;
 }
 
 
@@ -65,8 +67,8 @@ int debayer_real(char* infile, char* outfile) {
     naxes3d[1] = naxes[1];
     naxes3d[2] = 3;
 
-    printf("Original image: %ld, %ld\n", naxes[0], naxes[1]);
-    printf("New image: %ld, %ld, %ld\n", naxes3d[0], naxes3d[1], naxes3d[2]);
+    //printf("Original image: %ld, %ld\n", naxes[0], naxes[1]);
+    //printf("New image: %ld, %ld, %ld\n", naxes3d[0], naxes3d[1], naxes3d[2]);
 
     if (status || naxis != 2) {
       printf("Error: NAXIS = %d.  Only 2-D image", naxis);
@@ -149,28 +151,32 @@ int debayer_real(char* infile, char* outfile) {
       }
 
     }
-
+    //printf("Math done\n");
     free(pix1);
     free(pix2);
     free(pix3);
     free(pix4);
     free(pix5);
+    //printf("Memory free'd\n");
       
     free(r);
     free(g);
     free(b);
+    //printf("Colors free'd\n");
 
     fits_close_file(fptr, &status);
     fits_close_file(rgbfptr, &status);
       
   }
-
-  if (status)  {
+  //printf("%d\n", status);
+  if (status) {
+    //printf("Error'd\n");
+    //printf("%s\n", stderr);
     fits_report_error(stderr, status); /* print any error message */
     //printf("  minimum value = %g\n", minval);
   }
 
-  return(status);
+  return(0);
 }
 
 

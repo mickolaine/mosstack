@@ -1,6 +1,8 @@
 from __future__ import division
 from .. Debayer.Debayer import Debayer
 from .. Debayer import debayer
+from os.path import exists
+from os import remove
 
 
 class VNGC(Debayer):
@@ -14,7 +16,15 @@ class VNGC(Debayer):
 
     def debayer(self, image):
         """
+        Debayer using C-subroutine
 
+        None should be returned
         """
 
-        debayer.debayer(image.getpath(), image.getpath(fphase="rgb"))
+        outname = image.getpath(fphase="rgb")
+
+        # CFITSIO fails writing the file if it exists. Remove if necessary
+        if exists(outname):
+            remove(outname)
+
+        return debayer.debayer(image.getpath(), outname)

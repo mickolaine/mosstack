@@ -25,6 +25,7 @@ class Debayer:
         Arguments:
         image - 2D numpy.array holding the data
 
-        Returns:
+        Returns either:
         [red, green, blue] as numpy.array
+        None, which means the subroutine has already written the data
         """

@@ -10,7 +10,8 @@ modules = cythonize(["mosstack/Registering/_step2.pyx",
 modules.append(Extension("mosstack.Debayer.debayer",
                          sources=["mosstack/Debayer/debayermodule.c"],
                          libraries=["cfitsio", "m"],
-                         define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '7')])
+                         define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '7'),],
+                         extra_compile_args=["-O3"])
               )
 
 setup(

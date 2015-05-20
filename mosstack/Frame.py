@@ -175,9 +175,15 @@ class Frame(object):
         self.state["debayer"] = 1
         print("Debayering frame " + self.number)
         #self.data = debayer.debayer(self.data[0])
-        self.data = debayer.debayer(self)
+        time1 = datetime.datetime.now()
+        data = debayer.debayer(self)
+        print(datetime.datetime.now()-time1)
         self.fphase = "rgb"
-        self.write()
+
+        # None means data has already been written on disc
+        if data is not None:
+            self.write()
+
         self.project.addfile(self.path())
         self.state["debayer"] = 2
         return
@@ -733,7 +739,11 @@ class Frame(object):
         if self._data is None:
             print("No data set! Exiting...")
             exit()
-        fits.writeto(self.path(), np.uint16(self._data), hdu.header, clobber=True)
+        print("Writing a file with shape: " + str(self._data.shape))
+        if self._data.shape[0] == 1:
+            fits.writeto(self.path(), np.uint16(self._data[0]), hdu.header, clobber=True)
+        else:
+            fits.writeto(self.path(), np.uint16(self._data), hdu.header, clobber=True)
 
         self._release_data()
 
