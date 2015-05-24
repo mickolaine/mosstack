@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 
 """
-Created on 28.10.2013
+Created on 2015
 
 @author: Mikko Laine
 
-Main program for pyAstroStack.
+Main program for mosstack.
 
 This command line user interface is used to create a project file to store information
 about source files and temporary files in working directory. This same UI is then used
@@ -25,6 +25,8 @@ def main(argv):
     ui = CommandLine()
 
     ui.start(argv)
+
+    #ui.print_values()
 
 if __name__ == "__main__":
     main(sys.argv[1:])

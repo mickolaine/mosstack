@@ -16,7 +16,7 @@ modules.append(Extension("mosstack.Debayer.debayer",
 
 setup(
     name='mosstack',
-    version='0.7.dev0',
+    version='0.7.dev1',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=find_packages(),
