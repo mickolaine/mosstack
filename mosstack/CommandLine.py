@@ -46,14 +46,69 @@ class CommandLine:
 
         self.checkfiles()
 
+        # Settings
+
+        if self.args.autostack:
+            pass
+        if self.args.setdebayer:
+            pass
+        if self.args.setregister:
+            pass
+        if self.args.setstacker:
+            pass
+        if self.args.reference:
+            pass
+
+        # Printouts, implies exiting with printed message
+
+        if self.args.list:
+            pass
+        if self.args.settings:
+            pass
+        if self.args.size:
+            pass
+
+        # Single operations
+
+        if self.args.clean:
+            pass
+        if self.args.fixsex:
+            pass
+        if self.args.remove:
+            pass
+
+        # The workflow of stacking process
+
         if self.args.light:
             self.addframes("light", self.args.light)
         if self.args.bias:
-            self.addframes("bias", self.args.light)
+            self.addframes("bias", self.args.bias)
         if self.args.flat:
-            self.addframes("flat", self.args.light)
+            self.addframes("flat", self.args.flat)
         if self.args.dark:
-            self.addframes("dark", self.args.light)
+            self.addframes("dark", self.args.dark)
+
+        if self.args.masterbias:
+            self.addmaster("bias", self.args.masterbias)
+        # elif self.args.biaslevel:
+        #     pass
+        if self.args.masterflat:
+            self.addmaster("flat", self.args.masterflat)
+        if self.args.masterdark:
+            self.addmaster("dark", self.args.masterdark)
+
+        if self.args.calibrate:
+            # biaslevel
+            pass
+        if self.args.debayer:
+            for i in self.batch["light"].frames:
+                self.batch["light"].debayer(i, self.debayerwrap())
+        if self.args.register:
+
+        if self.args.crop:
+            pass
+        if self.args.stack:
+            pass
 
     def print_values(self):
         """
@@ -166,10 +221,22 @@ class CommandLine:
         """
 
         if ftype not in self.batch:
-                self.batch[ftype] = Batch.Batch(self.project, ftype)
+            self.batch[ftype] = Batch.Batch(self.project, ftype)
 
         for i in files:
             self.batch[ftype].addfile(CommandLine.absolutepath(i), ftype)
+
+    def addmaster(self, ftype, file):
+        """
+        Add master frame
+
+        :param ftype: Frame type (bias, flat, dark)
+        :param file: Unix path of file to add
+        """
+
+        if ftype not in self.batch:
+            self.batch[ftype] = Batch.Batch(project=self.project, ftype=ftype)
+        self.batch[ftype].addmaster(file, ftype)
 
     @staticmethod
     def absolutepath(path, directory=False):

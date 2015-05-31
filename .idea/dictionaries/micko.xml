@@ -4,6 +4,7 @@
       <w>absolutepath</w>
       <w>adddir</w>
       <w>addfiles</w>
+      <w>addframes</w>
       <w>addrgb</w>
       <w>argc</w>
       <w>argv</w>

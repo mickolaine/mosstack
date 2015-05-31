@@ -244,3 +244,25 @@ class Batch(object):
         if frameId == self.refId:
             self.setRef(list(self.frames.keys())[0])
             print("Reference frame " + frameId + " removed. New reference frame is " + self.refId + ".")
+
+    def debayer(self, frame, debayer):
+        """
+        Debayer all frames
+        """
+
+        for frame in self.frames:
+
+        print("Processing image " + self.frames[frame].path())
+
+        self.frames[frame].debayer(debayer)
+        print("...Done")
+
+        self.frames[self.refId].isref = True
+        print("Debayered images saved with generic name 'rgb'.")
+
+    def register(self, frame, register, ref=False):
+        """
+        Register a single frame
+        """
+
+        self.frames[frame].register(register)
