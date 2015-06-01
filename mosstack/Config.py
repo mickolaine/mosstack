@@ -83,7 +83,7 @@ class Setup:
         if not os.path.exists(self.file):
 
             print("Seems like this is the first time you run mosstack. Creating the setup file.")
-            self.input("Press enter to continue.")
+            input("Press enter to continue.")
 
             try:
                 print("Looking for SExtractor binaries...")
@@ -165,21 +165,6 @@ FLAGS
         defaultconv.write(conv)
         defaultconv.close()
 
-    def input(self, string):
-        """
-        Wrapper for input - raw_input differences between Python 2 and 3
-        """
-
-        version = version_info[0]
-
-        if version == 2:
-            return raw_input(string)
-        elif version == 3:
-            return input(string)
-        else:
-            print(version)
-            print("It appears there's a new version of Python...")
-
     @staticmethod
     def findsex():
         """
@@ -190,10 +175,10 @@ FLAGS
         except CalledProcessError:
             sexpath = check_output(["which", "sextractor"])
 
-                #print("SExtractor executable not found in $PATH.")
-                #sexpath = input("Give full path to SExtractor executable, eg. ~/bin/sex")
-                #if not os.path.exists(sexpath):
-                #    raise IOError("File not found:", sexpath)
+            # print("SExtractor executable not found in $PATH.")
+            # sexpath = input("Give full path to SExtractor executable, eg. ~/bin/sex")
+            # if not os.path.exists(sexpath):
+            #     raise IOError("File not found:", sexpath)
         return sexpath.decode().strip()
 
 
@@ -329,7 +314,7 @@ class Project(Config):
     This is something I probably should get rid off and do all the specific stuff elsewhere. Now for legacy reasons.
     """
 
-    def __init__(self, pname=None):
+    def __init__(self, pname=None, pfile=None):
         """
         Initialize project
 
@@ -360,6 +345,20 @@ class Project(Config):
                 self.get("Default", "Initialized")
             except KeyError:
                 self.set("Default", "Project name", pname)
+                self.set("Setup", "Path", self.path)
+                self.setdefaults()
+                self.set("Default", "Initialized", "True")
+
+        if pfile is not None:
+
+            self.projectfile = pfile
+
+            super().__init__(pfile)
+
+            try:
+                self.get("Default", "Initialized")
+            except KeyError:
+                # self.set("Default", "Project name", pname)
                 self.set("Setup", "Path", self.path)
                 self.setdefaults()
                 self.set("Default", "Initialized", "True")
@@ -398,24 +397,6 @@ class Project(Config):
 
         self.sex  = Global.get("Programs", "SExtractor")
         self.path = Global.get("Default", "Path")
-
-    '''
-    @staticmethod
-    def input(string):
-        """
-        Wrapper for input - raw_input differences between Python 2 and 3
-        """
-
-        version = version_info[0]
-
-        if version == 2:
-            return raw_input(string)
-        elif version == 3:
-            return input(string)
-        else:
-            print(version)
-            print("It appears there's a new version of Python...")
-    '''
 
     def readproject(self):
         """
@@ -544,5 +525,5 @@ class Global(object):
             makedirs(split(Global.configfile)[0])
 
         with open(Global.configfile, 'w') as configfile:
-            #print("Config written to " + Global.configfile)
+            # print("Config written to " + Global.configfile)
             Global.conf.write(configfile)

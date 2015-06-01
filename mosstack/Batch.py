@@ -188,6 +188,12 @@ class Batch(object):
             self.frames[str(frame.number)] = frame
             return
 
+        # If file already in the project, ignore it and return
+        for i in self.frames:
+            if file == self.frames[i].rawpath:
+                print("Trying to add a file that's already in the project. Ignoring.")
+                return
+
         n = self.nextkey()
 
         # Other than .info files
@@ -245,24 +251,28 @@ class Batch(object):
             self.setRef(list(self.frames.keys())[0])
             print("Reference frame " + frameId + " removed. New reference frame is " + self.refId + ".")
 
-    def debayer(self, frame, debayer):
+    def debayer(self, debayer):
         """
         Debayer all frames
         """
 
         for frame in self.frames:
 
-        print("Processing image " + self.frames[frame].path())
+            print("Processing image " + self.frames[frame].path())
 
-        self.frames[frame].debayer(debayer)
-        print("...Done")
+            self.frames[frame].debayer(debayer)
+            print("...Done")
 
         self.frames[self.refId].isref = True
         print("Debayered images saved with generic name 'rgb'.")
 
-    def register(self, frame, register, ref=False):
+    def register(self, register):
         """
-        Register a single frame
+        Register all frames
         """
 
-        self.frames[frame].register(register)
+        self.frames[self.refId].register(register)
+
+        for frame in self.frames:
+            if frame != self.refId:
+                self.frames[frame].register(register)

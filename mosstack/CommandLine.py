@@ -2,7 +2,7 @@
 The Command Line Interface for mosstack
 """
 
-from . import Config, Debayer, Registering, Stacker, Frame, Batch
+from . import Config, Debayer, Registering, Stacker, Batch
 import argparse
 import os
 
@@ -19,18 +19,22 @@ class CommandLine:
         Initialize user interface and set project name if specified
         """
 
+        self.wdir = Config.Global.get("Default", "Path")
+
         self.project = None
+        self.project_name = None
         self.parser = argparse.ArgumentParser(
             description="Mosstack - an open source stacker for astronomical images."
         )
         self.subparsers = self.parser.add_subparsers()
+        self.args = None
 
         # Set default values.
         self.debayerwrap = Debayer.VNGCython
         self.matcher = Registering.Groth
         self.transformer = Registering.SkTransform
         self.stackerwrap = Stacker.SigmaMedian
-        self.batch = []
+        self.batch = {}
 
     def start(self, argv):
         """
@@ -41,10 +45,22 @@ class CommandLine:
         self.args = self.parser.parse_args(argv)
         self.parser.print_usage()
 
-        if not self.initialized():
-            self.init_project()
+        # ##### Start workflow
 
-        self.checkfiles()
+        # ## Initiate project
+        if self.args.project:
+            print("Working with project " + self.args.project[0])
+            self.set_project(self.args.project[0])
+        elif self.args.init:
+            print("Initializing new project")
+            self.init_project()
+        elif not self.initialized():
+            print("No project initialized. Start a new with mosstack --init \"Foo\"")
+        # ## Project ready
+
+        # ## Check and load all files necessary
+        if not self.checkfiles():
+            exit("\nSome files weren't found. Please check your input.")
 
         # Settings
 
@@ -101,14 +117,13 @@ class CommandLine:
             # biaslevel
             pass
         if self.args.debayer:
-            for i in self.batch["light"].frames:
-                self.batch["light"].debayer(i, self.debayerwrap())
+            self.batch["light"].debayer(self.debayerwrap())
         if self.args.register:
-
+            self.batch["light"].register(self.matcher())
         if self.args.crop:
             pass
         if self.args.stack:
-            pass
+            self.batch["light"].stack(self.stackerwrap())
 
     def print_values(self):
         """
@@ -122,12 +137,12 @@ class CommandLine:
         """
 
         self.parser.add_argument("--init", nargs=1, metavar="name", help="Initialize project.")
-        self.parser.add_argument("--set", nargs=1, metavar="name", help="Change active project.")
+        self.parser.add_argument("--project", nargs=1, metavar="name", help="Change active project.")
 
-        self.parser.add_argument("--light", nargs='*', metavar="light", help='Add light frames  to project.')
-        self.parser.add_argument("--bias", nargs='*', metavar="bias", help='Add bias frames to project.')
-        self.parser.add_argument("--flat", nargs='*', metavar="flat", help='Add flat frames to project.')
-        self.parser.add_argument("--dark", nargs='*', metavar="dark", help='Add dark frames to project.')
+        self.parser.add_argument("--light", nargs='*', metavar="file", help='Add light frames  to project.')
+        self.parser.add_argument("--bias", nargs='*', metavar="file", help='Add bias frames to project.')
+        self.parser.add_argument("--flat", nargs='*', metavar="file", help='Add flat frames to project.')
+        self.parser.add_argument("--dark", nargs='*', metavar="file", help='Add dark frames to project.')
 
         self.parser.add_argument("--list", action='store_true', help='List all files in project')
 
@@ -151,7 +166,9 @@ class CommandLine:
         self.parser.add_argument("--subtract", nargs=2, metavar=("batch", "calib"), help="Subtract calib from batch")
         self.parser.add_argument("--divide", nargs=2, metavar=("batch", "calib"), help="Divide batch by calib")
 
-        self.parser.add_argument("--crop", nargs=4, type=int, metavar=("x0", "x1", "y0", "y1"), help='Crop image to coordinates')
+        self.parser.add_argument("--crop", nargs=4, type=int,
+                                 metavar=("x0", "x1", "y0", "y1"),
+                                 help='Crop image to coordinates')
 
         self.parser.add_argument("-c", "--calibrate", action='store_true', help='Calibrate frames')
         self.parser.add_argument("-d", "--debayer", action='store_true', help='Debayer frames')
@@ -166,25 +183,53 @@ class CommandLine:
 
         :return: true if initialized, false if not
         """
-        # TODO: This whole method
-        return True
+
+        pfile = Config.Global.get("Default", "Project file")
+        if os.path.isfile(pfile):
+            self.project = Config.Project(pfile=pfile)
+            return True
+        else:
+            return False
 
     def init_project(self):
         """
         Initialize the project
+
         :return: nothing
         """
         try:
             self.project = Config.Project()
-            self.project_name = self.args["init"]
+            self.project_name = self.args.init[0]
+            print(self.project_name)
             self.project.initproject(self.project_name)
-            Config.Global.set("Default", "Project", self.project_name)
-            print("New project started: \n" + Config.Global.get("Default", "Path") +
-                  "/" + self.project_name + ".project")
+
+            Config.Global.set("Default", "Project file", self.project.projectfile)
+            print("New project started: \n" + self.project.projectfile)
             exit()
         except IndexError:
             print("Project name not specified. Try \"mosstack help\" and see what went wrong.")
             exit()
+
+    def set_project(self, pfile):
+        """
+        Set project to match pname
+
+        Returns False and prints an error if no such project in working directory
+        """
+
+        Config.Global.set("Default", "Project file", pfile)
+        self.project = Config.Project(pfile=pfile)
+        self.project_name = self.project.get("Default", "Project name")
+
+        Config.Global.set("Default", "Project", self.project_name)
+
+        print("Project set to " + pfile)
+
+    def list_projects(self):
+        """
+        List all *.project files in working directory
+        """
+        pass
 
     def checkfiles(self):
         """
@@ -209,11 +254,13 @@ class CommandLine:
                 allfound = False
                 print("File " + i + " not found. Check your input")
         if not allfound:
-            exit("\nSome files not found. Try again")
+            return False
+        return True
 
     def addframes(self, ftype, files):
         """
-        Add frames to project
+        Add frames to project. Files already checked in this point, so it's safe to assume
+        paths are working
 
         :param ftype: Frame type (light, bias, flat, dark)
         :param files: List of file paths

@@ -12,6 +12,7 @@
       <w>astropy</w>
       <w>astropy's</w>
       <w>astuple</w>
+      <w>autostack</w>
       <w>bfptr</w>
       <w>bilinear</w>
       <w>bluenewpath</w>
@@ -113,6 +114,9 @@
       <w>magick's</w>
       <w>magicks</w>
       <w>maketriangles</w>
+      <w>masterbias</w>
+      <w>masterdark</w>
+      <w>masterflat</w>
       <w>mikko</w>
       <w>modinit</w>
       <w>mosstack</w>
@@ -160,13 +164,16 @@
       <w>scikit</w>
       <w>setclip</w>
       <w>setdata</w>
+      <w>setdebayer</w>
       <w>setgenname</w>
       <w>setname</w>
       <w>setpairs</w>
       <w>setpoints</w>
       <w>setproject</w>
       <w>setref</w>
+      <w>setregister</w>
       <w>setsensitivity</w>
+      <w>setstacker</w>
       <w>sexpath</w>
       <w>sextractor</w>
       <w>shorthelp</w>
