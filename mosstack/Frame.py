@@ -176,13 +176,15 @@ class Frame(object):
         print("Debayering frame " + self.number)
         #self.data = debayer.debayer(self.data[0])
         time1 = datetime.datetime.now()
-        data = debayer.debayer(self)
-        print(datetime.datetime.now()-time1)
+        self.data = debayer.debayer(self)
+        print(datetime.datetime.now() - time1)
         self.fphase = "rgb"
 
+        self.write()
         # None means data has already been written on disc
-        if data is not None:
-            self.write()
+
+        #if data is not None:
+        #    print("Writing the file")
 
         self.project.addfile(self.path())
         self.state["debayer"] = 2
@@ -798,7 +800,8 @@ class Frame(object):
         Arguments:
         tiff     = Write also a tiff file in addition to fits
         """
-
+        if self._data is None:
+            return
         self._write_fits()
         if tiff:
             self._write_tiff(skimage=skimage)

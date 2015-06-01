@@ -16,7 +16,7 @@ class VNGCython(Debayer):
         """Prepare everything for running the debayer-algorithms."""
 
     def debayer(self, file):
-        self.debayer_image(file.data[0])
+        return self.debayer_image(file.data[0])
 
     def debayer_image(self, image):
         """

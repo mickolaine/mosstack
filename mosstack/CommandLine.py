@@ -30,10 +30,11 @@ class CommandLine:
         self.args = None
 
         # Set default values.
-        self.debayerwrap = Debayer.VNGCython
+        self.debayerwrap = Debayer.VNGOpenCl
         self.matcher = Registering.Groth
         self.transformer = Registering.SkTransform
         self.stackerwrap = Stacker.SigmaMedian
+
         self.batch = {}
 
     def start(self, argv):
@@ -119,7 +120,9 @@ class CommandLine:
         if self.args.debayer:
             self.batch["light"].debayer(self.debayerwrap())
         if self.args.register:
-            self.batch["light"].register(self.matcher())
+            matcher = self.matcher()
+            matcher.tform = self.transformer
+            self.batch["light"].register(matcher)
         if self.args.crop:
             pass
         if self.args.stack:

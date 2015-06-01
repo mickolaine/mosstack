@@ -44,7 +44,7 @@ class BilinearOpenCl(Debayer):
         self.build()
 
     def debayer(self, file):
-        self.debayer_image(file.data[0])
+        return self.debayer_image(file.data[0])
 
     def debayer_image(self, image):
         """ LaRoche-Prescott interpolation using pyOpenCL.
