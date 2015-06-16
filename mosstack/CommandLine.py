@@ -81,7 +81,7 @@ class CommandLine:
         if self.args.list:
             pass
         if self.args.settings:
-            pass
+            self.settings()
         if self.args.size:
             pass
 
@@ -287,6 +287,27 @@ class CommandLine:
         if ftype not in self.batch:
             self.batch[ftype] = Batch.Batch(project=self.project, ftype=ftype)
         self.batch[ftype].addmaster(file, ftype)
+
+    def settings(self):
+        """
+        Show all configurable settings
+        """
+
+        for i in ("debayer", "matcher", "transformer", "stack"):
+            if i == "debayer":
+                options = Debayer.__all__
+            elif i == "matcher":
+                options = Registering.matcher
+            elif i == "transformer":
+                options = Registering.transformer
+            elif i == "stack":
+                options = Stacker.__all__
+            print("\nOptions for the setting \"" + i + "\" are:\n")
+            n = 0
+            for j in options:
+                n += 1
+                print(str(n) + ".  " + j)
+            print("\nActive choice is")
 
     @staticmethod
     def absolutepath(path, directory=False):
