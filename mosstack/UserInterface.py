@@ -945,7 +945,8 @@ temporary directory, you can fix it by:
         batch = Batch(self.project, ftype=ftype)
 
         for i in batch.frames:
-            batch.frames[i].calibrate(self.stackerwrap(), biaslevel=level)
+            batch.frames[i].biaslevel = level
+            batch.frames[i].calibrate(self.stackerwrap())
 
     def divide(self, genname, calib):
         """

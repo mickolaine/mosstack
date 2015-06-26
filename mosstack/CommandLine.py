@@ -68,13 +68,21 @@ class CommandLine:
         if self.args.autostack:
             pass
         if self.args.setdebayer:
-            pass
-        if self.args.setregister:
-            pass
+            options = Debayer.__all__
+            self.set("Debayer", options, self.args.setdebayer[0])
+        if self.args.setmatcher:
+            options = Registering.matcher
+            self.set("Matcher", options, self.args.setmatcher[0])
+        if self.args.settransformer:
+            options = Registering.transformer
+            self.set("Transformer", options, self.args.settransformer[0])
         if self.args.setstacker:
-            pass
+            options = Stacker.__all__
+            self.set("Stack", options, self.args.setstacker[0])
+        if self.args.setkappa:
+            self.project.set("Default", "Kappa", self.args.setkappa[0])
         if self.args.reference:
-            pass
+            self.batch["light"].setRef(self.args.reference[0])
 
         # Printouts, implies exiting with printed message
 
@@ -107,16 +115,16 @@ class CommandLine:
 
         if self.args.masterbias:
             self.addmaster("bias", self.args.masterbias)
-        # elif self.args.biaslevel:
-        #     pass
+        elif self.args.biaslevel:
+            self.batch.setbiaslevel(self.args.biaslevel)
         if self.args.masterflat:
             self.addmaster("flat", self.args.masterflat)
         if self.args.masterdark:
             self.addmaster("dark", self.args.masterdark)
 
         if self.args.calibrate:
-            # biaslevel
-            pass
+            for i in self.batch.frames:
+                self.batch.frames[i].calibrate(self.stackerwrap())
         if self.args.debayer:
             self.batch["light"].debayer(self.debayerwrap())
         if self.args.register:
@@ -124,7 +132,15 @@ class CommandLine:
             matcher.tform = self.transformer
             self.batch["light"].register(matcher)
         if self.args.crop:
-            pass
+            try:
+                crop = self.args.crop
+                xrange = int(crop[0]), int(crop[1])
+                yrange = int(crop[2]), int(crop[3])
+            except ValueError:
+                print("Values " + crop[0] + ", " + crop[1] + ", " + crop[2] +
+                      " and " + crop[3] + " should be integers.")
+            for i in self.batch.frames:
+                self.batch.frames[i].crop(xrange, yrange)
         if self.args.stack:
             self.batch["light"].stack(self.stackerwrap())
 
@@ -153,8 +169,11 @@ class CommandLine:
         self.parser.add_argument("--reference", nargs=1, metavar="ID", help='Set reference frame')
 
         self.parser.add_argument("--setdebayer", nargs=1, metavar="ID", help='Set debayering algorithm')
-        self.parser.add_argument("--setregister", nargs=1, metavar="ID", help='Set registering algorithm')
+        self.parser.add_argument("--setmatcher", nargs=1, metavar="ID", help='Set matching algorithm')
+        self.parser.add_argument("--settransformer", nargs=1, metavar="ID", help='Set transforming algorithm')
         self.parser.add_argument("--setstacker", nargs=1, metavar="ID", help='Set stacking algorithm')
+
+        self.parser.add_argument("--setkappa", nargs=1, metavar="float", help="Set kappa for sigma stackers")
 
         self.parser.add_argument("--size", action='store_true', help='Print size of project files')
         self.parser.add_argument("--clean", action='store_true', help='Remove temporary files')
@@ -308,6 +327,34 @@ class CommandLine:
                 n += 1
                 print(str(n) + ".  " + j)
             print("\nActive choice is")
+
+    def set(self, setting, options, value):
+        """
+        Save settings with command line mosstack set operation
+
+        Arguments:
+        setting - setting to alter
+        options - list of options for the setting
+        value   - int or name of value to set
+        """
+
+        if value.isdigit():
+            number = int(value) - 1
+            value = options[number]
+        else:
+            if value in options:
+                number = options.index(value)
+            else:
+                print("Value " + value + " not recognized.")
+                exit()
+
+        if number <= len(options):
+            #print("Setting \"" + setting + "\" changed to value \"" + value + "\"")
+            self.project.set("Default", setting, value)
+            print("Setting " + setting + " set to " + value)
+            #self.project.write()
+        else:
+            print("Invalid value")
 
     @staticmethod
     def absolutepath(path, directory=False):

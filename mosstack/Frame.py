@@ -53,6 +53,7 @@ class Frame(object):
         self.bayer       = None
         self.dlmulti     = None
         self.totalexposure = None
+        self.biaslevel   = None
         self.step1       = False
         self.step2       = False
         self.staticpath  = False
@@ -126,7 +127,7 @@ class Frame(object):
         self._decode()
         self.state["prepare"] = 2
 
-    def calibrate(self, stacker, bias=None, dark=None, flat=None, biaslevel=None):
+    def calibrate(self, stacker, bias=None, dark=None, flat=None):
         """
         Calibrate the frame. Project tells how.
 
@@ -140,6 +141,7 @@ class Frame(object):
         self.state["calibrate"] = 1
 
         data = self.data
+        biaslevel = self.biaslevel
 
         if bias is not None:
             data = stacker.subtract(data, bias.data)

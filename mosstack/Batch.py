@@ -137,6 +137,22 @@ class Batch(object):
 
         print("Calibrated images saved with generic name 'calib'.")
 
+    def setbiaslevel(self, level):
+        """
+        Set bias level to the batch.
+
+        Bias level can be set to Frames individually, if fore some reason that is required.
+
+        :param level: Float or None expected
+        :return: Nothing
+        """
+
+        if not isinstance(level, float):
+            raise Exception()
+
+        for i in self.frames:
+            self.frames[i].biaslevel = level
+
     def directory(self, path, ftype):
         """
         Add directory to Batch
