@@ -20,7 +20,7 @@ setup(
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=find_packages(),
-    scripts=['scripts/mosstack', 'scripts/mosstackgui', 'scripts/mosstack_new'],
+    scripts=['scripts/mosstack', 'scripts/mosstackgui', 'scripts/mosstack_new', 'scripts/mosstackgui_new'],
     include_dirs=[numpy.get_include()],
     ext_modules=modules,
     data_files=[
