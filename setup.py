@@ -3,9 +3,9 @@ from Cython.Build import cythonize
 import numpy
 
 modules = cythonize(["mosstack/Registering/_step2.pyx",
-                         "mosstack/Debayer/_BilinearCython.pyx",
-                         "mosstack/Debayer/_VNGCython.pyx",
-                         "mosstack/Stacker/_math.pyx"])
+                     "mosstack/Debayer/_BilinearCython.pyx",
+                     "mosstack/Debayer/_VNGCython.pyx",
+                     "mosstack/Stacker/_math.pyx"])
 
 modules.append(Extension("mosstack.Debayer.debayer",
                          sources=["mosstack/Debayer/debayermodule.c"],

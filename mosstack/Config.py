@@ -497,6 +497,17 @@ class Project(Config):
         self.set("Default", "stack", "SigmaMedian")
         self.set("Default", "Kappa", "3")
 
+    @staticmethod
+    def projectexists(pname):
+        """
+        Check if project with pname already exists
+        """
+
+        if os.path.exists(Global.get("Default", "path") + "/" + pname + ".project"):
+            return True
+        else:
+            return False
+
 
 class Global(object):
     """

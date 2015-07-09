@@ -30,7 +30,7 @@ class CommandLine:
         self.args = None
 
         # Set default values.
-        self.debayerwrap = Debayer.VNGOpenCl
+        self.debayerwrap = Debayer.VNGC
         self.matcher = Registering.Groth
         self.transformer = Registering.SkTransform
         self.stackerwrap = Stacker.SigmaMedian
@@ -44,19 +44,28 @@ class CommandLine:
 
         self.initparser()
         self.args = self.parser.parse_args(argv)
-        self.parser.print_usage()
+
+        if len(argv) == 0:
+            self.parser.print_usage()
 
         # ##### Start workflow
 
         # ## Initiate project
         if self.args.project:
-            print("Working with project " + self.args.project[0])
             self.set_project(self.args.project[0])
+            print("Working with project " + self.args.project[0])
         elif self.args.init:
             print("Initializing new project")
             self.init_project()
         elif not self.initialized():
             print("No project initialized. Start a new with mosstack --init \"Foo\"")
+
+        for ftype in ("light", "bias", "flat", "dark"):
+            try:
+                if self.project.get(ftype):
+                    self.batch[ftype] = Batch.Batch(self.project, ftype=ftype)
+            except KeyError:
+                pass
         # ## Project ready
 
         # ## Check and load all files necessary
@@ -67,31 +76,43 @@ class CommandLine:
 
         if self.args.autostack:
             pass
+
         if self.args.setdebayer:
             options = Debayer.__all__
             self.set("Debayer", options, self.args.setdebayer[0])
+
         if self.args.setmatcher:
             options = Registering.matcher
             self.set("Matcher", options, self.args.setmatcher[0])
+
         if self.args.settransformer:
             options = Registering.transformer
             self.set("Transformer", options, self.args.settransformer[0])
+
         if self.args.setstacker:
             options = Stacker.__all__
             self.set("Stack", options, self.args.setstacker[0])
+
         if self.args.setkappa:
-            self.project.set("Default", "Kappa", self.args.setkappa[0])
+            try:
+                kappa = float(self.args.setkappa[0])
+                self.project.set("Default", "Kappa", kappa)
+                print("Kappa set to " + str(self.args.setkappa[0]))
+            except ValueError:
+                print("Setting Kappa to " + str(self.args.setkappa[0]) + " failed. Try a small float.")
+                exit()
+
         if self.args.reference:
             self.batch["light"].setRef(self.args.reference[0])
 
         # Printouts, implies exiting with printed message
 
         if self.args.list:
-            pass
+            self.listframes()
         if self.args.settings:
             self.settings()
         if self.args.size:
-            pass
+            self.size()
 
         # Single operations
 
@@ -116,21 +137,28 @@ class CommandLine:
         if self.args.masterbias:
             self.addmaster("bias", self.args.masterbias)
         elif self.args.biaslevel:
-            self.batch.setbiaslevel(self.args.biaslevel)
+            try:
+                self.batch["light"].setbiaslevel(self.args.biaslevel[0])
+            except ValueError:
+                print(str(self.args.biaslevel[0]) + " not a valid biaslevel. Try an integer or float.")
+                exit()
         if self.args.masterflat:
             self.addmaster("flat", self.args.masterflat)
         if self.args.masterdark:
             self.addmaster("dark", self.args.masterdark)
 
         if self.args.calibrate:
-            for i in self.batch.frames:
-                self.batch.frames[i].calibrate(self.stackerwrap())
+            for i in self.batch["light"].frames:
+                self.batch["light"].frames[i].calibrate(self.stackerwrap())
+
         if self.args.debayer:
             self.batch["light"].debayer(self.debayerwrap())
+
         if self.args.register:
             matcher = self.matcher()
             matcher.tform = self.transformer
             self.batch["light"].register(matcher)
+
         if self.args.crop:
             try:
                 crop = self.args.crop
@@ -139,8 +167,10 @@ class CommandLine:
             except ValueError:
                 print("Values " + crop[0] + ", " + crop[1] + ", " + crop[2] +
                       " and " + crop[3] + " should be integers.")
-            for i in self.batch.frames:
-                self.batch.frames[i].crop(xrange, yrange)
+                exit()
+            for i in self.batch["light"].frames:
+                self.batch["light"].frames[i].crop(xrange, yrange)
+
         if self.args.stack:
             self.batch["light"].stack(self.stackerwrap())
 
@@ -205,8 +235,10 @@ class CommandLine:
 
         :return: true if initialized, false if not
         """
-
-        pfile = Config.Global.get("Default", "Project file")
+        try:
+            pfile = Config.Global.get("Default", "Project file")
+        except KeyError:
+            return False
         if os.path.isfile(pfile):
             self.project = Config.Project(pfile=pfile)
             return True
@@ -222,30 +254,31 @@ class CommandLine:
         try:
             self.project = Config.Project()
             self.project_name = self.args.init[0]
-            print(self.project_name)
             self.project.initproject(self.project_name)
 
             Config.Global.set("Default", "Project file", self.project.projectfile)
             print("New project started: \n" + self.project.projectfile)
-            exit()
+
         except IndexError:
             print("Project name not specified. Try \"mosstack help\" and see what went wrong.")
             exit()
 
-    def set_project(self, pfile):
+    def set_project(self, pname):
         """
         Set project to match pname
 
         Returns False and prints an error if no such project in working directory
         """
 
-        Config.Global.set("Default", "Project file", pfile)
-        self.project = Config.Project(pfile=pfile)
-        self.project_name = self.project.get("Default", "Project name")
+        if not Config.Project.projectexists(pname):
+            print("No such project " + pname + ". Start a new one with mosstack --init " + pname)
+            return False
 
+        self.project = Config.Project(pname=pname)
+        self.project_name = pname
         Config.Global.set("Default", "Project", self.project_name)
-
-        print("Project set to " + pfile)
+        Config.Global.set("Default", "Project file", self.project.projectfile)
+        print("Project set to " + self.project.path)
 
     def list_projects(self):
         """
@@ -326,7 +359,42 @@ class CommandLine:
             for j in options:
                 n += 1
                 print(str(n) + ".  " + j)
-            print("\nActive choice is")
+            print("\nActive choice is " + self.project.get("Default", i))
+
+    def listframes(self):
+        """
+        List all frames in project
+        :return:
+        """
+
+        for i in self.batch["light"].frames:
+            print(i + ": " + self.batch["light"].frames[i].rawpath)
+
+    def size(self):
+        """
+        Print the size of all files in project
+        """
+
+        size = 0
+        for i in self.project.filelist():
+            size += os.path.getsize(i)
+        divisions = 0
+        while size >= 1.0:
+            divisions += 1
+            size /= 1024
+            if divisions == 3:
+                break
+
+        if divisions == 0:
+            unit = "B"
+        elif divisions == 1:
+            unit = "kiB"
+        elif divisions == 2:
+            unit = "MiB"
+        elif divisions == 3:
+            unit = "GiB"
+
+        print("Size of all the files on project is {0:.2f} {1}.".format(size, unit))
 
     def set(self, setting, options, value):
         """
@@ -349,10 +417,10 @@ class CommandLine:
                 exit()
 
         if number <= len(options):
-            #print("Setting \"" + setting + "\" changed to value \"" + value + "\"")
+            # print("Setting \"" + setting + "\" changed to value \"" + value + "\"")
             self.project.set("Default", setting, value)
             print("Setting " + setting + " set to " + value)
-            #self.project.write()
+            # self.project.write()
         else:
             print("Invalid value")
 

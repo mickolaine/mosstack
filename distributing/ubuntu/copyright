@@ -1,8 +1,8 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: mosstack
 Upstream-Contact: Mikko Laine <mikko.laine@gmail.com>
-Source: https://bitbucket.org/mikko_laine/pyastrostack
+Source: https://bitbucket.org/mikko_laine/mosstack
 
 Files: *
-Copyright: 2013-2014 Mikko Laine
+Copyright: 2013-2015 Mikko Laine
 License: GPL-3

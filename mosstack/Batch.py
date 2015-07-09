@@ -147,11 +147,13 @@ class Batch(object):
         :return: Nothing
         """
 
-        if not isinstance(level, float):
-            raise Exception()
+        try:
+            biaslevel = float(level)
+        except ValueError:
+            raise
 
         for i in self.frames:
-            self.frames[i].biaslevel = level
+            self.frames[i].biaslevel = biaslevel
 
     def directory(self, path, ftype):
         """

@@ -575,7 +575,9 @@ class Frame(object):
         """
         Setter for data.
         """
-        if len(data.shape) == 3:
+        if data is None:
+            self._data = None
+        elif len(data.shape) == 3:
             self._data = data
         else:
             self._data = np.array([data])
@@ -672,7 +674,8 @@ class Frame(object):
         """
         if path is None:
             path = self.path()
-        self.hdu = fits.open(path, memmap=True)
+        self.hdu = fits.open(path, memmap=True, do_not_scale_image_data=True)  # TODO: "Cannot load a memory-mapped image: BZERO/BSCALE/BLANK hea..."
+        #self.hdu = fits.open(path, do_not_scale_image_data=True)
         self.image = self.hdu[0]
 
     def _load_tiff(self, path=None):
@@ -743,7 +746,7 @@ class Frame(object):
         if self._data is None:
             print("No data set! Exiting...")
             exit()
-        print("Writing a file with shape: " + str(self._data.shape))
+        # print("Writing a file with shape: " + str(self._data.shape))
         if self._data.shape[0] == 1:
             fits.writeto(self.path(), np.uint16(self._data[0]), hdu.header, clobber=True)
         else:
