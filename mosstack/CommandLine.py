@@ -59,6 +59,7 @@ class CommandLine:
             self.init_project()
         elif not self.initialized():
             print("No project initialized. Start a new with mosstack --init \"Foo\"")
+            exit()
 
         for ftype in ("light", "bias", "flat", "dark"):
             try:

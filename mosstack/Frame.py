@@ -147,7 +147,10 @@ class Frame(object):
             data = stacker.subtract(data, bias.data)
         elif biaslevel is not None:
             try:
+                print("Doin' the subtraction. Data minus " + str(float(biaslevel)))
+                print(str(data))
                 data -= float(biaslevel)
+                print(str(data))
             except ValueError:
                 pass
 
@@ -674,7 +677,7 @@ class Frame(object):
         """
         if path is None:
             path = self.path()
-        self.hdu = fits.open(path, memmap=True, do_not_scale_image_data=True)  # TODO: "Cannot load a memory-mapped image: BZERO/BSCALE/BLANK hea..."
+        self.hdu = fits.open(path, memmap=True, uint16=True)  # TODO: "Cannot load a memory-mapped image: BZERO/BSCALE/BLANK hea..."
         #self.hdu = fits.open(path, do_not_scale_image_data=True)
         self.image = self.hdu[0]
 
