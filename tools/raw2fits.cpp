@@ -37,24 +37,51 @@ void write_fits(unsigned width, unsigned height, unsigned short *bitmap, const c
 
     int status = 0;
     int hdutype, naxis;
-    long naxes[2], totpix;
 
+    long naxes[2], totpix, fpixel[2];
+
+    /*
+    unsigned long **data;
+
+    data = (unsigned long **) malloc(height * sizeof(unsigned long*));
+    if (data){
+        for (int i = 0; i < height; i++) {
+            data[i] = (unsigned long *) malloc(width * sizeof(unsigned long));
+        }
+    }
+
+    //unsigned short data[width][height];
+    */
     naxis = 2;
     naxes[0] = width;
     naxes[1] = height;
 
     totpix = naxes[0] * naxes[1];
-    printf("One\n");
+    fpixel[0] = 1;  /* read starting with first pixel in each row */
 
     fits_create_file(&fptr, fname, &status);
-
-    printf("Two\n");
     fits_create_img(fptr, -32, 2, naxes, &status);
 
-    long longone = 1;
     printf("%d, %d\n", width, height);
-    fits_write_pix(fptr, TUSHORT, &longone, width*height, bitmap, &status);
-    printf("Three\n");
+
+    /*
+    for (int i = 0; i < height; i++) {
+        //printf("Line: %d\n ", i);
+        for (int j = 0; j < width; j++) {
+            //printf("Line: %d of %d, Element: %d of %d \n", i, width, j, height);
+            //printf("Bitmap index %d of %ld\n", (height*i + j), totpix);
+
+            data[i][j] = bitmap[width*i + j];
+            //printf("Bitmap value %d\n", bitmap[height*i + j]);
+            fflush(stdout);
+        }
+    }
+    */
+    for (fpixel[1] = 1; fpixel[1] <= naxes[1]; fpixel[1]++) {
+        //printf("%ld\n ", fpixel[1]);
+        //fits_write_pix(fptr, TULONG, fpixel, width, data[fpixel[1]-1], &status);
+        fits_write_pix(fptr, TUSHORT, fpixel, width, bitmap + fpixel[1]*width, &status);
+    }
 
     fits_close_file(fptr, &status);
 
@@ -66,7 +93,9 @@ int main(int ac, char *av[]) {
 
     LibRaw RawProcessor;
 
-    if(ac<2) {
+
+
+    if(ac<3) {
         printf(
             "raw2fits - Simple program to convert DSLR raw files to fits format.\n"
             "The output data is supposed to be same than dcraw -4 -D -t 0\n\n"
@@ -75,10 +104,18 @@ int main(int ac, char *av[]) {
         return 0;
     }
 
+    char *infn;
+    char *outfn;
+
+    infn = av[1];
+    outfn = av[2];
+
+    printf("%s\n", av[1]);
+    printf("%s\n", av[2]);
+
     putenv ((char*)"TZ=UTC"); // dcraw compatibility, affects TIFF datestamp field
 
     int verbose=1, autoscale=0, use_gamma=0, out_tiff=0;
-    char outfn[1024];
 
 #define P1 RawProcessor.imgdata.idata
 #define S RawProcessor.imgdata.sizes
@@ -88,37 +125,33 @@ int main(int ac, char *av[]) {
 #define OUT RawProcessor.imgdata.params
 
 
-    for (i=1;i<ac;i++) {
+    if(verbose) printf("Processing file %s\n", infn);
 
-        if(verbose) printf("Processing file %s\n",av[i]);
-        if( (ret = RawProcessor.open_file(av[i])) != LIBRAW_SUCCESS) {
-            fprintf(stderr,"Cannot open %s: %s\n",av[i],libraw_strerror(ret));
-            continue; // no recycle b/c open file will recycle itself
-        }
-        if(verbose) {
-            printf("Image size: %dx%d\nRaw size: %dx%d\n",S.width,S.height,S.raw_width,S.raw_height);
-            printf("Margins: top=%d, left=%d\n",S.top_margin,S.left_margin);
-        }
+    if( (ret = RawProcessor.open_file(infn) ) != LIBRAW_SUCCESS) {
+        fprintf(stderr,"Cannot open %s: %s\n", infn, libraw_strerror(ret));
 
-        if( (ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS) {
-            fprintf(stderr,"Cannot unpack %s: %s\n",av[i],libraw_strerror(ret));
-            continue;
-        }
-
-        if(verbose)
-            printf("Unpacked....\n");
-
-        if(!(RawProcessor.imgdata.idata.filters || RawProcessor.imgdata.idata.colors == 1)) {
-            printf("Only Bayer-pattern RAW files supported, sorry....\n");
-            continue;
-        }
-
-        snprintf(outfn,sizeof(outfn),"%s.%s",av[i],out_tiff?"tiff":"fits");
-
-        write_fits(S.raw_width, S.raw_height, RawProcessor.imgdata.rawdata.raw_image, outfn);
-
-        if(verbose) printf("Stored to file %s\n",outfn);
     }
+    if(verbose) {
+        printf("Image size: %dx%d\nRaw size: %dx%d\n", S.width, S.height, S.raw_width, S.raw_height);
+        printf("Margins: top=%d, left=%d\n", S.top_margin, S.left_margin);
+    }
+
+    if( (ret = RawProcessor.unpack() ) != LIBRAW_SUCCESS) {
+        fprintf(stderr,"Cannot unpack %s: %s\n", infn, libraw_strerror(ret));
+
+    }
+    if(verbose)
+        printf("Unpacked....\n");
+
+    if(!(RawProcessor.imgdata.idata.filters || RawProcessor.imgdata.idata.colors == 1)) {
+        printf("Only Bayer-pattern RAW files supported, sorry....\n");
+
+    }
+
+    write_fits(S.raw_width, S.raw_height, RawProcessor.imgdata.rawdata.raw_image, outfn);
+
+    if(verbose) printf("Stored to file %s\n", outfn);
+
 
     RawProcessor.recycle(); // just for show this call
 
