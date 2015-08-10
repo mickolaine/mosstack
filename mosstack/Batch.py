@@ -2,6 +2,7 @@ from . Frame import Frame
 from os import listdir
 import datetime   # For profiling
 from os.path import splitext
+from memory_profiler import profile
 
 
 class Batch(object):
@@ -269,6 +270,7 @@ class Batch(object):
             self.setRef(list(self.frames.keys())[0])
             print("Reference frame " + frameId + " removed. New reference frame is " + self.refId + ".")
 
+    @profile
     def debayer(self, debayer):
         """
         Debayer all frames

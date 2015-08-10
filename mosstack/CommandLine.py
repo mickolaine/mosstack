@@ -150,12 +150,18 @@ class CommandLine:
 
         if self.args.calibrate:
             for i in self.batch["light"].frames:
+                self.batch["light"].frames[i].fphase = "orig"
                 self.batch["light"].frames[i].calibrate(self.stackerwrap())
 
         if self.args.debayer:
+            for i in self.batch["light"].frames:
+                self.batch["light"].frames[i].fphase = "calib"
+                print(self.batch["light"].frames[i].getpath())
             self.batch["light"].debayer(self.debayerwrap())
 
         if self.args.register:
+            for i in self.batch["light"].frames:
+                self.batch["light"].frames[i].fphase = "rgb"
             matcher = self.matcher()
             matcher.tform = self.transformer
             self.batch["light"].register(matcher)
@@ -170,9 +176,12 @@ class CommandLine:
                       " and " + crop[3] + " should be integers.")
                 exit()
             for i in self.batch["light"].frames:
+                self.batch["light"].fphase = "reg"
                 self.batch["light"].frames[i].crop(xrange, yrange)
 
         if self.args.stack:
+            for i in self.batch["light"].frames:
+                self.batch["light"].frames[i].fphase = "reg"
             self.batch["light"].stack(self.stackerwrap())
 
     def print_values(self):

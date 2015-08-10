@@ -41,7 +41,7 @@ static struct PyModuleDef debayermodule = {
 
 int debayer_real(char* infile, char* outfile) {
 
-  fitsfile *fptr, *rfptr, *gfptr, *bfptr, *rgbfptr;
+  fitsfile *fptr, *rgbfptr;
   char card[FLEN_CARD];
 
   int status = 0;
@@ -166,7 +166,7 @@ int debayer_real(char* infile, char* outfile) {
 
     fits_close_file(fptr, &status);
     fits_close_file(rgbfptr, &status);
-      
+
   }
   //printf("%d\n", status);
   if (status) {

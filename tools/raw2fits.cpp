@@ -40,18 +40,6 @@ void write_fits(unsigned width, unsigned height, unsigned short *bitmap, const c
 
     long naxes[2], totpix, fpixel[2];
 
-    /*
-    unsigned long **data;
-
-    data = (unsigned long **) malloc(height * sizeof(unsigned long*));
-    if (data){
-        for (int i = 0; i < height; i++) {
-            data[i] = (unsigned long *) malloc(width * sizeof(unsigned long));
-        }
-    }
-
-    //unsigned short data[width][height];
-    */
     naxis = 2;
     naxes[0] = width;
     naxes[1] = height;
@@ -64,22 +52,8 @@ void write_fits(unsigned width, unsigned height, unsigned short *bitmap, const c
 
     printf("%d, %d\n", width, height);
 
-    /*
-    for (int i = 0; i < height; i++) {
-        //printf("Line: %d\n ", i);
-        for (int j = 0; j < width; j++) {
-            //printf("Line: %d of %d, Element: %d of %d \n", i, width, j, height);
-            //printf("Bitmap index %d of %ld\n", (height*i + j), totpix);
 
-            data[i][j] = bitmap[width*i + j];
-            //printf("Bitmap value %d\n", bitmap[height*i + j]);
-            fflush(stdout);
-        }
-    }
-    */
     for (fpixel[1] = 1; fpixel[1] <= naxes[1]; fpixel[1]++) {
-        //printf("%ld\n ", fpixel[1]);
-        //fits_write_pix(fptr, TULONG, fpixel, width, data[fpixel[1]-1], &status);
         fits_write_pix(fptr, TUSHORT, fpixel, width, bitmap + fpixel[1]*width, &status);
     }
 

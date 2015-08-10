@@ -10,6 +10,7 @@ import gc
 import ast
 import magic
 import datetime   # For profiling
+from memory_profiler import profile
 
 
 class Frame(object):
@@ -126,6 +127,7 @@ class Frame(object):
 
         self._decode()
         self.state["prepare"] = 2
+        self.project.set("Phase", "Decoded", "1")
 
     def calibrate(self, stacker, bias=None, dark=None, flat=None):
         """
@@ -147,10 +149,7 @@ class Frame(object):
             data = stacker.subtract(data, bias.data)
         elif biaslevel is not None:
             try:
-                print("Doin' the subtraction. Data minus " + str(float(biaslevel)))
-                print(str(data))
                 data -= float(biaslevel)
-                print(str(data))
             except ValueError:
                 pass
 
@@ -166,8 +165,11 @@ class Frame(object):
         self.project.addfile(self.path())
         self.state["calibrate"] = 2
 
+        self.project.set("Phase", "Calibrated", "1")
+
         return
 
+    @profile
     def debayer(self, debayer):
         """
         Debayer the frame. Project tells how.
@@ -180,19 +182,21 @@ class Frame(object):
         self.state["debayer"] = 1
         print("Debayering frame " + self.number)
         #self.data = debayer.debayer(self.data[0])
-        time1 = datetime.datetime.now()
-        self.data = debayer.debayer(self)
-        print(datetime.datetime.now() - time1)
+        #time1 = datetime.datetime.now()
+
+        deb = debayer()
+
+        data = deb.debayer(self)
+        del deb
+        #print(datetime.datetime.now() - time1)
         self.fphase = "rgb"
 
-        self.write()
-        # None means data has already been written on disc
-
-        #if data is not None:
-        #    print("Writing the file")
+        if data is not None:
+            self.write()
 
         self.project.addfile(self.path())
         self.state["debayer"] = 2
+        self.project.set("Phase", "Debayered", "1")
         return
 
     def register(self, register):  # , ref=False):
@@ -213,6 +217,7 @@ class Frame(object):
             self.write()
             self.project.addfile(self.path())
             del data
+        self.project.set("Phase", "Registered", "1")
         return
 
     def crop(self, xrange, yrange):
@@ -289,7 +294,7 @@ class Frame(object):
             if self.staticpath:
                 return self._path
             try:
-                return self.frameinfo.get("Paths", self.fphase)
+                return self.frameinfo.get("Paths", fphase)
             except (KeyError, AttributeError):
                 pass
 
@@ -560,6 +565,7 @@ class Frame(object):
 
     points = property(getpoints, setpoints)
 
+    @profile
     def getdata(self):
         """
         Getter for data.
@@ -574,6 +580,7 @@ class Frame(object):
         self._release_data()
         return data
 
+    @profile
     def setdata(self, data):
         """
         Setter for data.
@@ -585,6 +592,7 @@ class Frame(object):
         else:
             self._data = np.array([data])
 
+    @profile
     def deldata(self):
         """
         Destructor for data
@@ -649,6 +657,27 @@ class Frame(object):
 
     def _decode(self):
         """
+        Convert the raw file into FITS with raw2fits.
+
+        Mainly for testing the raw2fits before integrating it as C-extension.
+        """
+
+        if exists(self.path()):
+            print("Image already converted.")
+            return
+
+        print("Converting RAW image...")
+        if call(["/home/micko/.local/bin/raw2fits", self.rawpath, self.path()]):
+            print("Something went wrong... There might be helpful output from Rawtran above this line.")
+            if exists(self.path()):
+                print("File " + self.path() + " was created but dcraw returned an error.")
+            else:
+                print("Unable to continue.")
+        else:
+            print("Conversion successful!")
+
+    def _decode_old(self):
+        """
         Convert the raw file into FITS via PGM.
         """
 
@@ -677,8 +706,7 @@ class Frame(object):
         """
         if path is None:
             path = self.path()
-        self.hdu = fits.open(path, memmap=True, uint16=True)  # TODO: "Cannot load a memory-mapped image: BZERO/BSCALE/BLANK hea..."
-        #self.hdu = fits.open(path, do_not_scale_image_data=True)
+        self.hdu = fits.open(path, memmap=True)
         self.image = self.hdu[0]
 
     def _load_tiff(self, path=None):
@@ -734,11 +762,17 @@ class Frame(object):
         if self.hdu is not None:
             self.hdu.close()
         self.image = None
-        del self.data
         self.hdu = None
 
-        gc.collect()
+        del self.image
+        del self.hdu
+        del self.data
 
+        gc.collect()
+        self.hdu = None
+        self.image = None
+
+    @profile
     def _write_fits(self):
         """
         Write self.data to disk as a fits file
@@ -749,11 +783,13 @@ class Frame(object):
         if self._data is None:
             print("No data set! Exiting...")
             exit()
+
         # print("Writing a file with shape: " + str(self._data.shape))
+        # Changed datatype to int32 since uint16 isn't supported by standard
         if self._data.shape[0] == 1:
-            fits.writeto(self.path(), np.uint16(self._data[0]), hdu.header, clobber=True)
+            fits.writeto(self.path(), np.int32(self._data[0]), hdu.header, clobber=True)
         else:
-            fits.writeto(self.path(), np.uint16(self._data), hdu.header, clobber=True)
+            fits.writeto(self.path(), np.int32(self._data), hdu.header, clobber=True)
 
         self._release_data()
 
@@ -801,6 +837,7 @@ class Frame(object):
 
         self._release_data()
 
+    @profile
     def write(self, tiff=False, skimage=True):
         """
         Wrapper function to relay writing of the image on disk. This is remnants of something much more complicated...
