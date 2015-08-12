@@ -57,6 +57,8 @@ class Stacking:
         X = list(imagelist.values())[0].x
         Y = list(imagelist.values())[0].y
 
+        print("Image of size " + str(X) + " x " + str(Y) + " recieved in stacker.")
+
         xclip = math.ceil(X / n)
         yclip = math.ceil(Y / n)
 

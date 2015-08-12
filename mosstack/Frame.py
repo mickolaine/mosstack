@@ -10,7 +10,7 @@ import gc
 import ast
 import magic
 import datetime   # For profiling
-from memory_profiler import profile
+#from memory_profiler import profile
 
 
 class Frame(object):
@@ -169,7 +169,7 @@ class Frame(object):
 
         return
 
-    @profile
+    # @profile
     def debayer(self, debayer):
         """
         Debayer the frame. Project tells how.
@@ -187,11 +187,12 @@ class Frame(object):
         deb = debayer()
 
         data = deb.debayer(self)
-        del deb
+        #del deb
         #print(datetime.datetime.now() - time1)
         self.fphase = "rgb"
 
         if data is not None:
+            self.data = data
             self.write()
 
         self.project.addfile(self.path())
@@ -199,7 +200,7 @@ class Frame(object):
         self.project.set("Phase", "Debayered", "1")
         return
 
-    def register(self, register):  # , ref=False):
+    def register(self, reg):  # , ref=False):
         """
         Register the frame. Project tells how.
 
@@ -209,7 +210,7 @@ class Frame(object):
         """
 
         self.state["register"] = 1
-        data = register.register(self)
+        data = reg.register(self)
         self.fphase = "reg"
         self.state["register"] = 2
         if data is not None:
@@ -565,7 +566,7 @@ class Frame(object):
 
     points = property(getpoints, setpoints)
 
-    @profile
+    # @profile
     def getdata(self):
         """
         Getter for data.
@@ -580,7 +581,7 @@ class Frame(object):
         self._release_data()
         return data
 
-    @profile
+    # @profile
     def setdata(self, data):
         """
         Setter for data.
@@ -592,7 +593,7 @@ class Frame(object):
         else:
             self._data = np.array([data])
 
-    @profile
+    # @profile
     def deldata(self):
         """
         Destructor for data
@@ -772,7 +773,7 @@ class Frame(object):
         self.hdu = None
         self.image = None
 
-    @profile
+    # @profile
     def _write_fits(self):
         """
         Write self.data to disk as a fits file
@@ -837,7 +838,7 @@ class Frame(object):
 
         self._release_data()
 
-    @profile
+    # @profile
     def write(self, tiff=False, skimage=True):
         """
         Wrapper function to relay writing of the image on disk. This is remnants of something much more complicated...

@@ -3,7 +3,7 @@ from .. Debayer.Debayer import Debayer
 from .. Debayer import debayer
 from os.path import exists
 from os import remove
-from memory_profiler import profile
+#from memory_profiler import profile
 import gc
 
 
@@ -16,7 +16,7 @@ class VNGC(Debayer):
     def __init__(self):
         """Prepare everything for running the debayer-algorithms."""
 
-    @profile
+    # @profile
     def debayer(self, image):
         """
         Debayer using C-subroutine

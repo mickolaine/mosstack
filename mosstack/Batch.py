@@ -2,7 +2,7 @@ from . Frame import Frame
 from os import listdir
 import datetime   # For profiling
 from os.path import splitext
-from memory_profiler import profile
+#from memory_profiler import profile
 
 
 class Batch(object):
@@ -78,15 +78,20 @@ class Batch(object):
         # Create new empty frame for the result
         self.master = Frame(self.project, ftype=self.ftype, number="master")
 
-        # Call stacker
-        self.master.data = stacker.stack(self.frames, self.project)
+        print(list(self.frames.values())[0].x)
+        print(list(self.frames.values())[0].y)
 
+        # Call stacker
+        data = stacker.stack(self.frames, self.project)
+        print(data.shape)
+        self.master.data = data
         # Save file
         self.master.write(tiff=True)
 
         # Metadata and printouts
         self.project.addfile(self.master.path(), final=True)
         dim, self.master.x, self.master.y = self.master.data.shape
+        print("Dimensions : " + str(self.master.x) + " x " + str(self.master.y))
         totalexposure = 0.0
         for i in self.frames:
             try:
@@ -270,7 +275,7 @@ class Batch(object):
             self.setRef(list(self.frames.keys())[0])
             print("Reference frame " + frameId + " removed. New reference frame is " + self.refId + ".")
 
-    @profile
+    # @profile
     def debayer(self, debayer):
         """
         Debayer all frames

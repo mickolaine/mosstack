@@ -101,17 +101,19 @@ int debayer_real(char* infile, char* outfile) {
     fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix4,0, &status);
     fpixel[1]++;
     fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix5,0, &status);
+
+    r = (double *) malloc(naxes[0] * sizeof(double));
+    //printf("Reserve green\n");
+    g = (double *) malloc(naxes[0] * sizeof(double));
+    //printf("Reserve blue\n");
+    b = (double *) malloc(naxes[0] * sizeof(double));
     
     /* process image one row at a time; increment row # in each loop */
     for (fpixel[1] = 1; fpixel[1] <= naxes[1]; fpixel[1]++) {
 
 	  //printf("begin to calculate line %ld\n", fpixel[1]);
 	  //printf("Reserve red %ld\n", naxes[0]);
-      r = (double *) malloc(naxes[0] * sizeof(double));
-	  //printf("Reserve green\n");
-      g = (double *) malloc(naxes[0] * sizeof(double));
-	  //printf("Reserve blue\n");
-      b = (double *) malloc(naxes[0] * sizeof(double));
+
 
       //printf("Calculations...\n");
       vng(pix1, pix2, pix3, pix4, pix5, r, g, b, fpixel[0], fpixel[1], naxes0, naxes1);
