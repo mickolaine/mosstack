@@ -13,10 +13,16 @@ modules.append(Extension("mosstack.Debayer.debayer",
                          define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '7'),],
                          extra_compile_args=["-O3"])
               )
+modules.append(Extension("mosstack.Decoding.raw2fits",
+                         sources=["mosstack/Decoding/raw2fitsmodule.cpp"],
+                         libraries=["cfitsio", "raw", "m"],
+                         define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '7'),],
+                         extra_compile_args=["-O3"])
+              )
 
 setup(
     name='mosstack',
-    version='0.7.dev1',
+    version='0.7.dev2',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=find_packages(),

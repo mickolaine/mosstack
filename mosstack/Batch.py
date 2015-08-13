@@ -78,12 +78,9 @@ class Batch(object):
         # Create new empty frame for the result
         self.master = Frame(self.project, ftype=self.ftype, number="master")
 
-        print(list(self.frames.values())[0].x)
-        print(list(self.frames.values())[0].y)
-
         # Call stacker
         data = stacker.stack(self.frames, self.project)
-        print(data.shape)
+
         self.master.data = data
         # Save file
         self.master.write(tiff=True)

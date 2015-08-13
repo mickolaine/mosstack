@@ -4,6 +4,7 @@ from os.path import splitext, exists
 from shutil import move
 from subprocess import call, check_output
 from . import Config
+from . Decoding import Raw2fits_cpp
 import numpy as np
 from PIL import Image as Im
 import gc
@@ -125,7 +126,9 @@ class Frame(object):
         Decode the frame. Now just calls _decode
         """
 
-        self._decode()
+        #self._decode()
+        Raw2fits_cpp.decode(self.rawpath, self.path())
+        self.getdimensions()
         self.state["prepare"] = 2
         self.project.set("Phase", "Decoded", "1")
 
@@ -488,6 +491,24 @@ class Frame(object):
 
         print("Done!")
         print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
+
+    #TODO: get rid of this once decoding is done better
+    def getdimensions(self):
+        """
+        Get X and Y dimensions from FITS instead of DCRaw output.
+
+        This is needed to fix problems with temporary raw2fits.cpp-solution
+        """
+        self._load_fits(self.path())
+        data = self.image.data
+
+        if len(data.shape) == 2:
+            self.x, self.y = data.shape
+
+        elif len(data.shape) == 3:
+            temp, self.x, self.y = data.shape
+
+        self.data = data
 
     def writeinfo(self):
         """

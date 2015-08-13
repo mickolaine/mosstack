@@ -14,7 +14,7 @@ def test():
     setup = Config.Setup()
 
     # Setting algorithms
-    debayerwrap = Debayer.VNGCython
+    debayerwrap = Debayer.VNGC
     matcher = Registering.Groth
     transformer = Registering.SkTransform
     stackerwrap = Stacker.SigmaMedian
@@ -102,8 +102,8 @@ def test():
     for i in flat:
         batch["flat"].addfile(i, "flat")
 
-    #for i in batch["light"].frames:
-    #    batch["bias"].stack(stackerwrap())
+    for i in batch["light"].frames:
+        batch["bias"].stack(stackerwrap())
     #    batch["flat"].subtract("bias", stackerwrap())
     #    batch["flat"].stack(stackerwrap())
     #    batch["light"].frames[i].calibrate(stackerwrap(), bias=batch["bias"].master, flat=batch["flat"].master)
