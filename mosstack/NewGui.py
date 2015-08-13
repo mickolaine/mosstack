@@ -17,7 +17,7 @@ class GUI():
 
         self.app = QApplication(argv)
         self.view = QDeclarativeView()
-        url = QUrl(self.app.applicationDirPath() + 'QML/main.qml')
+        url = QUrl(self.app.applicationFilePath() + 'QML/main.qml')
         #url = QUrl('QML/main.qml')
 
 
