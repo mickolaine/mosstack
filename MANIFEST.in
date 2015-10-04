@@ -5,4 +5,4 @@ include doc/LaTeX/manual.pdf
 include doc/LaTeX/manual.md
 include doc/*
 include data/*
-recursive-include astrostack *.pyx *.c
+recursive-include mosstack *.pyx *.c

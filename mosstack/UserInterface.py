@@ -904,7 +904,7 @@ temporary directory, you can fix it by:
         batch = Batch(self.project, ftype="light", fphase=fphase)
 
         for i in batch.frames:
-            batch.frames[i].debayer(self.debayerwrap())
+            batch.frames[i].debayer(self.debayerwrap)
         #batch.debayerAll(self.debayerwrap())
 
     def stack(self, ftype, fphase):

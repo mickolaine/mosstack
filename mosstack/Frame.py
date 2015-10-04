@@ -129,6 +129,7 @@ class Frame(object):
         #self._decode()
         Raw2fits_cpp.decode(self.rawpath, self.path())
         self.getdimensions()
+        self.writeinfo()
         self.state["prepare"] = 2
         self.project.set("Phase", "Decoded", "1")
 
@@ -356,9 +357,14 @@ class Frame(object):
         If not recognized, will return file magic's description
         """
 
-        mg = magic.open(magic.NONE)
-        mg.load()
-        ms = mg.file(path)
+        # There are two different libraries called magic.
+        #  Try statement expects filemagic, in case that fails except tries python_magic
+        try:
+            mg = magic.open(magic.NONE)
+            mg.load()
+            ms = mg.file(path)
+        except AttributeError:
+            ms = magic.from_file(path)
 
         if ms.split()[0] == "TIFF":
             return "tiff"
@@ -503,10 +509,10 @@ class Frame(object):
         data = self.image.data
 
         if len(data.shape) == 2:
-            self.x, self.y = data.shape
+            self.y, self.x = data.shape
 
         elif len(data.shape) == 3:
-            temp, self.x, self.y = data.shape
+            temp, self.y, self.x = data.shape
 
         self.data = data
 
@@ -773,8 +779,8 @@ class Frame(object):
             else:
                 self._data = np.array([self.image.data])
 
-        if np.amin(self._data) >= 32768:
-            self._data -= 32768
+        #if np.amin(self._data) >= 32768:
+        #    self._data -= 32768
 
     def _release_data(self):
         """
@@ -824,13 +830,15 @@ class Frame(object):
             im_version = "6.7"
         else:
             im_version = "6.8"
-
+        print(self.data.shape)
         if self.data.shape[0] == 1:
+
             imagedata = np.flipud(np.int16(self.data[0] - 32768))
             image = Im.fromarray(imagedata)
             image.save(self.path(fformat="tiff"), format="tiff")
 
         elif self.data.shape[0] == 3:
+
             rgbpath = self.rgbpath(fileformat="tiff")
             for i in (0, 1, 2):
                 if im_version == "6.7" and not skimage:
@@ -839,9 +847,10 @@ class Frame(object):
                     imagedata = np.flipud(np.int16(self.data[i]))
                 image = Im.fromarray(imagedata)
                 image.save(rgbpath[i], format="tiff")
-            call(["convert", rgbpath[0], rgbpath[1], rgbpath[2],
-                  "-channel", "RGB", "-depth", "16", "-combine", self.path(fformat="tiff")])
-            call(["rm", rgbpath[0], rgbpath[1], rgbpath[2]])
+            print("convert " + rgbpath[0] + rgbpath[1] + rgbpath[2] + " -channel RGB -combine " + self.path(fformat="tiff"))
+            call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine", self.path(fformat="tiff")])
+            #      "-channel", "RGB", "-depth", "16", "-combine", self.path(fformat="tiff")])
+            #call(["rm", rgbpath[0], rgbpath[1], rgbpath[2]])
         self.project.addfile(self.path(fformat="tiff"), final=True)
 
     def write_tiff(self):

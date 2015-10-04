@@ -23,8 +23,8 @@ class SigmaMedian(Stacking):
 
     #@staticmethod
     def _realstack(self, frames):
-        print("Data types: " + frames.dtype.name + ",  " + np.std(frames, axis=0).dtype.name +
-              ", " + np.median(frames, axis=0).dtype.name + " and " + str(type(self.kappa)))
+        #print("Data types: " + frames.dtype.name + ",  " + np.std(frames, axis=0).dtype.name +
+        #      ", " + np.median(frames, axis=0).dtype.name + " and " + str(type(self.kappa)))
         #TODO: Remove the line above and try to find a better solution for the one below
         #      Preferably something where type conversions aren't necessary.
         return _sigmaMedian(np.float32(frames), np.float32(np.std(frames, axis=0)),

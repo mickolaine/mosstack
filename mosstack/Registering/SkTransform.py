@@ -52,11 +52,12 @@ class SkTransform(object):
 
             return frame.data
 
-        imagedata = frame.data
+        imagedata = np.float64(frame.data)
         data = []
         for i in range(len(imagedata)):
             amax = np.amax(imagedata[i])
-            data.append(tf.warp(np.float32(imagedata[i]) / np.amax(imagedata[i]), inverse_map=frame.tform))
+            #data.append(tf.warp(np.int32(imagedata[i] / np.amax(imagedata[i])), inverse_map=frame.tform))
+            data.append(tf.warp(imagedata[i] / np.amax(imagedata[i]), inverse_map=frame.tform))
             data[i] /= np.amax(data[i]) / amax
 
         return np.array(data)

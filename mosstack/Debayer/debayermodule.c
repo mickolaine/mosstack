@@ -47,7 +47,7 @@ int debayer_real(char* infile, char* outfile) {
   int status = 0;
   int hdutype, naxis, ii;
   long naxes[2], totpix, fpixel[2], fpixelread[2], naxes3d[3], fpixel3d[3];
-  double *r, *g, *b, *pix1, *pix2, *pix3, *pix4, *pix5;
+  long *r, *g, *b, *pix1, *pix2, *pix3, *pix4, *pix5;
 
   
   if ( !fits_open_image(&fptr, infile, READONLY, &status) ) {
@@ -75,11 +75,11 @@ int debayer_real(char* infile, char* outfile) {
     }
 
     /* Five lines of data in memory */
-    pix1 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
-    pix2 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
-    pix3 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
-    pix4 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
-    pix5 = (double *) malloc(naxes[0] * sizeof(double)); /* memory for 1 row */
+    pix1 = (long *) malloc(naxes[0] * sizeof(long)); /* memory for 1 row */
+    pix2 = (long *) malloc(naxes[0] * sizeof(long)); /* memory for 1 row */
+    pix3 = (long *) malloc(naxes[0] * sizeof(long)); /* memory for 1 row */
+    pix4 = (long *) malloc(naxes[0] * sizeof(long)); /* memory for 1 row */
+    pix5 = (long *) malloc(naxes[0] * sizeof(long)); /* memory for 1 row */
     
     if (pix4 == NULL) {
       printf("Memory allocation error\n");
@@ -91,22 +91,22 @@ int debayer_real(char* infile, char* outfile) {
 
     /* Create new file */
     fits_create_file(&rgbfptr, outfile, &status);
-    fits_create_img(rgbfptr, -32, 3, naxes3d, &status);
+    fits_create_img(rgbfptr, 32, 3, naxes3d, &status);
 
     
     /* start by loading 3 first lines in memory */
     fpixel[1] = 1;
-    fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix3,0, &status);
+    fits_read_pix(fptr, TLONG, fpixel, naxes[0],0, pix3,0, &status);
     fpixel[1]++;
-    fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix4,0, &status);
+    fits_read_pix(fptr, TLONG, fpixel, naxes[0],0, pix4,0, &status);
     fpixel[1]++;
-    fits_read_pix(fptr, TDOUBLE, fpixel, naxes[0],0, pix5,0, &status);
+    fits_read_pix(fptr, TLONG, fpixel, naxes[0],0, pix5,0, &status);
 
-    r = (double *) malloc(naxes[0] * sizeof(double));
+    r = (long *) malloc(naxes[0] * sizeof(long));
     //printf("Reserve green\n");
-    g = (double *) malloc(naxes[0] * sizeof(double));
+    g = (long *) malloc(naxes[0] * sizeof(long));
     //printf("Reserve blue\n");
-    b = (double *) malloc(naxes[0] * sizeof(double));
+    b = (long *) malloc(naxes[0] * sizeof(long));
     
     /* process image one row at a time; increment row # in each loop */
     for (fpixel[1] = 1; fpixel[1] <= naxes[1]; fpixel[1]++) {
@@ -124,13 +124,13 @@ int debayer_real(char* infile, char* outfile) {
       fpixel3d[2] = 1;
 
       //printf("Writing red\n");
-      fits_write_pix(rgbfptr, TDOUBLE, fpixel3d, naxes3d[0], r, &status);
+      fits_write_pix(rgbfptr, TLONG, fpixel3d, naxes3d[0], r, &status);
       //printf("Writing green\n");
       fpixel3d[2] = 2;
-      fits_write_pix(rgbfptr, TDOUBLE, fpixel3d, naxes3d[0], g, &status);
+      fits_write_pix(rgbfptr, TLONG, fpixel3d, naxes3d[0], g, &status);
       //printf("Writing blue\n");
       fpixel3d[2] = 3;
-      fits_write_pix(rgbfptr, TDOUBLE, fpixel3d, naxes3d[0], b, &status);
+      fits_write_pix(rgbfptr, TLONG, fpixel3d, naxes3d[0], b, &status);
 
       //printf("Freeing memory\n");
       free(pix1);
@@ -138,7 +138,7 @@ int debayer_real(char* infile, char* outfile) {
       pix2 = pix3;
       pix3 = pix4;
       pix4 = pix5;
-      pix5 = (double *) malloc(naxes[0] * sizeof(double));
+      pix5 = (long *) malloc(naxes[0] * sizeof(long));
 
       //printf("%ld, %ld\n", fpixel[1], naxes[1]);
 
@@ -148,7 +148,7 @@ int debayer_real(char* infile, char* outfile) {
       }
       else {
         long fpixelread[2] = {fpixel[0], fpixel[1]+3};
-        fits_read_pix(fptr, TDOUBLE, fpixelread, naxes[0],0, pix5,0, &status);
+        fits_read_pix(fptr, TLONG, fpixelread, naxes[0],0, pix5,0, &status);
         //printf("read line %ld\n", fpixel[1]+3);
       }
 
@@ -182,8 +182,8 @@ int debayer_real(char* infile, char* outfile) {
 }
 
 
-int bilinear(double *pix1, double *pix2, double *pix3, double *pix4, double *pix5,
-	     double *r, double *g, double *b,
+int bilinear(long *pix1, long *pix2, long *pix3, long *pix4, long *pix5,
+	     long *r, long *g, long *b,
 	     long fpixel0, long fpixel1, int naxes0, int naxes1) {
 
   
@@ -252,8 +252,8 @@ int bilinear(double *pix1, double *pix2, double *pix3, double *pix4, double *pix
   }
 }
 
-int vng(double *pix1, double *pix2, double *pix3, double *pix4, double *pix5,
-	double *r, double *g, double *b,
+int vng(long *pix1, long *pix2, long *pix3, long *pix4, long *pix5,
+	long *r, long *g, long *b,
 	long fpixel0, long fpixel1, int naxes0, int naxes1) {
   
   int i = 0;
@@ -263,12 +263,16 @@ int vng(double *pix1, double *pix2, double *pix3, double *pix4, double *pix5,
     // i:       row
 
     // green pixels
-    int green_on_blue = (fpixel1%2 == 0) & (i%2 == 0); // green pixel on red  line
-    int green_on_red  = (fpixel1%2 == 1) & (i%2 == 1); // green pixel on blue line
+    //int green_on_blue = (fpixel1%2 == 0) & (i%2 == 1); // green pixel on red  line
+    //int green_on_red  = (fpixel1%2 == 0) & (i%2 == 1); // green pixel on blue line
+    int green_on_blue = (fpixel1%2 == 1) & (i%2 == 0); // green pixel on red  line
+    int green_on_red  = (fpixel1%2 == 0) & (i%2 == 1); // green pixel on blue line
     // red pixels
-    int blue  = (fpixel1%2 == 0) & (i%2 == 1);
+    //int blue  = (fpixel1%2 == 0) & (i%2 == 1);
+    int blue  = (fpixel1%2 == 1) & (i%2 == 1);
     // blue pixels
-    int red = (fpixel1%2 == 1) & (i%2 == 0);
+    //int red = (fpixel1%2 == 1) & (i%2 == 0);
+    int red = (fpixel1%2 == 0) & (i%2 == 0);
 
     double rsum = 0, gsum = 0, bsum = 0;
     

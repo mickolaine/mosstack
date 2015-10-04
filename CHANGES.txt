@@ -1,5 +1,10 @@
-v0.7
+v0.7rc1
 - Fixed Bilinear methods to match each other
+- Added VNG written in C
+- Added raw decoding with C++ libraw. DCRaw is still required though (for now).
+- Fixed compatibility issues with AstroPy 1.0
+- New command line gui almost ready. Will be in 0.7.0. It's accessible via
+  command mosstack_new, but not fully implemented yet.
 
 v0.6.2
 - CLI: stack command changed. Now requires two arguments but works.

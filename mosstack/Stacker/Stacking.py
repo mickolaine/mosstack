@@ -57,7 +57,7 @@ class Stacking:
         X = list(imagelist.values())[0].x
         Y = list(imagelist.values())[0].y
 
-        print("Image of size " + str(X) + " x " + str(Y) + " recieved in stacker.")
+        # print("Image of size " + str(X) + " x " + str(Y) + " recieved in stacker.")
 
         xclip = math.ceil(X / n)
         yclip = math.ceil(Y / n)
@@ -84,7 +84,7 @@ class Stacking:
                 dY = 0
                 while dY < Y:
                     if Y - dY > yclip:
-                        sec.append((dX, X, dY, dY + yclip -0))
+                        sec.append((dX, X, dY, dY + yclip - 0))
                         dY += yclip
                     else:
                         sec.append((dX, X, dY, Y))
@@ -116,11 +116,14 @@ class Stacking:
                 templist = []
                 for i in imagelist:
                     imagelist[i].setclip(clip)
+                    #print(clip)
 
                     if len(templist) == 0:
                         templist = imagelist[i].data[np.newaxis, :, :]
                     else:
                         templist = np.vstack((templist, imagelist[i].data[np.newaxis, :, :]))
+
+                #print(templist.shape)
 
                 ### The stacking itself.
                 temp = self._realstack(templist)
@@ -159,7 +162,7 @@ class Stacking:
 
         newdata = image - calib
         newdata = newdata.clip(0)
-        return np.uint16(newdata)
+        return np.int32(newdata)
 
     @staticmethod
     def clip(batch):
@@ -194,4 +197,4 @@ class Stacking:
         """
         maxim = np.amax(calib)
         newdata = image / calib * maxim
-        return newdata
+        return np.int32(newdata).clip(0)

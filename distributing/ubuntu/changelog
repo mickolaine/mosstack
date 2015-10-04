@@ -1,3 +1,9 @@
+mosstack (0.7rc1) vivid; urgency=low
+
+  * Release candidate of the 0.7 version
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Sat, 03 Oct 2015 18:38:43 +0300
+
 mosstack (0.7.dev1) vivid; urgency=low
 
   * Testing if the packaging still works
