@@ -79,11 +79,14 @@ int raw2fits_real(char *infile, char *outfile) {
   int verbose=1, autoscale=0, use_gamma=0, out_tiff=0;
 
   #define P1 RawProcessor.imgdata.idata
+  #define P2 RawProcessor.imgdata.other
+
   #define S RawProcessor.imgdata.sizes
   #define C RawProcessor.imgdata.color
   #define T RawProcessor.imgdata.thumbnail
-  #define P2 RawProcessor.imgdata.other
+
   #define OUT RawProcessor.imgdata.params
+  #define exifLens RawProcessor.imgdata.lens
 
 
   if(verbose) printf("Processing file %s\n", infile);
@@ -108,6 +111,26 @@ int raw2fits_real(char *infile, char *outfile) {
     printf("Only Bayer-pattern RAW files supported, sorry....\n");
 
   }
+
+  printf ("Timestamp: %s", ctime(&(P2.timestamp)));
+  printf ("Camera: %s %s\n", P1.make, P1.model);
+  printf ("ISO speed: %d\n", (int) P2.iso_speed);
+  printf ("%0.1f sec\n", P2.shutter);
+  printf ("Aperture: f/%0.1f\n", P2.aperture);
+  printf ("Focal length: %0.1f mm\n", P2.focal_len);
+  if (P1.filters) {
+    printf ("\nFilter pattern: ");
+    if (!P1.cdesc[3]) P1.cdesc[3] = 'G';
+    for (int i=0; i < 16; i++)
+      putchar (P1.cdesc[RawProcessor.fcol(i >> 1,i & 1)]);
+  }
+  printf ("\nDaylight multipliers:");
+  for(int c=0;c<P1.colors;c++) printf (" %f", C.pre_mul[c]);
+  if (C.cam_mul[0] > 0) {
+    printf ("\nCamera multipliers:");
+    for(int c=0;c<4;c++) printf (" %f", C.cam_mul[c]);
+  }
+
 
   write_fits(S.raw_width, S.raw_height, RawProcessor.imgdata.rawdata.raw_image, outfile);
 

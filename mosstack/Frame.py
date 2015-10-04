@@ -683,6 +683,7 @@ class Frame(object):
 
     pairs = property(fget=getpairs, fset=setpairs)
 
+    ''' Comment these out before removal
     def _decode(self):
         """
         Convert the raw file into FITS with raw2fits.
@@ -727,6 +728,7 @@ class Frame(object):
                 self.project.addfile(self.path())
             call(["convert", self.path(fformat="pgm"), self.path()])
             print("Conversion successful!")
+    '''
 
     def _load_fits(self, path=None):
         """
