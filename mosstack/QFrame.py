@@ -5,7 +5,7 @@ PyQt4 specific class. Program will run just fine on command line without PyQt bu
 from . Frame import Frame
 from PyQt4 import QtGui
 import numpy as np
-from PIL import Image, ImageQt
+from PIL import Image #, ImageQt
 
 
 class QFrame(Frame):
@@ -39,7 +39,8 @@ class QFrame(Frame):
 
         pimage = Image.fromarray(np.int16(idata)).convert("P")
 
-        return QtGui.QPixmap.fromImage(ImageQt.ImageQt(pimage))
+        #return QtGui.QPixmap.fromImage(ImageQt.ImageQt(pimage))
+        return None
 
     @staticmethod
     def align_32bit(data):

@@ -75,8 +75,14 @@ class CommandLine:
 
         # Settings
 
+        # Autostack chooses good general settings which work for most stacks.
         if self.args.autostack:
-            pass
+            self.args.calibrate = True
+            self.args.debayer = True
+            self.args.register = True
+            self.args.stack = True
+            print(self.args)
+
 
         if self.args.setdebayer:
             options = Debayer.__all__
@@ -120,7 +126,7 @@ class CommandLine:
         if self.args.clean:
             pass
         if self.args.fixsex:
-            pass
+            Config.Setup.createSExConf()
         if self.args.remove:
             pass
 
@@ -157,7 +163,7 @@ class CommandLine:
             for i in self.batch["light"].frames:
                 self.batch["light"].frames[i].fphase = "calib"
                 print(self.batch["light"].frames[i].getpath())
-            self.batch["light"].debayer(self.debayerwrap())
+            self.batch["light"].debayer(self.debayerwrap)
 
         if self.args.register:
             for i in self.batch["light"].frames:
@@ -266,6 +272,7 @@ class CommandLine:
             self.project_name = self.args.init[0]
             self.project.initproject(self.project_name)
 
+            Config.Global.set("Default", "Project", self.project_name)
             Config.Global.set("Default", "Project file", self.project.projectfile)
             print("New project started: \n" + self.project.projectfile)
 

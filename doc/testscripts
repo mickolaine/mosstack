@@ -35,4 +35,4 @@ mosstack debayer calib
 mosstack register rgb
 mosstack stack light reg
 
-mosstack_new
+mosstack_new --init Testi --light /home/micko/Astrokuvat/OrionNebula --autostack

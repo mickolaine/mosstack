@@ -278,7 +278,7 @@ class Batch(object):
         Debayer all frames
         """
 
-        for frame in self.frames:
+        for frame in sorted(self.frames):
 
             print("Processing image " + self.frames[frame].path())
 
