@@ -196,5 +196,14 @@ class Stacking:
         calib - Masterframe.data to calibrate with
         """
         maxim = np.amax(calib)
+
+        # Calibration broke because libraw's inclusion of extra pixels (flat will have zeroes).
+        # This is an attempt to fix it
+        # Replacing zeroes with median
+        median = np.median(calib[calib > 0])
+        calib[calib < 100] = median
+
         newdata = image / calib * maxim
+        print(np.amax(newdata))
+        print(np.amin(calib))
         return np.int32(newdata).clip(0)

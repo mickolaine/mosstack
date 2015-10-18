@@ -136,6 +136,7 @@
       <w>picklable</w>
       <w>pname</w>
       <w>ppath</w>
+      <w>preparecalib</w>
       <w>projectfile</w>
       <w>projectname</w>
       <w>pyopencl</w>

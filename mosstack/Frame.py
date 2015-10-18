@@ -828,6 +828,34 @@ class Frame(object):
         Write self.data to disk as a tiff file
         """
 
+        # Convert data from int32 to int16
+        maxim = np.amax(self.data)
+        data = np.int16(self.data / maxim * 32768)
+
+        if self.data.shape[0] == 1:
+
+            imagedata = np.flipud(data[0])
+            image = Im.fromarray(imagedata)
+            image.save(self.path(fformat="tiff"), format="tiff")
+
+        elif self.data.shape[0] == 3:
+
+            rgbpath = self.rgbpath(fileformat="tiff")
+            for i in (0, 1, 2):
+                imagedata = np.flipud(data[i])
+                image = Im.fromarray(imagedata)
+                image.save(rgbpath[i], format="tiff")
+            print("convert " + rgbpath[0] + rgbpath[1] + rgbpath[2] + " -channel RGB -combine " + self.path(fformat="tiff"))
+            call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine", self.path(fformat="tiff")])
+            #      "-channel", "RGB", "-depth", "16", "-combine", self.path(fformat="tiff")])
+            #call(["rm", rgbpath[0], rgbpath[1], rgbpath[2]])
+        self.project.addfile(self.path(fformat="tiff"), final=True)
+
+    def _write_tiff_old(self, skimage=True):
+        """
+        Write self.data to disk as a tiff file
+        """
+
         if check_output(["convert -version | grep Version"], shell=True).split()[2].decode()[2] == "7":
             im_version = "6.7"
         else:

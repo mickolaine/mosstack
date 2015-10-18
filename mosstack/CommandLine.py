@@ -35,6 +35,10 @@ class CommandLine:
         self.transformer = Registering.SkTransform
         self.stackerwrap = Stacker.SigmaMedian
 
+        self.masterbias = None
+        self.masterflat = None
+        self.masterdark = None
+
         self.batch = {}
 
     def start(self, argv):
@@ -83,7 +87,6 @@ class CommandLine:
             self.args.stack = True
             print(self.args)
 
-
         if self.args.setdebayer:
             options = Debayer.__all__
             self.set("Debayer", options, self.args.setdebayer[0])
@@ -124,7 +127,17 @@ class CommandLine:
         # Single operations
 
         if self.args.clean:
-            pass
+            print("Cleaning up project files.")
+            for i in self.project.filelist(temp=True):
+                if os.path.isfile(i):
+                    os.remove(i)
+
+            print("Files:")
+            for i in self.project.filelist():
+                print(i)
+            print("are not removed. They must be removed manually.")
+            exit()
+
         if self.args.fixsex:
             Config.Setup.createSExConf()
         if self.args.remove:
@@ -155,9 +168,13 @@ class CommandLine:
             self.addmaster("dark", self.args.masterdark)
 
         if self.args.calibrate:
+            print("Calibrating...")
+            self.preparecalib()
+
             for i in self.batch["light"].frames:
                 self.batch["light"].frames[i].fphase = "orig"
-                self.batch["light"].frames[i].calibrate(self.stackerwrap())
+                self.batch["light"].frames[i].calibrate(self.stackerwrap(), bias=self.masterbias,
+                                                        dark=self.masterdark, flat=self.masterflat)
 
         if self.args.debayer:
             for i in self.batch["light"].frames:
@@ -355,7 +372,51 @@ class CommandLine:
 
         if ftype not in self.batch:
             self.batch[ftype] = Batch.Batch(project=self.project, ftype=ftype)
+        if ftype == "bias":
+            self.masterbias = self.batch["bias"].master
+        if ftype == "flat":
+            self.masterflat = self.batch["flat"].master
+        if ftype == "dark":
+            self.masterdark = self.batch["dark"].master
         self.batch[ftype].addmaster(file, ftype)
+
+    def preparecalib(self):
+        """
+        Prepare calibration frames.
+
+        This belongs in workflow, but is too long to fit there properly
+        """
+
+        # Prepare masterbias
+        if "bias" in self.batch.keys():
+            print("Preparing bias master frame")
+            #for i in self.batch["bias"].frames:
+            #    self.batch["bias"].frames[i].fphase = "reg"
+            self.batch["bias"].stack(self.stackerwrap())
+            self.masterbias = self.batch["bias"].master
+
+        # Prepare masterdark
+        if "dark" in self.batch.keys():
+            print("Preparing dark master frame")
+            if self.masterbias:
+                for i in self.batch["dark"].frames:
+                    self.batch["dark"].frames[i].fphase = "orig"
+                    self.batch["dark"].frames[i].calibrate(self.stackerwrap(), bias=self.masterbias)
+            self.batch["dark"].stack(self.stackerwrap())
+            self.masterdark = self.batch["dark"].master
+
+        # Prepare masterflat
+        if "flat" in self.batch.keys():
+            print("Preparing flat master frame")
+            if self.masterbias or self.masterdark:
+                for i in self.batch["flat"].frames:
+                    self.batch["flat"].frames[i].fphase = "orig"
+                    self.batch["flat"].frames[i].calibrate(self.stackerwrap(), bias=self.masterbias,
+                                                                               dark=self.masterdark)
+            self.batch["flat"].stack(self.stackerwrap())
+            self.masterflat = self.batch["flat"].master
+
+
 
     def settings(self):
         """
