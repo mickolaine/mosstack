@@ -10,8 +10,6 @@ from PIL import Image as Im
 import gc
 import ast
 import magic
-import datetime   # For profiling
-#from memory_profiler import profile
 
 
 class Frame(object):
@@ -126,7 +124,6 @@ class Frame(object):
         Decode the frame. Now just calls _decode
         """
 
-        #self._decode()
         Raw2fits_cpp.decode(self.rawpath, self.path())
         self.getdimensions()
         self.writeinfo()
@@ -173,7 +170,6 @@ class Frame(object):
 
         return
 
-    # @profile
     def debayer(self, debayer):
         """
         Debayer the frame. Project tells how.
@@ -185,14 +181,10 @@ class Frame(object):
 
         self.state["debayer"] = 1
         print("Debayering frame " + self.number)
-        #self.data = debayer.debayer(self.data[0])
-        #time1 = datetime.datetime.now()
 
         deb = debayer()
 
         data = deb.debayer(self)
-        #del deb
-        #print(datetime.datetime.now() - time1)
         self.fphase = "rgb"
 
         if data is not None:
@@ -204,7 +196,7 @@ class Frame(object):
         self.project.set("Phase", "Debayered", "1")
         return
 
-    def register(self, reg):  # , ref=False):
+    def register(self, reg):
         """
         Register the frame. Project tells how.
 
@@ -374,6 +366,7 @@ class Frame(object):
             return "raw"
         return ms
 
+    '''
     def combine(self, newpath):
         """
         Combine channels from three fits files into one.
@@ -389,6 +382,7 @@ class Frame(object):
         self.data = np.array(data) - 32768
         self.write(skimage=True)
         self._release_data()
+    '''
 
     def readinfo(self):
         """
@@ -593,7 +587,6 @@ class Frame(object):
 
     points = property(getpoints, setpoints)
 
-    # @profile
     def getdata(self):
         """
         Getter for data.
@@ -608,7 +601,6 @@ class Frame(object):
         self._release_data()
         return data
 
-    # @profile
     def setdata(self, data):
         """
         Setter for data.
@@ -620,7 +612,6 @@ class Frame(object):
         else:
             self._data = np.array([data])
 
-    # @profile
     def deldata(self):
         """
         Destructor for data
@@ -738,6 +729,7 @@ class Frame(object):
             path = self.path()
         self.hdu = fits.open(path, memmap=True)
         self.image = self.hdu[0]
+        #self.image = self.hdu[1]
 
     def _load_tiff(self, path=None):
         """
@@ -781,9 +773,6 @@ class Frame(object):
             else:
                 self._data = np.array([self.image.data])
 
-        #if np.amin(self._data) >= 32768:
-        #    self._data -= 32768
-
     def _release_data(self):
         """
         Release data from memory and delete even the hdu
@@ -802,7 +791,6 @@ class Frame(object):
         self.hdu = None
         self.image = None
 
-    # @profile
     def _write_fits(self):
         """
         Write self.data to disk as a fits file
@@ -814,7 +802,6 @@ class Frame(object):
             print("No data set! Exiting...")
             exit()
 
-        # print("Writing a file with shape: " + str(self._data.shape))
         # Changed datatype to int32 since uint16 isn't supported by standard
         if self._data.shape[0] == 1:
             fits.writeto(self.path(), np.int32(self._data[0]), hdu.header, clobber=True)
@@ -897,7 +884,6 @@ class Frame(object):
 
         self._release_data()
 
-    # @profile
     def write(self, tiff=False, skimage=True):
         """
         Wrapper function to relay writing of the image on disk. This is remnants of something much more complicated...

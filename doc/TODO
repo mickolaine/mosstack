@@ -1,7 +1,15 @@
+0.8
+
+- Drop DCRaw
+- Drop ImageMagick
+- Drop OpenCL
+- New GUI
+
+
 0.7
 
-+ New CLI
-  - something is different with adding files and loading them. Stacking works if you first add files and calibrate
++ Done: New CLI
+  + something is different with adding files and loading them. Stacking works if you first add files and calibrate
     with separate command. If add files and calibrate within single command stacking fails on calibration.
 - CompressedData. Test speed
 

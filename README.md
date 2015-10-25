@@ -5,14 +5,18 @@ Mosstack is an open source registering and stacking software for
 astronomical images. Original (and current) design is made for photos taken
 with DSLR camera.
 
-Version 0.6 brings support for everything DCRaw opens, makes project control
-easier and gives a choice to crop the image before stacking.
+Version 0.7 has new command line interface and it drops several dependencies.
+It changes default RGB-conversion to one written in C. PyOpenCL will probably
+be dropped in the future.
 
 Full list of working features:
 
-- CFA to RGB conversion (see below for supported cameras)
-    - Bilinear (OpenCL, Cython)
-    - Variable Number of Gradients (OpenCL, Cython)
+- Image decoding
+    - C++ and LibRaw (DCRaw still required but not for long)
+
+- CFA to RGB conversion
+    - Variable Number of Gradients: C (default), OpenCL, Cython
+    - Bilinear: OpenCL, Cython
 
 - Registering
     - SExtractor and http://adsabs.harvard.edu/abs/1986AJ.....91.1244G
