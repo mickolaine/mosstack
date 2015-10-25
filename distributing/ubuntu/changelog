@@ -1,3 +1,27 @@
+mosstack (0.7rc1) vivid; urgency=low
+
+  * Release candidate of the 0.7 version
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Sat, 03 Oct 2015 18:38:43 +0300
+
+mosstack (0.7.dev1) vivid; urgency=low
+
+  * Testing if the packaging still works
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Fri, 26 Jun 2015 22:30:31 +0200
+
+mosstack (0.6.2) trusty; urgency=low
+
+  * Added missing dependency
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Tue, 21 Apr 2015 16:37:31 +0200
+
+mosstack (0.6.1) trusty; urgency=low
+
+  * Bugfix
+
+ -- Mikko Laine <mikko.laine@gmail.com>  Sat, 13 Dec 2014 22:49:00 +0300
+
 mosstack (0.6.0) trusty; urgency=low
 
   * New version

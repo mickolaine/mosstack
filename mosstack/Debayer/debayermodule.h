@@ -1,0 +1,1 @@
+int debayer(char* infile, char* outfile)
