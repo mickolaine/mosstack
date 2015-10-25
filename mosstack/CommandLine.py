@@ -65,12 +65,14 @@ class CommandLine:
             print("No project initialized. Start a new with mosstack --init \"Foo\"")
             exit()
 
+        """
         for ftype in ("light", "bias", "flat", "dark"):
             try:
                 if self.project.get(ftype):
                     self.batch[ftype] = Batch.Batch(self.project, ftype=ftype)
             except KeyError:
                 pass
+        """
         # ## Project ready
 
         # ## Check and load all files necessary
@@ -85,7 +87,6 @@ class CommandLine:
             self.args.debayer = True
             self.args.register = True
             self.args.stack = True
-            print(self.args)
 
         if self.args.setdebayer:
             options = Debayer.__all__
@@ -153,6 +154,15 @@ class CommandLine:
             self.addframes("flat", self.args.flat)
         if self.args.dark:
             self.addframes("dark", self.args.dark)
+
+        self.batch = {}
+
+        for ftype in ("light", "bias", "flat", "dark"):
+            try:
+                if self.project.get(ftype):
+                    self.batch[ftype] = Batch.Batch(self.project, ftype=ftype)
+            except KeyError:
+                pass
 
         if self.args.masterbias:
             self.addmaster("bias", self.args.masterbias)
@@ -357,7 +367,7 @@ class CommandLine:
         """
 
         if ftype not in self.batch:
-            self.batch[ftype] = Batch.Batch(self.project, ftype)
+            self.batch[ftype] = Batch.Batch(self.project, ftype=ftype)
 
         for i in files:
             self.batch[ftype].addfile(CommandLine.absolutepath(i), ftype)
@@ -390,8 +400,6 @@ class CommandLine:
         # Prepare masterbias
         if "bias" in self.batch.keys():
             print("Preparing bias master frame")
-            #for i in self.batch["bias"].frames:
-            #    self.batch["bias"].frames[i].fphase = "reg"
             self.batch["bias"].stack(self.stackerwrap())
             self.masterbias = self.batch["bias"].master
 
@@ -415,8 +423,6 @@ class CommandLine:
                                                                                dark=self.masterdark)
             self.batch["flat"].stack(self.stackerwrap())
             self.masterflat = self.batch["flat"].master
-
-
 
     def settings(self):
         """

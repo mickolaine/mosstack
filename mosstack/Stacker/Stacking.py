@@ -54,6 +54,7 @@ class Stacking:
 
         ### Calculating image clip coordinates
 
+        # list(imagelist.values())[0]._print_all_values()
         X = list(imagelist.values())[0].x
         Y = list(imagelist.values())[0].y
 
@@ -107,6 +108,7 @@ class Stacking:
                 lines[i].append(clip)
 
         # Take clips one line at a time
+
         for line in lines:
             tempslice = None
             for clip in line:
@@ -116,7 +118,6 @@ class Stacking:
                 templist = []
                 for i in imagelist:
                     imagelist[i].setclip(clip)
-                    #print(clip)
 
                     if len(templist) == 0:
                         templist = imagelist[i].data[np.newaxis, :, :]
@@ -185,7 +186,6 @@ class Stacking:
         """
         return calib.data / np.amax(calib.data)
 
-
     @staticmethod
     def divide(image, calib):
         """
@@ -204,6 +204,4 @@ class Stacking:
         calib[calib < 100] = median
 
         newdata = image / calib * maxim
-        print(np.amax(newdata))
-        print(np.amin(calib))
         return np.int32(newdata).clip(0)

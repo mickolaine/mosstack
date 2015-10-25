@@ -35,11 +35,12 @@ mosstack debayer calib
 mosstack register rgb
 mosstack stack light reg
 
-mosstack_new --init Testi --light /home/micko/Astrokuvat/OrionNebula --autostack
+mosstack_new --init Orion --light /media/Dee/Astrokuvat/2013-12-30/OrionNebula/*CR2 --bias /media/Dee/Astrokuvat/2013-12-30/Bias/*CR2 --flat /media/Dee/Astrokuvat/2013-12-30/Flat/*CR2 --autostack
 
 mosstack_new --init Orion
 mosstack_new --light /media/Dee/Astrokuvat/2013-12-30/OrionNebula/*CR2
 mosstack_new --bias /media/Dee/Astrokuvat/2013-12-30/Bias/*CR2
+#mosstack_new --dark /media/Dee/Astrokuvat/2013-12-30/Dark/*CR2
 mosstack_new --flat /media/Dee/Astrokuvat/2013-12-30/Flat/*CR2
 mosstack_new --calibrate
 mosstack_new --debayer

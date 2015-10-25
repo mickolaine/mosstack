@@ -1,3 +1,8 @@
+0.7
+- Command line interface rewritten. Old is still available as mosstack_old
+- Temporary images saved as int32. This increases their size.
+-
+
 v0.7rc1
 - Fixed Bilinear methods to match each other
 - Added VNG written in C
