@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
 static PyObject *DebayerError;
 
-static PyObject* debayer(PyObject* self, PyObject* args) {
+static PyObject* debayer_c(PyObject* self, PyObject* args) {
     char *infile, *outfile;
     PyArg_ParseTuple(args, "ss", &infile, &outfile);
     //printf("File %s\n", infile);
@@ -25,7 +25,7 @@ static PyObject* debayer(PyObject* self, PyObject* args) {
 
 
 static PyMethodDef debayer_methods[] = {
-  {"debayer", debayer, METH_VARARGS, NULL},
+  {"debayer_c", debayer_c, METH_VARARGS, NULL},
   {NULL, NULL, 0, NULL}
 };
 
@@ -583,7 +583,7 @@ int vng(long *pix1, long *pix2, long *pix3, long *pix4, long *pix5,
   }
 }
 
-PyMODINIT_FUNC PyInit_debayer(void)
+PyMODINIT_FUNC PyInit_debayer_c(void)
 {
     PyObject *m;
 

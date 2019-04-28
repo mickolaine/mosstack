@@ -1,0 +1,5 @@
+Pillow>=2.2.1
+NumPy>=1.6.0
+pyopencl>=2013
+astropy>=0.2.4
+Cython>=0.19

@@ -1,0 +1,9 @@
+AstropyDeprecationWarning: "clobber" was deprecated in version 2.0 and will be removed 
+in a future version. Use argument "overwrite" instead. [astropy.utils.decorators]
+
+#warning "Using deprecated NumPy API, disable it by " "#defining 
+NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+
+FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). 
+This will change in a later release! 
+File: /home/micko/src/mosstack/mosstack/Debayer/_BilinearCython.pyx

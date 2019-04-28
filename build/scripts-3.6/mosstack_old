@@ -1,0 +1,30 @@
+#!/usr/lib/python-exec/python3.6/python
+# -*- coding: utf-8 -*-
+
+"""
+Created on 28.10.2013
+
+@author: Mikko Laine
+
+Main program for pyAstroStack.
+
+This command line user interface is used to create a project file to store information
+about source files and temporary files in working directory. This same UI is then used
+to run different stacking operations according to the project file.
+"""
+
+import sys
+from mosstack.UserInterface import UserInterface
+
+
+def main(argv):
+    """
+    Call user interface with requested arguments.
+    """
+
+    ui = UserInterface()
+
+    ui.start(argv)
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

@@ -1,5 +1,6 @@
 #cython: boundscheck=False
 #cython: wraparound=False
+#cython: language_level=3
 
 from __future__ import division
 

@@ -1,0 +1,132 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017) (preloaded format=pdftex 2018.8.29)  14 SEP 2018 14:56
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**manual.tex
+(./manual.tex
+! Undefined control sequence.
+l.1 \documentclass
+                  [twoside,a4paper]{refart}
+? 
+! Undefined control sequence.
+l.2 \usepackage
+               {makeidx}
+? 
+! Undefined control sequence.
+l.3 \usepackage
+               {ifthen}
+? 
+! Undefined control sequence.
+l.6 \newcommand
+               {\ie}{i.\,e.,}
+? 
+! Undefined control sequence.
+l.6 \newcommand{\ie
+                   }{i.\,e.,}
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \mskip 
+\,->\mskip 
+           \thinmuskip 
+l.6 \newcommand{\ie}{i.\,
+                         e.,}
+? 
+! Extra }, or forgotten $.
+l.6 \newcommand{\ie}{i.\,e.,}
+                             
+? 
+! Undefined control sequence.
+l.7 \newcommand
+               {\eg}{e.\,g..}
+? 
+! Undefined control sequence.
+l.7 \newcommand{\eg
+                   }{e.\,g..}
+? 
+! Undefined control sequence.
+l.8 \DeclareRobustCommand
+                         \cs[1]{\texttt{\char`\\#1}}
+? 
+! Undefined control sequence.
+l.8 \DeclareRobustCommand\cs
+                            [1]{\texttt{\char`\\#1}}
+? 
+! Undefined control sequence.
+l.8 \DeclareRobustCommand\cs[1]{\texttt
+                                       {\char`\\#1}}
+? 
+! You can't use `macro parameter character #' in math mode.
+<recently read> ##
+                  
+l.8 \DeclareRobustCommand\cs[1]{\texttt{\char`\\#
+                                                 1}}
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.9 
+    
+? 
+! Undefined control sequence.
+l.10 \title
+           {Mikko's Open Source Stacker for astronomical images}
+? 
+! Undefined control sequence.
+l.11 \author
+            {Mikko Laine}
+? 
+! Undefined control sequence.
+l.13 \date
+          {2014-12-04}
+? 
+! Undefined control sequence.
+l.16 \pagestyle
+               {myfootings}
+? 
+! Undefined control sequence.
+l.17 \markboth
+              {Mikko's Open Source Stacker for astronomical images}%
+? 
+! Undefined control sequence.
+l.20 \makeindex
+               
+? 
+! Undefined control sequence.
+l.22 \setcounter
+                {tocdepth}{2}
+? 
+! Undefined control sequence.
+l.24 \begin
+           {document}
+? 
+! Undefined control sequence.
+l.26 \maketitle
+               
+? 
+! Undefined control sequence.
+l.28 \begin
+           {abstract}
+? 
+! Undefined control sequence.
+l.29 	\textit
+             {Mosstack} is an open source program for calibrating,
+? 
+[1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] )
+(\end occurred inside a group at level 1)
+
+### simple group (level 1) entered at line 6 ({)
+### bottom level</usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pf
+b></usr/share/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/t
+exmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb>
+Output written on manual.pdf (1 page, 34166 bytes).
+PDF statistics:
+ 20 PDF objects out of 1000 (max. 8388607)
+ 13 compressed objects within 1 object stream
+ 0 named destinations out of 1000 (max. 500000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+

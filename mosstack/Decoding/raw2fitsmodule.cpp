@@ -27,9 +27,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
-#include <string>
-#include "fitsio.h"
-#include "libraw/libraw.h"
+//#include <string>
+#include <fitsio.h>
+#include <libraw/libraw.h>
 
 using namespace std;
 
