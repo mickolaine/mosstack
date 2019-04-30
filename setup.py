@@ -22,7 +22,7 @@ modules.append(Extension("mosstack.Decoding.raw2fits",
 
 setup(
     name='mosstack',
-    version='0.7rc2',
+    version='0.7rc3',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=find_packages(),
