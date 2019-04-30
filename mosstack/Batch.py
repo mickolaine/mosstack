@@ -27,6 +27,11 @@ class Batch(object):
 
         self.frames = {}                                               # Empty dict for Photos
 
+        # Variables for the tools
+        self.debayertool = None
+        self.registertool = None
+        self._stackingtool = None
+
         if ftype is not None:
             self.ftype = ftype
 
@@ -86,7 +91,7 @@ class Batch(object):
         self.master.write(tiff=True)
 
         # Metadata and printouts
-        self.project.addfile(self.master.path(), final=True)
+        self.project.addfile(self.master.path()[0], final=True)
         dim, self.master.x, self.master.y = self.master.data.shape
         print("Dimensions : " + str(self.master.x) + " x " + str(self.master.y))
         totalexposure = 0.0
@@ -100,7 +105,7 @@ class Batch(object):
         self.master.totalexposure = totalexposure
         self.master.writeinfo()
         self.project.set("Masters", self.ftype, self.master.infopath)
-        print("Result image saved to " + self.master.path())
+        print("Result image saved to " + self.master.path()[0])
         print("                  and " + self.master.path(fformat="tiff"))
 
     def subtract(self, calib, stacker):
@@ -239,9 +244,9 @@ class Batch(object):
         Add a ready master to batch
         """
 
-        frame = Frame.createmaster(self.project, file, ftype)
+        self.master = Frame.createmaster(self.project, file, ftype)
 
-        self.project.set("Masters", ftype, frame.infopath)
+        self.project.set("Masters", ftype, self.master.infopath)
 
     def nextkey(self):
         """
@@ -331,16 +336,36 @@ class Batch(object):
         
         threadlist = []
 
-        for frame in sorted(self.frames):
-            t = threading.Thread(target=frame.calibrate_worker,
+        for i in sorted(self.frames):
+            print("threadlist lenght: " + str(len(threadlist)))
+            self.frames[i].stackingtool = self.stackingtool
+            t = threading.Thread(target=self.frames[i].calibrate_worker,
                                  args=(bias, dark, flat))
             threadlist.append(t)
             t.start()
-    
+        
+        for t in threadlist:
+            t.join()
+
     def calibrate(self, bias, dark, flat):
         """
         This exists for debugging. Remove and change calibrate_threaded
         to calibrate when threading works
         """
         self.calibrate_threaded(bias, dark, flat)
-    
+
+    # PROPERTIES
+
+    def setstackingtool(self, stackingtool):
+        try:
+            self._stackingtool = stackingtool
+            for i in self.frames:
+                self.frames[i].stackingtool = self.stackingtool
+                
+        except Exception as err:
+            print(err)
+
+    def getstackingtool(self):
+        return self._stackingtool
+
+    stackingtool = property(fget=getstackingtool, fset=setstackingtool)

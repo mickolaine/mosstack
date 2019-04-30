@@ -166,7 +166,7 @@ class CommandLine:
                 pass
 
         if self.args.masterbias:
-            self.addmaster("bias", self.args.masterbias)
+            self.addmaster("bias", self.args.masterbias[0])
         elif self.args.biaslevel:
             try:
                 self.batch["light"].setbiaslevel(self.args.biaslevel[0])
@@ -177,23 +177,22 @@ class CommandLine:
             self.addmaster("flat", self.args.masterflat)
         if self.args.masterdark:
             self.addmaster("dark", self.args.masterdark)
-
         if self.args.calibrate:
             print("Calibrating...")
             self.preparecalib()
 
+            self.batch["light"].stackingtool = self.stackerwrap()
+            self.batch["light"].debayertool = self.debayerwrap()
+            self.batch["light"].registertool = self.matcher
             for i in self.batch["light"].frames:
                 self.batch["light"].frames[i].fphase = "orig"
-                self.batch["light"].calibrate(bias=self.masterbias, 
-                                              dark=self.masterdark, 
-                                              flat=self.masterflat)
-                #self.batch["light"].frames[i].calibrate(self.stackerwrap(), bias=self.masterbias,
-                #                                        dark=self.masterdark, flat=self.masterflat)
+            self.batch["light"].calibrate(bias=self.masterbias,
+                                          dark=self.masterdark,
+                                          flat=self.masterflat)
 
         if self.args.debayer:
             for i in self.batch["light"].frames:
                 self.batch["light"].frames[i].fphase = "calib"
-                print(self.batch["light"].frames[i].getpath())
             self.batch["light"].debayer(self.debayerwrap)
 
         if self.args.register:
@@ -352,6 +351,9 @@ class CommandLine:
 
         for i in filelist:
             try:
+                #TODO: i has either list or path. This needs to be consistent
+                if isinstance(i, list):
+                    i = i[0]
                 CommandLine.absolutepath(i)
             except IOError:
                 allfound = False
@@ -386,13 +388,14 @@ class CommandLine:
 
         if ftype not in self.batch:
             self.batch[ftype] = Batch.Batch(project=self.project, ftype=ftype)
+
+        self.batch[ftype].addmaster(file, ftype)
         if ftype == "bias":
             self.masterbias = self.batch["bias"].master
         if ftype == "flat":
             self.masterflat = self.batch["flat"].master
         if ftype == "dark":
             self.masterdark = self.batch["dark"].master
-        self.batch[ftype].addmaster(file, ftype)
 
     def preparecalib(self):
         """
@@ -402,26 +405,38 @@ class CommandLine:
         """
 
         # Prepare masterbias
-        if "bias" in self.batch.keys():
-            print("Preparing bias master frame")
+        #TODO: Move this to batch.createmaster or smth
+        if self.masterbias:
+            print("Using master bias.")
+        elif "bias" in self.batch.keys():
             self.batch["bias"].stack(self.stackerwrap())
             self.masterbias = self.batch["bias"].master
 
         # Prepare masterdark
-        if "dark" in self.batch.keys():
+        #TODO: As above. Creating master frames should be in batch.py
+        if self.masterdark:
+            print("Using master dark")
+        elif "dark" in self.batch.keys():
             print("Preparing dark master frame")
+            self.batch["dark"].stackingtool = self.stackerwrap
             if self.masterbias:
                 for i in self.batch["dark"].frames:
+                    self.batch["dark"].frames[i].stackingtool = self.stackerwrap
                     self.batch["dark"].frames[i].fphase = "orig"
                     self.batch["dark"].frames[i].calibrate(self.stackerwrap(), bias=self.masterbias)
             self.batch["dark"].stack(self.stackerwrap())
             self.masterdark = self.batch["dark"].master
 
         # Prepare masterflat
-        if "flat" in self.batch.keys():
+        #TODO: Likewise. Creating master frames should be in batch.py
+        if self.masterflat:
+            print("Using master flat")
+        elif "flat" in self.batch.keys():
             print("Preparing flat master frame")
+            self.batch["flat"].stackingtool = self.stackerwrap()
             if self.masterbias or self.masterdark:
                 for i in self.batch["flat"].frames:
+                    self.batch["flat"].frames[i].stackingtool = self.stackerwrap
                     self.batch["flat"].frames[i].fphase = "orig"
                     self.batch["flat"].frames[i].calibrate(self.stackerwrap(),
                                                            bias=self.masterbias,
@@ -526,7 +541,7 @@ class CommandLine:
             check = os.path.isdir
         else:
             check = os.path.isfile
-
+      
         if check("/" + path):
             return path
 

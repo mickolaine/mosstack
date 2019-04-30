@@ -3,6 +3,7 @@ from astropy.io import fits
 from os.path import splitext, exists
 from shutil import move
 from subprocess import call, check_output
+from threading import RLock
 from . import Config
 from . Decoding import Raw2fits_cpp
 import numpy as np
@@ -85,6 +86,8 @@ class Frame(object):
         self.hdu   = None      # HDU-object for loading fits. Not required for tiff
         self.image = None      # Image object. Required for Tiff and Fits
         self._data = None      # Image data as an numpy.array
+
+        self.lock = RLock()
 
         if self.infopath is not None:
             self.frameinfo = Config.Frame(infopath)
@@ -346,20 +349,22 @@ class Frame(object):
         path - unix path to fits or tiff master frame
         ftype - type of master: bias, dark or flat
         """
-
+        if isinstance(path, list):
+            pathstr = path[0]
+        else:
+            pathstr = path
         frame = Frame(project, ftype=ftype, number="master")
-        fileformat = Frame.identify(path)
-        frame._path = path
-
+        fileformat = Frame.identify(pathstr)
+        frame._path = pathstr
         if fileformat == "fits":
             frame.rawtype = "fits"
             frame.staticpath = True
-            frame._load_fits(path=path)
+            frame._load_fits(path=pathstr)
             frame.extractinfo()
             frame.writeinfo()
         elif fileformat == "tiff":
             frame.rawtype = "tiff"
-            frame._load_tiff(path=path)
+            frame._load_tiff(path=pathstr)
             frame.extractinfo()
             frame.writeinfo()
             frame.write()
@@ -441,12 +446,18 @@ class Frame(object):
 
         # There are two different libraries called magic.
         #  Try statement expects filemagic, in case that fails except tries python_magic
+        #TODO: This magic thing
+        if isinstance(path, list):
+            pathstr = path[0]
+        else:
+            pathstr = path
         try:
-            mg = magic.open(magic.NONE)
-            mg.load()
-            ms = mg.file(path)
+            #mg = magic.open(magic.NONE)
+            #mg.load()
+            #ms = mg.file(path)
+            ms = magic.from_file(pathstr)
         except AttributeError:
-            ms = magic.from_file(path)
+            ms = magic.from_file(pathstr)
 
         if ms.split()[0] == "TIFF":
             return "tiff"
@@ -557,7 +568,7 @@ class Frame(object):
 
         output = str.split(str(rawoutput), "\n")
 
-        for i in output:                        # Some of these are extracted for possible future use
+        for i in output: # Some of these are extracted for possible future use
             line = str.split(i, ": ")
             if line[0] == "Timestamp":
                 self.timestamp = line[1]
@@ -681,8 +692,8 @@ class Frame(object):
         """
         Getter for data.
 
-        Data can't be loaded in memory all the time because of the size of it. This getter handles reading data
-        from disk and returning it as if it were just Frame.data
+        Data can't be loaded in memory all the time because of the size of it.
+        This getter handles reading data from disk and returning it as if it were just Frame.data
         """
 
         if self._data is None:
@@ -788,7 +799,8 @@ class Frame(object):
 
     def setstackingtool(self, stackingtool):
         try:
-            self._stackingtool = stackingtool()
+            self._stackingtool = stackingtool
+            
         except:
             pass
     
@@ -803,7 +815,12 @@ class Frame(object):
         """
         if path is None:
             path = self.path()
-        self.hdu = fits.open(path, memmap=True)
+        if isinstance(path, list):
+            pathstr = path[0]
+        else:
+            pathstr = path
+        
+        self.hdu = fits.open(pathstr, memmap=True)
         self.image = self.hdu[0]
         #self.image = self.hdu[1]
 
@@ -852,13 +869,16 @@ class Frame(object):
     def _release_data(self):
         """
         Release data from memory and delete even the hdu
+        
+        Lock used to prevent other threads using while memory is released
         """
 
+        self.lock.acquire()
         if self.hdu is not None:
             self.hdu.close()
         self.image = None
         self.hdu = None
-
+        
         del self.image
         del self.hdu
         del self.data
@@ -866,6 +886,7 @@ class Frame(object):
         gc.collect()
         self.hdu = None
         self.image = None
+        self.lock.release()
 
     def _write_fits(self):
         """
