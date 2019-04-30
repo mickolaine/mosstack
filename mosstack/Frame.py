@@ -289,7 +289,7 @@ class Frame(object):
         self.project.set("Phase", "Registered", "1")
         #return
 
-    def register_worker(self, reg):
+    def register_worker(self):
         """
         Register the frame using threads
 
@@ -299,7 +299,7 @@ class Frame(object):
         """
 
         self.state["register"] = 1
-        data = reg.register(self)
+        data = self.registertool.register(self)
         self.fphase = "reg"
         self.state["register"] = 2
         if data is not None:
@@ -777,7 +777,7 @@ class Frame(object):
 
     def setdebayertool(self, debayertool):
         try:
-            self._debayertool = debayertool()
+            self._debayertool = debayertool
         except:
             pass
     
@@ -788,7 +788,7 @@ class Frame(object):
 
     def setregistertool(self, registertool):
         try:
-            self._registertool = registertool()
+            self._registertool = registertool
         except:
             pass
     

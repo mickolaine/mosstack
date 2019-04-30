@@ -28,8 +28,8 @@ class Batch(object):
         self.frames = {}                                               # Empty dict for Photos
 
         # Variables for the tools
-        self.debayertool = None
-        self.registertool = None
+        self._debayertool = None
+        self._registertool = None
         self._stackingtool = None
 
         if ftype is not None:
@@ -278,7 +278,7 @@ class Batch(object):
             print("Reference frame " + frameId + " removed. New reference frame is " + self.refId + ".")
 
     # @profile
-    def debayer(self, debayertool):
+    def debayer_old(self, debayertool):
         """
         Debayer all frames
         """
@@ -302,12 +302,23 @@ class Batch(object):
         """
         threadlist = []
 
-        for frame in sorted(self.frames):
-            t = threading.Thread(target=frame.debayer_worker)
+        for i in sorted(self.frames):
+            print("Debayering threadlist lenght: " + str(len(threadlist)))
+            t = threading.Thread(target=self.frames[i].debayer_worker)
             threadlist.append(t)
             t.start()
 
-    def register(self, register):
+        for t in threadlist:
+            t.join()
+
+    def debayer(self):
+        """
+        Wrapper to choose between threaded and non-threaded.
+        Non-threaded will be removed and so will this when it's done.
+        """
+        self.debayer_threaded()
+
+    def register_old(self, register):
         """
         Register all frames
         """
@@ -323,12 +334,26 @@ class Batch(object):
         Register all frames using threads
         """
         threadlist = []
+        self.frames[self.refId].register_worker()
 
-        for frame in sorted(self.frames):
-            t = threading.Thread(target=frame.register_worker)
+        for i in sorted(self.frames):
+            if i == self.refId:
+                continue
+            t = threading.Thread(target=self.frames[i].register_worker)
             threadlist.append(t)
             t.start()
+
+        for t in threadlist:
+            t.join()
     
+    def register(self):
+        """
+        Wrapper to choose from threded and non-threaded registers
+
+        Remove when threading works and done
+        """
+        self.register_threaded()
+
     def calibrate_threaded(self, bias, dark, flat):
         """
         Calibrate all frames
@@ -337,7 +362,7 @@ class Batch(object):
         threadlist = []
 
         for i in sorted(self.frames):
-            print("threadlist lenght: " + str(len(threadlist)))
+            print("Calibrating threadlist lenght: " + str(len(threadlist)))
             self.frames[i].stackingtool = self.stackingtool
             t = threading.Thread(target=self.frames[i].calibrate_worker,
                                  args=(bias, dark, flat))
@@ -360,8 +385,7 @@ class Batch(object):
         try:
             self._stackingtool = stackingtool
             for i in self.frames:
-                self.frames[i].stackingtool = self.stackingtool
-                
+                self.frames[i].stackingtool = self.stackingtool 
         except Exception as err:
             print(err)
 
@@ -369,3 +393,29 @@ class Batch(object):
         return self._stackingtool
 
     stackingtool = property(fget=getstackingtool, fset=setstackingtool)
+
+    def setdebayertool(self, debayertool):
+        try:
+            self._debayertool = debayertool
+            for i in self.frames:
+                self.frames[i].debayertool = self.debayertool              
+        except Exception as err:
+            print(err)
+
+    def getdebayertool(self):
+        return self._debayertool
+
+    debayertool = property(fget=getdebayertool, fset=setdebayertool)
+
+    def setregistertool(self, registertool):
+        try:
+            self._registertool = registertool
+            for i in self.frames:
+                self.frames[i].registertool = self.registertool              
+        except Exception as err:
+            print(err)
+
+    def getregistertool(self):
+        return self._registertool
+
+    registertool = property(fget=getregistertool, fset=setregistertool)

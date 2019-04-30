@@ -182,25 +182,25 @@ class CommandLine:
             self.preparecalib()
 
             self.batch["light"].stackingtool = self.stackerwrap()
-            self.batch["light"].debayertool = self.debayerwrap()
-            self.batch["light"].registertool = self.matcher
+            
             for i in self.batch["light"].frames:
                 self.batch["light"].frames[i].fphase = "orig"
             self.batch["light"].calibrate(bias=self.masterbias,
                                           dark=self.masterdark,
                                           flat=self.masterflat)
-
+        
         if self.args.debayer:
+            self.batch["light"].debayertool = self.debayerwrap()
             for i in self.batch["light"].frames:
                 self.batch["light"].frames[i].fphase = "calib"
-            self.batch["light"].debayer(self.debayerwrap)
+            self.batch["light"].debayer()
 
         if self.args.register:
+            self.batch["light"].registertool = self.matcher()
+            self.batch["light"].registertool.tform = self.transformer
             for i in self.batch["light"].frames:
                 self.batch["light"].frames[i].fphase = "rgb"
-            matcher = self.matcher()
-            matcher.tform = self.transformer
-            self.batch["light"].register(matcher)
+            self.batch["light"].register()
 
         if self.args.crop:
             try:
