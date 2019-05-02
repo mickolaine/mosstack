@@ -1,9 +1,17 @@
-AstropyDeprecationWarning: "clobber" was deprecated in version 2.0 and will be removed 
-in a future version. Use argument "overwrite" instead. [astropy.utils.decorators]
+Roadmap
 
-#warning "Using deprecated NumPy API, disable it by " "#defining 
-NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-Wcpp]
+0.8
+- Make Gui and Cli use the same threading workers and mostly the same methods
+  Minimize code duplication.
+   - For example QBatch.register should call Batch.register and only add
+     what Gui needs
+- Rename everything to conform pylints requests.
+- Clean CommandLine.py workflow by moving stuff to Batch and make assisting
+  methods which CommandLine.start() calls
+- Begin work on automated tests
+- Remove obsolete stuff
+- Make decision on new gui
 
-FutureWarning: Cython directive 'language_level' not set, using 2 for now (Py2). 
-This will change in a later release! 
-File: /home/micko/src/mosstack/mosstack/Debayer/_BilinearCython.pyx
+0.9
+- Automated tests
+- Rework the gui. Either totally new or improve the old
