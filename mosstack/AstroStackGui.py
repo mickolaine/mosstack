@@ -486,6 +486,24 @@ class Ui(Ui_MainWindow, QObject):
         Run everything needed for calibrating
         """
 
+        # Get stackigtool from ui selections before it's needed for the first time
+        #TODO: These probably should be in their own method which will be run before everything
+        #TODO: Change stackingwrap to stackingtool so the same name will be used everywhere-
+        if self.radioButtonMaximum.isChecked():
+            self.stackingwrap = Stacker.Maximum()
+        elif self.radioButtonMinimum.isChecked():
+            self.stackingwrap = Stacker.Minimum()
+        elif self.radioButtonMean.isChecked():
+            self.stackingwrap = Stacker.Mean()
+        elif self.radioButtonMedian.isChecked():
+            self.stackingwrap = Stacker.Median()
+        elif self.radioButtonSMedian.isChecked():
+            self.stackingwrap = Stacker.SigmaMedian(kappa=self.values["Kappa"])
+        elif self.radioButtonSClip.isChecked():
+            self.stackingwrap = Stacker.SigmaClip(kappa=self.values["Kappa"])
+
+
+
         # First gather some instructions on what is required. Makes reading the if's ahead easier
         need_bias = self.checkBoxDarkBias.isChecked() + \
                     self.checkBoxFlatBias.isChecked() + \
@@ -506,8 +524,8 @@ class Ui(Ui_MainWindow, QObject):
 
         # Bias frames
         if need_bias > 0:
-            # Threads set to 1 because this has to be done before anything else
-
+            # Threads set to 1 because this has to be done before anything else TODO: ?!?!?! Why to one? Is this fixed by locks?
+            self.batch["bias"].stackingtool = self.stackingwrap
             self.threadpool.setMaxThreadCount(1)
             self.threadpool.start(GenericThread(self.batch["bias"].stack, Stacker.Mean()))
             self.threadpool.waitForDone()
@@ -515,8 +533,10 @@ class Ui(Ui_MainWindow, QObject):
 
         # Dark frames
         if need_dark > 0:
+            self.batch["dark"].stackingtool = self.stackingwrap
             for i in self.batch["dark"].frames:
                 self.threadpool.start(GenericThread(self.batch["dark"].calibrate, i, Stacker.Mean(), bias=darkbias))
+            #self.threadpool.start(GenericThread(self.batch["dark"].calibrate, i, Stacker.Mean(), bias=darkbias))
             self.threadpool.setMaxThreadCount(1)
             self.threadpool.start(GenericThread(self.batch["dark"].stack, Stacker.Mean()))
             self.threadpool.waitForDone()
@@ -524,6 +544,7 @@ class Ui(Ui_MainWindow, QObject):
 
         # Flat frames
         if need_flat > 0:
+            self.batch["flat"].stackingtool = self.stackingwrap
             for i in self.batch["flat"].frames:
                 self.threadpool.start(GenericThread(self.batch["flat"].calibrate, i, Stacker.Mean(), bias=flatbias,
                                                                                                      dark=flatdark))
@@ -534,6 +555,7 @@ class Ui(Ui_MainWindow, QObject):
 
         # Light frames
         for i in self.batch["light"].frames:
+            self.batch["light"].stackingtool = self.stackingwrap
             self.threadpool.start(GenericThread(self.batch["light"].calibrate, i, Stacker.Mean(), bias=lightbias,
                                                                                                   dark=lightdark,
                                                                                                   flat=lightflat))
@@ -556,8 +578,8 @@ class Ui(Ui_MainWindow, QObject):
         elif self.buttonDebayer.checkedButton().text() == "Bilinear OpenCL":
             self.debayerwrap = Debayer.BilinearOpenCl
 
-        for i in self.batch["light"].frames:
-            self.threadpool.start(GenericThread(self.batch["light"].debayer, i, self.debayerwrap))
+        self.batch["light"].debayertool = self.debayerwrap()
+        self.batch["light"].debayer_threaded(self.threadpool)
 
         self.threadpool.waitForDone()
 
@@ -572,21 +594,23 @@ class Ui(Ui_MainWindow, QObject):
         if self.buttonTransformer.checkedButton().text() == self.radioButtonScikit.text():
             self.registerwrap.tform = Registering.SkTransform()
         elif self.buttonTransformer.checkedButton().text() == self.radioButtonImagick.text():
-            self.registerwrap.tform = Registering.ImTransform()
-
+            #self.registerwrap.tform = Registering.ImTransform()
+            pass
+        self.batch["light"].registertool = self.registerwrap
+        self.batch["light"].debayer_threaded(self.threadpool)
         # First register the reference frame. This has to be done before anything else
-        self.threadpool.start(GenericThread(self.batch["light"].register,
-                                            self.batch["light"].refId,
-                                            self.registerwrap,
-                                            ref=True))
+        #self.threadpool.start(GenericThread(self.batch["light"].register,
+        #                                    self.batch["light"].refId,
+        #                                    self.registerwrap,
+        #                                    ref=True))
         self.threadpool.waitForDone()
 
-        for i in self.batch["light"].frames:
-            if i == self.batch["light"].refId:
-                continue
-            self.threadpool.start(GenericThread(self.batch["light"].register, i, self.registerwrap))
+        #for i in self.batch["light"].frames:
+        #    if i == self.batch["light"].refId:
+        #        continue
+        #    self.threadpool.start(GenericThread(self.batch["light"].register, i, self.registerwrap))
 
-        self.threadpool.waitForDone()
+        #self.threadpool.waitForDone()
 
     def runStack(self):
         """
@@ -599,25 +623,14 @@ class Ui(Ui_MainWindow, QObject):
                 ymax = self.batch["light"].frames[i].y
                 xrange = (self.coords[0], self.coords[1])
                 yrange = (self.coords[2], self.coords[3])
-                self.threadpool.start(GenericThread(self.batch["light"].frames[i].crop, xrange, yrange))
+                self.threadpool.start(GenericThread(self.batch["light"].frames[i].crop,
+                                                    xrange,
+                                                    yrange))
 
         if "Kappa" not in self.values:
             self.values["Kappa"] = self.kappa
 
         self.threadpool.waitForDone()
-
-        if self.radioButtonMaximum.isChecked():
-            self.stackingwrap = Stacker.Maximum()
-        elif self.radioButtonMinimum.isChecked():
-            self.stackingwrap = Stacker.Minimum()
-        elif self.radioButtonMean.isChecked():
-            self.stackingwrap = Stacker.Mean()
-        elif self.radioButtonMedian.isChecked():
-            self.stackingwrap = Stacker.Median()
-        elif self.radioButtonSMedian.isChecked():
-            self.stackingwrap = Stacker.SigmaMedian(kappa=self.values["Kappa"])
-        elif self.radioButtonSClip.isChecked():
-            self.stackingwrap = Stacker.SigmaClip(kappa=self.values["Kappa"])
 
         self.threadpool.start(GenericThread(self.batch["light"].stack, self.stackingwrap))
 

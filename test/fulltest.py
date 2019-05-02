@@ -36,10 +36,10 @@ def test():
 
     batch = {}
 
-    batch["light"] = Batch.Batch(project, "light")
-    batch["bias"] = Batch.Batch(project, "bias")
-    batch["flat"] = Batch.Batch(project, "flat")
-    batch["dark"] = Batch.Batch(project, "dark")
+    batch["light"] = Batch.batch(project, "light")
+    batch["bias"] = Batch.batch(project, "bias")
+    batch["flat"] = Batch.batch(project, "flat")
+    batch["dark"] = Batch.batch(project, "dark")
 
     light = {
         "/media/Dee/Astrokuvat/2015-02-10/OrionNebula/OrionNebula_2015-02-10_20.08.18.010282.cr2",

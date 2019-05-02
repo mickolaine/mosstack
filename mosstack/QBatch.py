@@ -1,11 +1,11 @@
-from . Batch import batch
+from . batch import Batch
 from . QFrame import QFrame
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import *
 from os.path import splitext, split
 
 
-class QBatch(batch, QWidget):
+class QBatch(Batch, QWidget):
     """
     QBatch is a PyQt4 aware extension of Batch. I'm not sure how much this is needed yet so this might be
     integrated to Batch
@@ -118,19 +118,26 @@ class QBatch(batch, QWidget):
         print("Calibrated images saved with generic name 'calib'.")
         self.refresh.emit()
 
-    def debayer(self, frame, debayer):
+    def debayer_old(self, frame, debayer):
         """
         Debayer a single frame
         """
 
         print("Processing image " + self.frames[frame].path())
 
-        self.frames[frame].debayer(debayer)
+        #self.frames[frame].debayer(debayer)
+        self.frames[frame].debayertool = debayer
+        self.frames[frame].debayer_worker()
         print("...Done")
 
         self.frames[self.refId].isref = True
         print("Debayered images saved with generic name 'rgb'.")
         self.refresh.emit()
+
+    def debayer_threaded(self, threadpool):
+
+        for i in sorted(self.frames):
+            threadpool.start(GenericThread(self.frames[i].debayer))
 
     def register(self, frame, register, ref=False):
         """
@@ -141,4 +148,39 @@ class QBatch(batch, QWidget):
 
         self.refresh.emit()
 
+    def register_threaded(self, threadpool):
+        """
+        Register all frames using threads
+        """
+        self.frames[self.refId].register_worker()
+
+        for i in sorted(self.frames):
+            if i == self.refId:
+                continue
+            threadpool.start(GenericThread(self.frames[i].register))
+
+        for i in sorted(self.frames):
+            threadpool.start(GenericThread(self.frames[i].register))
+
     framearray = property(fget=getframearray)
+
+
+class GenericThread(QRunnable):
+    """
+    Generic thread borrowed from http://joplaete.wordpress.com/2010/07/21/threading-with-pyqt4/
+
+    Will rewrite this, when I understand what's happening here
+    """
+    __pyqtSignals__ = ("update")
+    refresh = pyqtSignal()
+
+    def __init__(self, function, *args, **kwargs):
+        super(QRunnable, self).__init__()
+        #QThread.__init__(self)
+        self.function = function
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self):
+        self.function(*self.args, **self.kwargs)
+        return

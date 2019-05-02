@@ -232,7 +232,7 @@ class Frame(object):
         #print(self._debayertool)
         if debayertool:
             self.debayertool = debayertool
-        data = self.debayertool.debayer(self)
+        data = self.debayertool.debayer(self)     
         self.fphase = "rgb"
 
         if data is not None:
