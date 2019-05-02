@@ -2,18 +2,18 @@ from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
 import numpy
 
-modules = cythonize(["mosstack/Registering/_step2.pyx",
+MODULES = cythonize(["mosstack/Registering/_step2.pyx",
                      "mosstack/Debayer/_BilinearCython.pyx",
                      "mosstack/Debayer/_VNGCython.pyx",
                      "mosstack/Stacker/_math.pyx"])
 
-modules.append(Extension("mosstack.Debayer.debayer_c",
+MODULES.append(Extension("mosstack.Debayer.debayer_c",
                          sources=["mosstack/Debayer/debayermodule.c"],
                          libraries=["cfitsio", "m"],
                          define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '7'),],
                          extra_compile_args=["-O3"])
               )
-modules.append(Extension("mosstack.Decoding.raw2fits",
+MODULES.append(Extension("mosstack.Decoding.raw2fits",
                          sources=["mosstack/Decoding/raw2fitsmodule.cpp"],
                          libraries=["cfitsio", "raw", "m"],
                          define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '7'),],
@@ -22,13 +22,13 @@ modules.append(Extension("mosstack.Decoding.raw2fits",
 
 setup(
     name='mosstack',
-    version='0.7rc3',
+    version='0.7rc4',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=find_packages(),
     scripts=['scripts/mosstack', 'scripts/mosstackgui', 'scripts/mosstack_old', 'scripts/mosstackgui_new'],
     include_dirs=[numpy.get_include()],
-    ext_modules=modules,
+    ext_modules=MODULES,
     data_files=[
         ("share/mosstack/", ["data/mosstack.xpm", "doc/LaTeX/manual.pdf"]),
         ("share/applications/", ["data/mosstack.desktop"]),

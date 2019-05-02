@@ -9,6 +9,8 @@ Created on 2.10.2013
 
 """
 
+from abc import abstractmethod
+
 
 class Registering:
     """
@@ -54,3 +56,8 @@ class Registering:
         Return:
         Nothing, see classdoc
         """
+
+    @abstractmethod
+    def match_stars(self, frame):
+        pass
+    

@@ -6,14 +6,13 @@
 This file includes classes for "global" configuration and for project configuration.
 
 Global includes stuff like paths to programs, path for program data ...
-Project holds lists of source files and information what has been done for them. Idea is you can continue the process
-from any point forward.
+Project holds lists of source files and information what has been done
+for them. Idea is you can continue the process from any point forward.
 '''
 
 import configparser
 import os
 from subprocess import check_output, CalledProcessError
-from sys import version_info
 from os.path import expanduser, exists, split
 from os import makedirs
 from ast import literal_eval
@@ -23,7 +22,8 @@ from threading import Thread
 
 class ConfigAbstractor:
     """
-    Class to read and write configuration files. I'm not sure about the format yet so I'll make this class to handle
+    Class to read and write configuration files.
+    I'm not sure about the format yet so I'll make this class to handle
     calls from system and project configuration classes.
     """
 
@@ -91,8 +91,10 @@ class Setup:
                     sexpath = self.findsex()
                     version_string = check_output([sexpath, "--version"]).split()[2]
                     if version_string == "2.4.4":
-                        print("SExtractor version 2.4.4 found. This is an old version which contains a serious bug.")
-                        print("Mosstack will not work with this version. Please upgrade SExtractor.")
+                        print("SExtractor version 2.4.4 found. " +
+                              "This is an old version which contains a serious bug.")
+                        print("Mosstack will not work with this version. " +
+                              "Please upgrade SExtractor.")
                         exit()
                 except CalledProcessError:
                     print("SExtractor executable not found in $PATH.")
@@ -112,7 +114,8 @@ class Setup:
         """
 
         print("Mosstack requires a dedicated directory for temporary files.")
-        print("Be aware that temp files can take a lot of space (from 1 GB to 20 GB) depending on your project.\n")
+        print("Be aware that temp files can take a lot of space " +
+              "(from 1 GB to 20 GB) depending on your project.\n")
         temppath = input("Path for temporary files: ")
 
         # Make sure path ends in /
@@ -135,8 +138,9 @@ class Setup:
     @staticmethod
     def createSExConf():
         """
-        SExtractor requires two configuration files in the temp dir. This creates them. Files are from
-        SExtractor distribution package and all rights belong to it's author.
+        SExtractor requires two configuration files in the temp dir.
+        This creates them. Files are from SExtractor distribution package
+        and all rights belong to it's author.
         """
 
         # default.param
@@ -237,8 +241,7 @@ class Config:
                 raise KeyError("Key not found!")
             #print("Löytyi: " + self.conf[section][key])
             return self.conf[section][key]
-        else:
-            return dict(self.conf._sections[section])
+        return dict(self.conf._sections[section])
 
     def set(self, section, key, value):
         """
@@ -315,9 +318,13 @@ class Frame(Config):
 
 class Project(Config):
     """
-    A configurator object for project information. Inherits Config but adds some project specific stuff.
-    This is something I probably should get rid off and do all the specific stuff elsewhere. Now for legacy reasons.
+    A configurator object for project information. Inherits Config but adds
+    some project specific stuff. This is something I probably should get rid
+    off and do all the specific stuff elsewhere. Now for legacy reasons.
     """
+
+    # pylint: disable=too-many-instance-attributes
+    # All of them are necessary
 
     def __init__(self, pname=None, pfile=None):
         """
@@ -333,8 +340,8 @@ class Project(Config):
         self.worker.start()
 
         try:
-            self.sex   = Global.get("Programs", "SExtractor")
-            self.path  = Global.get("Default", "path")
+            self.sex = Global.get("Programs", "SExtractor")
+            self.path = Global.get("Default", "path")
         except KeyError:
             self.setup = Setup()
 
@@ -400,7 +407,7 @@ class Project(Config):
 
         self.projectfile = pfile
 
-        self.sex  = Global.get("Programs", "SExtractor")
+        self.sex = Global.get("Programs", "SExtractor")
         self.path = Global.get("Default", "Path")
 
     def readproject(self):
@@ -464,8 +471,7 @@ class Project(Config):
 
         if temp:
             return tlist
-        else:
-            return tlist + flist
+        return tlist + flist
 
     def initproject(self, pname):
         """
@@ -514,7 +520,7 @@ class Project(Config):
             return False
 
 
-class Global(object):
+class Global():
     """
     Global configurations
     """
@@ -525,6 +531,9 @@ class Global(object):
 
     @staticmethod
     def get(section, key):
+        """
+        Get setting with section and key
+        """
 
         Global.conf.read(Global.configfile)
         #return Global.conf[section][key]
@@ -532,6 +541,9 @@ class Global(object):
 
     @staticmethod
     def set(section, key, value):
+        """
+        Set setting with section and key to value
+        """
 
         Global.conf.read(Global.configfile)
         if section not in Global.conf:
@@ -542,5 +554,4 @@ class Global(object):
             makedirs(split(Global.configfile)[0])
 
         with open(Global.configfile, 'w') as configfile:
-            # print("Config written to " + Global.configfile)
             Global.conf.write(configfile)

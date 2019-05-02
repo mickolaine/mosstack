@@ -467,24 +467,6 @@ class Frame(object):
             return "raw"
         return ms
 
-    '''
-    def combine(self, newpath):
-        """
-        Combine channels from three fits files into one.
-        """
-
-        hdu = []
-        data = []
-
-        for i in (0, 1, 2):
-            hdu.append(fits.open(newpath[i]))
-            data.append(hdu[i][0].data)
-
-        self.data = np.array(data) - 32768
-        self.write(skimage=True)
-        self._release_data()
-    '''
-
     def readinfo(self):
         """
         Read frame info from specified file

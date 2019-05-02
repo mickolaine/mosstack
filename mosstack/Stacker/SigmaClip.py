@@ -2,11 +2,13 @@
 Class for Sigma clipping stacker.
 """
 
+
+from . import _math
 from .. Stacker.Stacking import Stacking
 import numpy as np
 import pyximport
 pyximport.install(setup_args={'include_dirs': [np.get_include()]})
-from . _math import _sigmaClip
+#from . _math import _sigmaClip
 
 
 class SigmaClip(Stacking):
@@ -18,8 +20,8 @@ class SigmaClip(Stacking):
         #super().__init__()
         self.name = "sigma clipping"
         self.kappa = kappa
-        pass
+
 
     #@staticmethod
     def _realstack(self, frames):
-        return _sigmaClip(frames, np.std(frames, axis=0), np.median(frames, axis=0), self.kappa)
+        return _math._sigmaClip(frames, np.std(frames, axis=0), np.median(frames, axis=0), self.kappa)

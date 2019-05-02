@@ -5,11 +5,13 @@ Created on 11.10.2013
 
 This file contains everything required for stacking the photos.
 """
+
 from __future__ import division
-import numpy as np
+from abc import abstractmethod
 import datetime   # For profiling
 import math
 import gc
+import numpy as np
 
 
 class Stacking:
@@ -23,7 +25,8 @@ class Stacking:
     """
     
     def __init__(self):
-        pass
+        self.name = None
+
 
     #@staticmethod
     def stack(self, imagelist, project):
@@ -148,6 +151,10 @@ class Stacking:
 
         return result
 
+    @abstractmethod
+    def _realstack(self, frames):
+        pass
+
     @staticmethod
     def subtract(image, calib):
         """
@@ -204,4 +211,5 @@ class Stacking:
         calib[calib < 100] = median
 
         newdata = image / calib * maxim
-        return np.int32(newdata).clip(0)
+        return newdata.astype(np.int32).clip(0)
+        #return np.int32(newdata).clip(0)

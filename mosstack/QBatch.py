@@ -1,11 +1,11 @@
-from . Batch import Batch
+from . Batch import batch
 from . QFrame import QFrame
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import *
 from os.path import splitext, split
 
 
-class QBatch(Batch, QWidget):
+class QBatch(batch, QWidget):
     """
     QBatch is a PyQt4 aware extension of Batch. I'm not sure how much this is needed yet so this might be
     integrated to Batch

@@ -4,7 +4,7 @@ this file controls all the actions after that.
 """
 
 from . import Config
-from . Batch import Batch
+from . batch import Batch
 from . import Registering
 from . import Debayer
 from . import Stacker
@@ -934,7 +934,7 @@ temporary directory, you can fix it by:
         if genname == "calib":
             batch = Batch(self.project, ftype="light", fphase="calib")
         else:
-            batch = Batch(self.project, ftype=genname)
+            batch = batch(self.project, ftype=genname)
         batch.subtract(calib, self.stackerwrap())
 
     def biaslevel(self, ftype, level):
@@ -960,7 +960,7 @@ temporary directory, you can fix it by:
         if genname == "calib":
             batch = Batch(self.project, ftype="light", fphase="calib")
         else:
-            batch = Batch(self.project, ftype=genname)
+            batch = batch(self.project, ftype=genname)
         batch.divide(calib, self.stackerwrap())
 
     def list(self, setting, options):

@@ -2,10 +2,10 @@
 The Command Line Interface for mosstack
 """
 
-from . import Debayer, Config, Registering, Stacker, Batch
-#from . Debayer import VNGCython, BilinearCython, VNGOpenCl, BilinearOpenCl
-import argparse
 import os
+import argparse
+from . import Debayer, Config, Registering, Stacker, batch
+#from . Debayer import VNGCython, BilinearCython, VNGOpenCl, BilinearOpenCl
 
 
 class CommandLine:
@@ -161,7 +161,7 @@ class CommandLine:
         for ftype in ("light", "bias", "flat", "dark"):
             try:
                 if self.project.get(ftype):
-                    self.batch[ftype] = Batch.Batch(self.project, ftype=ftype)
+                    self.batch[ftype] = batch.Batch(self.project, ftype=ftype)
             except KeyError:
                 pass
 
@@ -171,7 +171,9 @@ class CommandLine:
             try:
                 self.batch["light"].setbiaslevel(self.args.biaslevel[0])
             except ValueError:
-                print(str(self.args.biaslevel[0]) + " not a valid biaslevel. Try an integer or float.")
+                print(str(self.args.biaslevel[0])
+                      + " not a valid biaslevel."
+                      + " Try an integer or float.")
                 exit()
         if self.args.masterflat:
             self.addmaster("flat", self.args.masterflat)
@@ -182,13 +184,13 @@ class CommandLine:
             self.preparecalib()
 
             self.batch["light"].stackingtool = self.stackerwrap()
-            
+
             for i in self.batch["light"].frames:
                 self.batch["light"].frames[i].fphase = "orig"
             self.batch["light"].calibrate(bias=self.masterbias,
                                           dark=self.masterdark,
                                           flat=self.masterflat)
-        
+
         if self.args.debayer:
             self.batch["light"].debayertool = self.debayerwrap()
             for i in self.batch["light"].frames:
@@ -373,7 +375,7 @@ class CommandLine:
         """
 
         if ftype not in self.batch:
-            self.batch[ftype] = Batch.Batch(self.project, ftype=ftype)
+            self.batch[ftype] = batch.Batch(self.project, ftype=ftype)
 
         for i in files:
             self.batch[ftype].addfile(CommandLine.absolutepath(i), ftype)
@@ -387,7 +389,7 @@ class CommandLine:
         """
 
         if ftype not in self.batch:
-            self.batch[ftype] = Batch.Batch(project=self.project, ftype=ftype)
+            self.batch[ftype] = batch.Batch(project=self.project, ftype=ftype)
 
         self.batch[ftype].addmaster(file, ftype)
         if ftype == "bias":

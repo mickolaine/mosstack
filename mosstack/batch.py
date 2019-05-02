@@ -1,3 +1,7 @@
+"""
+Batch is a series of frames that will be stacked in to a single frame.
+"""
+
 from os import listdir
 import threading
 import datetime   # For profiling
@@ -5,7 +9,7 @@ from os.path import splitext
 from . Frame import Frame
 
 
-class Batch(object):
+class Batch():
     """
     Batch holds a list of frames and handles connections to project files
     """
@@ -23,9 +27,9 @@ class Batch(object):
         self.fphase = fphase
         self.master = None
 
-        self.name = self.project.get("Default", key="project name")    # Name for the resulting image
+        self.name = self.project.get("Default", key="project name")   # Name for the resulting image
 
-        self.frames = {}                                               # Empty dict for Photos
+        self.frames = {}                                              # Empty dict for Photos
 
         # Variables for the tools
         self._debayertool = None
