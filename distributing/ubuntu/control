@@ -2,13 +2,13 @@ Source: mosstack
 Maintainer: Mikko Laine <mikko.laine@gmail.com>
 Section: python
 Priority: optional
-Build-Depends: python3-all-dev (>= 2.6.6-3), debhelper (>= 7.4.3), python3-numpy (>= 1.7), cython3 (>= 0.20)
-Standards-Version: 3.9.1
+Build-Depends: python3-all-dev (>= 2.6.6-3), debhelper (>= 7.4.3), python3-numpy (>= 1.7), cython3 (>= 0.20), libcfitsio-dev, libraw-dev, python3-setuptools
+Standards-Version: 3.9.6
 X-Python3-Version: >= 3.2
 
 Package: mosstack
 Architecture: any
-Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python3-numpy (>= 1.7), python3-astropy (>= 0.2.3), python3-imaging (>= 2.3.0), python3-skimage (>= 0.8.2), sextractor (>= 2.8.6), dcraw (>= 9.19), imagemagick (>= 6.7.7.10), cython3 (>= 0.19), libimage-exiftool-perl (>= 9.13), python3-pyqt4
+Depends: ${misc:Depends}, ${python:Depends}, ${shlibs:Depends}, python3-numpy (>= 1.7), python3-astropy (>= 0.2.3), python3-imaging (>= 2.3.0), python3-skimage (>= 0.8.2), sextractor (>= 2.8.6), dcraw (>= 9.19), imagemagick (>= 6.7.7.10), cython3 (>= 0.19), libimage-exiftool-perl (>= 9.13), python3-pyqt4, python3-magic, libcfitsio, libraw
 Description: Stacking software for astronomical images
  Mosstack is an open source registering and stacking software for
  astronomical images. Original (and current) design is made for photos taken

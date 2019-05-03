@@ -12,10 +12,10 @@ Graphical user interface for pyAstroStack.
 
 import sys
 try:
-    from PyQt4.QtGui import QApplication, QMainWindow
+    from PyQt5.QtWidgets import QApplication, QMainWindow
 except ImportError:
-    print("No PyQt4 found. Check your installation.")
-from astrostack import AstroStackGui
+    print("No PyQt5 found. Check your installation.")
+from mosstack import AstroStackGui
 #try:
 #    from PyQt4.QtCore import Qstring
 #    _fromUtf8 = QString.fromUtf8

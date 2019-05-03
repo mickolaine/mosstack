@@ -4,13 +4,20 @@
       <w>absolutepath</w>
       <w>adddir</w>
       <w>addfiles</w>
+      <w>addframes</w>
       <w>addrgb</w>
+      <w>argc</w>
+      <w>argv</w>
       <w>astro</w>
+      <w>astropy</w>
       <w>astropy's</w>
       <w>astuple</w>
+      <w>autostack</w>
+      <w>bfptr</w>
       <w>bilinear</w>
       <w>bluenewpath</w>
       <w>bluepath</w>
+      <w>bsum</w>
       <w>bufb</w>
       <w>bufg</w>
       <w>bufr</w>
@@ -20,7 +27,9 @@
       <w>cfab</w>
       <w>cfag</w>
       <w>cfar</w>
+      <w>cfitsio</w>
       <w>cframe</w>
+      <w>checkfiles</w>
       <w>checkraw</w>
       <w>codeblue</w>
       <w>codecommon</w>
@@ -28,24 +37,34 @@
       <w>codered</w>
       <w>commandlist</w>
       <w>confname</w>
+      <w>coords</w>
       <w>createconf</w>
       <w>cython</w>
+      <w>darks</w>
       <w>dcraw</w>
       <w>debayer</w>
       <w>debayered</w>
+      <w>debayering</w>
       <w>deldata</w>
       <w>demosaic</w>
       <w>demosaiced</w>
       <w>demosaicing</w>
       <w>dest</w>
+      <w>dlmulti</w>
       <w>dslr</w>
       <w>execsex</w>
       <w>exiftool</w>
       <w>extractinfo</w>
       <w>fargs</w>
+      <w>fformat</w>
+      <w>fileformat</w>
       <w>findsensitivity</w>
+      <w>fitsfile</w>
       <w>fitspath</w>
       <w>fkwargs</w>
+      <w>fmax</w>
+      <w>fmin</w>
+      <w>focallength</w>
       <w>fphase</w>
       <w>framearray</w>
       <w>frameinfo</w>
@@ -55,10 +74,20 @@
       <w>genname</w>
       <w>getcoordinates</w>
       <w>getdata</w>
+      <w>getgenname</w>
+      <w>getpairs</w>
       <w>getpoints</w>
+      <w>gfptr</w>
       <w>greennewpath</w>
       <w>greenpath</w>
+      <w>grne</w>
+      <w>grnw</w>
       <w>groth</w>
+      <w>grse</w>
+      <w>grsw</w>
+      <w>gsum</w>
+      <w>idialog</w>
+      <w>ifname</w>
       <w>iformat</w>
       <w>ilist</w>
       <w>imageb</w>
@@ -72,14 +101,27 @@
       <w>imaget</w>
       <w>imagetype</w>
       <w>infopath</w>
+      <w>infotable</w>
+      <w>infotablemodel</w>
       <w>initproject</w>
+      <w>isospeed</w>
+      <w>isref</w>
       <w>itype</w>
+      <w>laine</w>
       <w>lencfa</w>
       <w>libraw</w>
       <w>longhelp</w>
       <w>magick</w>
       <w>magick's</w>
+      <w>magicks</w>
       <w>maketriangles</w>
+      <w>masterbias</w>
+      <w>masterdark</w>
+      <w>masterflat</w>
+      <w>mikko</w>
+      <w>modinit</w>
+      <w>mosstack</w>
+      <w>mosstackgui</w>
       <w>newdata</w>
       <w>newfunc</w>
       <w>newlist</w>
@@ -94,10 +136,15 @@
       <w>picklable</w>
       <w>pname</w>
       <w>ppath</w>
+      <w>preparecalib</w>
       <w>projectfile</w>
       <w>projectname</w>
+      <w>pyopencl</w>
+      <w>rangetuple</w>
+      <w>raw's</w>
       <w>rawfiles</w>
       <w>rawformat</w>
+      <w>rawoutput</w>
       <w>rawpath</w>
       <w>raws</w>
       <w>rawtran</w>
@@ -108,29 +155,44 @@
       <w>redpath</w>
       <w>refimg</w>
       <w>refnum</w>
+      <w>rfptr</w>
+      <w>rgbfptr</w>
       <w>rgbname</w>
       <w>rgbpath</w>
+      <w>rsum</w>
       <w>savefinal</w>
       <w>savemaster</w>
       <w>savergb</w>
+      <w>scikit</w>
       <w>setclip</w>
       <w>setdata</w>
+      <w>setdebayer</w>
+      <w>setgenname</w>
       <w>setname</w>
+      <w>setpairs</w>
       <w>setpoints</w>
       <w>setproject</w>
       <w>setref</w>
+      <w>setregister</w>
       <w>setsensitivity</w>
+      <w>setstacker</w>
+      <w>sexpath</w>
       <w>sextractor</w>
       <w>shorthelp</w>
+      <w>skimage</w>
       <w>sqrt</w>
       <w>srclist</w>
       <w>srcname</w>
       <w>srcpath</w>
+      <w>staticpath</w>
       <w>subpixel</w>
+      <w>swindow</w>
       <w>tablemodel</w>
+      <w>threadpool</w>
       <w>thru</w>
       <w>todo's</w>
       <w>wdir</w>
+      <w>yrange</w>
     </words>
   </dictionary>
 </component>
