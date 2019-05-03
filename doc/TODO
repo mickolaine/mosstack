@@ -1,9 +1,25 @@
+0.9
+- Automated tests
+- Rework the gui. Either totally new or improve the old
+
+
 0.8
 
 - Drop DCRaw
 - Drop ImageMagick
 - Drop OpenCL
-- New GUI
+- Make Gui and Cli use the same threading workers and mostly the same methods
+  Minimize code duplication.
+   - For example QBatch.register should call Batch.register and only add
+     what Gui needs
+- Rename everything to conform pylints requests.
+- Clean CommandLine.py workflow by moving stuff to Batch and make assisting
+  methods which CommandLine.start() calls
+- Begin work on automated tests
+- Remove obsolete stuff
+- Make decision on new gui
+- Hot pixels detection and removal
+- CompressedData. Test speed. What's this? Can't remember anymore
 
 
 0.7
@@ -11,12 +27,6 @@
 + Done: New CLI
   + something is different with adding files and loading them. Stacking works if you first add files and calibrate
     with separate command. If add files and calibrate within single command stacking fails on calibration.
-- CompressedData. Test speed
-
-0.7
-- Rewrite of Command line interface
-- Hot pixels detection and removal
-
 
 
 0.6
