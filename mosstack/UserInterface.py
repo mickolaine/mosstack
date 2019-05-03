@@ -3,7 +3,7 @@ Classes related to user interface. Main program "AstroStack.py" parses the input
 this file controls all the actions after that.
 """
 
-from . import Config
+from . import config
 from . batch import Batch
 from . import Registering
 from . import Debayer
@@ -17,7 +17,7 @@ class UserInterface:
     but this class holds all the functionality
     """
 
-    setup = Config.Setup()
+    setup = config.Setup()
 
     shorthelp = """
     Mikko's Open Source Stacker is run with:
@@ -544,23 +544,23 @@ temporary directory, you can fix it by:
 
         if argv[0] == "init":
             try:
-                project = Config.Project()
+                project = config.Project()
                 project.initproject(argv[1])
-                Config.Global.set("Default", "Project", argv[1])
-                print("New project started: \n" + Config.Global.get("Default", "Path") + "/" + argv[1] + ".project")
+                config.Global.set("Default", "Project", argv[1])
+                print("New project started: \n" + config.Global.get("Default", "Path") + "/" + argv[1] + ".project")
                 exit()
             except IndexError:
                 print("Project name not specified. Try \"mosstack help\" and see what went wrong.")
                 exit()
 
         try:
-            pname = Config.Global.get("Default", "Project")
-            ppath = Config.Global.get("Default", "Path") + "/" + pname + ".project"
+            pname = config.Global.get("Default", "Project")
+            ppath = config.Global.get("Default", "Path") + "/" + pname + ".project"
             if argv[0] == "set" and argv[1] == "project":
                 pass
             else:
                 print("Current project is " + ppath + "\n")
-            project = Config.Project(pname)
+            project = config.Project(pname)
             project.readproject()
             self.setproject(project)
 
@@ -573,9 +573,9 @@ temporary directory, you can fix it by:
             if argv[1] == "project":
                 if argv[2]:
                     pname = argv[2]
-                    Config.Global.set("Default", "Project", pname)
-                    ppath = Config.Global.get("Default", "Path") + pname + ".project"
-                    self.setproject(Config.Project(pname))
+                    config.Global.set("Default", "Project", pname)
+                    ppath = config.Global.get("Default", "Path") + pname + ".project"
+                    self.setproject(config.Project(pname))
                     print("Project set to " + ppath)
                 else:
                     print("No project name specified.")
@@ -827,7 +827,7 @@ temporary directory, you can fix it by:
         elif argv[0] == "fixsex":
 
             print("Rewriting SExtractor configuration files.")
-            Config.Setup.createSExConf()
+            config.Setup.createSExConf()
 
         else:
             print("Invalid operation: " + argv[0])

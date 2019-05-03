@@ -8,8 +8,8 @@ from ast import literal_eval
 from subprocess import CalledProcessError
 from . UiDesign5 import Ui_MainWindow
 from . settings5 import Ui_Dialog
-from . Config import Project, Global, Setup
-from . QBatch import QBatch
+from . config import Project, Global, Setup
+from . qbatch import QBatch
 from . import Registering
 from . import Debayer
 from . import Stacker

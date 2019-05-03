@@ -4,7 +4,7 @@ from os.path import splitext, exists
 from shutil import move
 from subprocess import call, check_output
 from threading import RLock
-from . import Config
+from . import config
 from . Decoding import Raw2fits_cpp
 import numpy as np
 from PIL import Image as Im
@@ -59,7 +59,7 @@ class Frame(object):
         self.step2       = False
         self.staticpath  = False
 
-        self.wdir = Config.Global.get("Default", "Path")
+        self.wdir = config.Global.get("Default", "Path")
 
         if project is not None:
             self.name = self.project.get("Default", "Project name")
@@ -90,7 +90,7 @@ class Frame(object):
         self.lock = RLock()
 
         if self.infopath is not None:
-            self.frameinfo = Config.Frame(infopath)
+            self.frameinfo = config.Frame(infopath)
         else:
             self.frameinfo = None
 
@@ -604,7 +604,7 @@ class Frame(object):
 
         if self.infopath is None:
             self.infopath = self.wdir + "/" + self.name + "_" + self.ftype + "_" + str(self.number) + ".info"
-        self.frameinfo = Config.Frame(self.infopath)
+        self.frameinfo = config.Frame(self.infopath)
         self.project.addfile(self.infopath)
 
         self.frameinfo.set("Paths", "Raw", str(self.rawpath))

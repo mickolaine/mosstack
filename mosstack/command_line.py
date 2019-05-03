@@ -5,12 +5,12 @@ The Command Line Interface for mosstack
 import os
 import argparse
 from . import Debayer, Config, Registering, Stacker, batch
-#from . Debayer import VNGCython, BilinearCython, VNGOpenCl, BilinearOpenCl
 
 
 class CommandLine:
     """
-    The Command line interface. This class parses command line arguments and calls for everything necessary
+    The Command line interface. This class parses command line arguments
+    and calls for everything necessary
     """
 
     setup = Config.Setup()
@@ -66,14 +66,6 @@ class CommandLine:
             print("No project initialized. Start a new with mosstack --init \"Foo\"")
             exit()
 
-        """
-        for ftype in ("light", "bias", "flat", "dark"):
-            try:
-                if self.project.get(ftype):
-                    self.batch[ftype] = Batch.Batch(self.project, ftype=ftype)
-            except KeyError:
-                pass
-        """
         # ## Project ready
 
         # ## Check and load all files necessary
@@ -111,7 +103,8 @@ class CommandLine:
                 self.project.set("Default", "Kappa", kappa)
                 print("Kappa set to " + str(self.args.setkappa[0]))
             except ValueError:
-                print("Setting Kappa to " + str(self.args.setkappa[0]) + " failed. Try a small float.")
+                print("Setting Kappa to " + str(self.args.setkappa[0]) + 
+                      " failed. Try a small float.")
                 exit()
 
         if self.args.reference:
@@ -234,24 +227,34 @@ class CommandLine:
         """
 
         self.parser.add_argument("--init", nargs=1, metavar="name", help="Initialize project.")
-        self.parser.add_argument("--project", nargs=1, metavar="name", help="Change active project.")
+        self.parser.add_argument("--project", nargs=1, metavar="name",
+                                 help="Change active project.")
 
-        self.parser.add_argument("--light", nargs='*', metavar="file", help='Add light frames  to project.')
-        self.parser.add_argument("--bias", nargs='*', metavar="file", help='Add bias frames to project.')
-        self.parser.add_argument("--flat", nargs='*', metavar="file", help='Add flat frames to project.')
-        self.parser.add_argument("--dark", nargs='*', metavar="file", help='Add dark frames to project.')
+        self.parser.add_argument("--light", nargs='*', metavar="file",
+                                 help='Add light frames  to project.')
+        self.parser.add_argument("--bias", nargs='*', metavar="file",
+                                 help='Add bias frames to project.')
+        self.parser.add_argument("--flat", nargs='*', metavar="file",
+                                 help='Add flat frames to project.')
+        self.parser.add_argument("--dark", nargs='*', metavar="file",
+                                 help='Add dark frames to project.')
 
         self.parser.add_argument("--list", action='store_true', help='List all files in project')
 
         self.parser.add_argument("--remove", nargs=1, metavar="ID", help='Remove file from project')
         self.parser.add_argument("--reference", nargs=1, metavar="ID", help='Set reference frame')
 
-        self.parser.add_argument("--setdebayer", nargs=1, metavar="ID", help='Set debayering algorithm')
-        self.parser.add_argument("--setmatcher", nargs=1, metavar="ID", help='Set matching algorithm')
-        self.parser.add_argument("--settransformer", nargs=1, metavar="ID", help='Set transforming algorithm')
-        self.parser.add_argument("--setstacker", nargs=1, metavar="ID", help='Set stacking algorithm')
+        self.parser.add_argument("--setdebayer", nargs=1, metavar="ID",
+                                 help='Set debayering algorithm')
+        self.parser.add_argument("--setmatcher", nargs=1, metavar="ID",
+                                 help='Set matching algorithm')
+        self.parser.add_argument("--settransformer", nargs=1, metavar="ID",
+                                 help='Set transforming algorithm')
+        self.parser.add_argument("--setstacker", nargs=1, metavar="ID",
+                                 help='Set stacking algorithm')
 
-        self.parser.add_argument("--setkappa", nargs=1, metavar="float", help="Set kappa for sigma stackers")
+        self.parser.add_argument("--setkappa", nargs=1, metavar="float",
+                                 help="Set kappa for sigma stackers")
 
         self.parser.add_argument("--size", action='store_true', help='Print size of project files')
         self.parser.add_argument("--clean", action='store_true', help='Remove temporary files')

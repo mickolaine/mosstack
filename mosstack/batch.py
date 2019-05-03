@@ -3,10 +3,10 @@ Batch is a series of frames that will be stacked in to a single frame.
 """
 
 from os import listdir
+from os.path import splitext
 import threading
 import datetime   # For profiling
-from os.path import splitext
-from . Frame import Frame
+from . frame import Frame
 
 
 class Batch():

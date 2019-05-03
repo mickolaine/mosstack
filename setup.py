@@ -22,11 +22,11 @@ MODULES.append(Extension("mosstack.Decoding.raw2fits",
 
 setup(
     name='mosstack',
-    version='0.7',
+    version='0.7.999',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=find_packages(),
-    scripts=['scripts/mosstack', 'scripts/mosstackgui', 'scripts/mosstack_old', 'scripts/mosstackgui_new'],
+    scripts=['bin/mosstack', 'bin/mosstackgui'],
     include_dirs=[numpy.get_include()],
     ext_modules=MODULES,
     data_files=[

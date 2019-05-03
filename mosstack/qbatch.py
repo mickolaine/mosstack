@@ -1,5 +1,5 @@
 from . batch import Batch
-from . QFrame import QFrame
+from . qframe import QFrame
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import *
 from os.path import splitext, split

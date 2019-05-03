@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -14,7 +14,7 @@ to run different stacking operations according to the project file.
 """
 
 import sys
-from mosstack.CommandLine import CommandLine
+from mosstack.command_line import CommandLine
 
 
 def main(argv):
