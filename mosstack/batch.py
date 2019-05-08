@@ -5,7 +5,6 @@ Batch is a series of frames that will be stacked in to a single frame.
 from os import listdir
 from os.path import splitext
 import threading
-import datetime   # For profiling
 from . frame import Frame
 
 
@@ -256,8 +255,10 @@ class Batch():
         """
         Return next free key for frame in dict
 
-        This is required because if a frame is removed, total number of frames will be less than the highest key. Also
-        the keys are string representations of numbers for compatibility reasons, so this won't be a oneliner.
+        This is required because if a frame is removed, total number of
+        frames will be less than the highest key. Also the keys are string
+        representations of numbers for compatibility reasons, so this
+        won't be a oneliner.
         """
 
         keys = list(self.frames.keys())
@@ -338,6 +339,8 @@ class Batch():
         Register all frames using threads
         """
         threadlist = []
+        print(self.refId)
+        print(self.frames[self.refId].isref)
         self.frames[self.refId].register_worker()
 
         for i in sorted(self.frames):
@@ -358,7 +361,7 @@ class Batch():
         """
         self.register_threaded()
 
-    def calibrate_threaded(self, bias, dark, flat):
+    def calibrate_threaded(self, bias=None, dark=None, flat=None):
         """
         Calibrate all frames
         """
@@ -376,7 +379,7 @@ class Batch():
         for t in threadlist:
             t.join()
 
-    def calibrate(self, bias, dark, flat):
+    def calibrate(self, bias=None, dark=None, flat=None):
         """
         This exists for debugging. Remove and change calibrate_threaded
         to calibrate when threading works

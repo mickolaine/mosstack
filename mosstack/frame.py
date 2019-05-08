@@ -1,7 +1,6 @@
 from __future__ import division
 from astropy.io import fits
 from os.path import splitext, exists
-from shutil import move
 from subprocess import call, check_output
 from threading import RLock
 from . import config
@@ -15,10 +14,12 @@ import magic
 
 class Frame(object):
     """
-    Frame has all the information of a single photo frame and all the methods to read and write data on disk
+    Frame has all the information of a single photo frame and all the
+    methods to read and write data on disk
     """
 
-    def __init__(self, project=None, rawpath=None, infopath=None, ftype="light", number=None, fphase="orig"):
+    def __init__(self, project=None, rawpath=None, infopath=None,
+                 ftype="light", number=None, fphase="orig"):
         """
         Create a Frame object from rawpath or frame info file
 
@@ -36,28 +37,28 @@ class Frame(object):
             "register": 0       # -1 = failed
         }                       # -2 = invalid (eg. registration for darks)
 
-        self.rawpath     = rawpath
-        self.infopath    = infopath
-        self.ftype       = ftype
-        self.fphase      = fphase
-        self.rawtype     = None
-        self.project     = project
-        self.format      = ".fits"
-        self.isref       = False
-        self.staticpath  = False
-        self.timestamp   = None
-        self.camera      = None
-        self.isospeed    = None
-        self.shutter     = None
-        self.aperture    = None
+        self.rawpath = rawpath
+        self.infopath = infopath
+        self.ftype = ftype
+        self.fphase = fphase
+        self.rawtype = None
+        self.project = project
+        self.format = ".fits"
+        self.isref = False
+        self.staticpath = False
+        self.timestamp = None
+        self.camera = None
+        self.isospeed = None
+        self.shutter = None
+        self.aperture = None
         self.focallength = None
-        self.bayer       = None
-        self.dlmulti     = None
+        self.bayer = None
+        self.dlmulti = None
         self.totalexposure = None
-        self.biaslevel   = None
-        self.step1       = False
-        self.step2       = False
-        self.staticpath  = False
+        self.biaslevel = None
+        self.step1 = False
+        self.step2 = False
+        self.staticpath = False
 
         self.wdir = config.Global.get("Default", "Path")
 
@@ -70,20 +71,20 @@ class Frame(object):
         self._stackingtool = None
 
         # Instance variables required later
-        self.rgb       = False      # Is image rgb or monochrome (Boolean)
-        self.clip      = []
-        self.tri       = []         # List of triangles
-        self.match     = []         # List of matching triangles with reference picture
-        self._pairs    = None
-        self._points   = None       # String to pass to ImageMagick convert, if star matching is already done.
-        self._x        = None
-        self._y        = None       # Dimensions for image
-        self._path     = None
+        self.rgb = False      # Is image rgb or monochrome (Boolean)
+        self.clip = []
+        self.tri = []         # List of triangles
+        self.match = []         # List of matching triangles with reference picture
+        self._pairs = None
+        self._points = None       # String to pass to ImageMagick convert, if star matching is already done.
+        self._x = None
+        self._y = None       # Dimensions for image
+        self._path = None
 
         self.number = number
 
         # The following objects are lists because colour channels are separate
-        self.hdu   = None      # HDU-object for loading fits. Not required for tiff
+        self.hdu = None      # HDU-object for loading fits. Not required for tiff
         self.image = None      # Image object. Required for Tiff and Fits
         self._data = None      # Image data as an numpy.array
 

@@ -7,15 +7,17 @@ from os.path import splitext, split
 
 class QBatch(Batch, QWidget):
     """
-    QBatch is a PyQt4 aware extension of Batch. I'm not sure how much this is needed yet so this might be
-    integrated to Batch
+    QBatch is a PyQt4 aware extension of Batch. I'm not sure how much this
+    is needed yet so this might be integrated to Batch
     """
     refresh = pyqtSignal()
     __pyqtSignals__ = ("update")
 
     def __init__(self, project, ftype):
-        super(QBatch, self).__init__(project, ftype)
-        super(QWidget, self).__init__()
+        Batch.__init__(self, project, ftype)
+        QWidget.__init__(self)
+        #super(Batch, self).__init__(project, ftype)
+        #super(QWidget, self).__init__()
         #self.frames = {}
         self._framearray = {}
 
@@ -175,8 +177,7 @@ class GenericThread(QRunnable):
     refresh = pyqtSignal()
 
     def __init__(self, function, *args, **kwargs):
-        super(QRunnable, self).__init__()
-        #QThread.__init__(self)
+        QRunnable.__init__(self)
         self.function = function
         self.args = args
         self.kwargs = kwargs

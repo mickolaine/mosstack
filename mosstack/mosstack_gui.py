@@ -15,12 +15,12 @@ from . import Debayer
 from . import Stacker
 from . imageDialog5 import Ui_Dialog as imageDialog
 
-try:
-    from PyQt5.QtCore import Qstring
-    _fromUtf8 = QString.fromUtf8
-except ImportError:
-    def _fromUtf8(s):
-        return s
+#try:
+#    from PyQt5.QtCore import Qstring
+#    _fromUtf8 = QString.fromUtf8
+#except ImportError:
+#    def _fromUtf8(s):
+#        return s
 
 try:
     import pyopencl
@@ -32,7 +32,8 @@ except ImportError:
 class Ui(Ui_MainWindow, QObject):
 
     def __init__(self):
-        super(Ui_MainWindow, self).__init__()
+        Ui_MainWindow.__init__(self)
+        #super(Ui_MainWindow, self).__init__()
 
         self.thread = None
         self.fileDialog = QFileDialog()
@@ -263,7 +264,7 @@ class Ui(Ui_MainWindow, QObject):
                                                      filter="Project files (*.project)")
         print(self.pfile)
         self.project = Project.load(self.pfile[0])
-        self.setProjectName(self.project.get("Default", "project name"))
+        self.set_project_name(self.project.get("Default", "project name"))
 
         try:
             self.setValues(literal_eval(self.project.get("GUI", "Values")))
@@ -274,7 +275,7 @@ class Ui(Ui_MainWindow, QObject):
             try:
                 files = self.project.get(i)
                 files = list(files.values())
-                self.addFrame(files, i)
+                self.add_frame(files, i)
             except:
                 pass
 
@@ -297,18 +298,18 @@ class Ui(Ui_MainWindow, QObject):
         if self.pname == "":
             return
 
-        self.setProjectName(str(self.pname))
+        self.set_project_name(str(self.pname))
         self.project = Project(self.pname)
         self.setValues()
         self.framearray = []
         tablemodel = GenericTableModel(self.framearray)
         self.tableView.setModel(tablemodel)
 
-    def setProjectName(self, pname):
-        self.projectName.setText(_fromUtf8(pname))
+    def set_project_name(self, pname):
+        self.projectName.setText(pname)
         self.pname = pname
 
-    def addFrameDialog(self, ftype):
+    def add_frame_dialog(self, ftype):
         """
         Wrapper to add light files. TODO: better solution
         """
@@ -317,35 +318,35 @@ class Ui(Ui_MainWindow, QObject):
             return
         files = QFileDialog.getOpenFileNames(caption="Select " + ftype + " files",
                                             filter="Raw photos (*.CR2 *.cr2 *.arw *.ARW *.nef *.NEF);;All files (*.*)")
-        self.addFrame(files[0], ftype)
+        self.add_frame(files[0], ftype)
 
-    def addLight(self):
+    def add_light(self):
         """
         Wrapper to add light files TODO: better solution
         """
-        self.addFrameDialog("light")
+        self.add_frame_dialog("light")
 
-    def addDark(self):
+    def add_dark(self):
         """
         Wrapper to add dark files. TODO: better solution
         """
 
-        self.addFrameDialog("dark")
+        self.add_frame_dialog("dark")
 
-    def addFlat(self):
+    def add_flat(self):
         """
         Wrapper to add flat files. TODO: better solution
         """
 
-        self.addFrameDialog("flat")
+        self.add_frame_dialog("flat")
 
-    def addBias(self):
+    def add_bias(self):
         """
         Wrapper to add bias files. TODO: better solution
         """
-        self.addFrameDialog("bias")
+        self.add_frame_dialog("bias")
 
-    def addFrame(self, files, ftype):
+    def add_frame(self, files, ftype):
         """
         Add files to frame list and batches. Create batches if they don't already exist.
         """
@@ -370,34 +371,46 @@ class Ui(Ui_MainWindow, QObject):
         for i in self.batch[ftype].frames:
             self.threadpool.start(GenericThread(self.batch[ftype].decode, i))
 
-    def addMasterDialog(self, ftype):
+    def add_master_dialog(self, ftype):
+        """
+        Dialog to add a master frame
+        """
         if self.pname is None:
             self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
             return
         file = QFileDialog.getOpenFileName(caption="Select master file",
                                             filter="Fits and Tiff (*.FITS *.fits *.tiff *.TIFF *.tif *.TIF)")
-        return self.addMasterFrame(file, ftype)
+        return self.add_master_frame(file, ftype)
 
-    def addMasterDark(self):
+    #TODO: Why are these all separate methods?
+    def add_master_dark(self):
+        """
+        Add master dark frame
+        """
         if self.addMasterDialog("dark"):
             self.checkBoxDark.setCheckable(True)
             self.checkBoxDark.setCheckState(2)
             #self.checkBoxDark.setCheckable(False)
 
-    def addMasterBias(self):
+    def add_master_bias(self):
+        """
+        Add master dark frame
+        """
         if self.addMasterDialog("bias"):
-            print("FOOOOOOO")
             self.checkBoxBias.setCheckable(True)
             self.checkBoxBias.setCheckState(2)
             #self.checkBoxBias.setCheckable(False)
 
-    def addMasterFlat(self):
+    def add_master_flat(self):
+        """
+        Add master dark frame
+        """
         if self.addMasterDialog("flat"):
             self.checkBoxFlat.setCheckable(True)
             self.checkBoxFlat.setCheckState(2)
             #self.checkBoxFlat.setCheckable(False)
 
-    def addMasterFrame(self, file, ftype):
+    def add_master_frame(self, file, ftype):
         """
         Add file to project as master frame of type ftype
         """
@@ -409,7 +422,7 @@ class Ui(Ui_MainWindow, QObject):
         except:
             return False
 
-    def updateTableView(self):
+    def update_table_view(self):
         """
         Update frame list view.
         """
@@ -425,7 +438,7 @@ class Ui(Ui_MainWindow, QObject):
         self.tableView.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tableView.selectionModel().currentChanged.connect(self.updateInfoView)
 
-    def updateInfoView(self, selected, deselected):
+    def update_info_view(self, selected, deselected):
         """
         Update frame information view to the selected frame Qt.DisplayRole
         """
@@ -438,22 +451,22 @@ class Ui(Ui_MainWindow, QObject):
         self.tableView_2.resizeColumnsToContents()
         self.tableView_2.resizeRowsToContents()
 
-    def makeRef(self):
+    def make_ref(self):
         """
         Make selected image the reference frame
         """
-
+        #TODO: Is this needed? Why not call the line below where this is needed
         self.batch[self.selectedFtype].setRef(self.selectedId)
 
-    def delFrame(self):
+    def del_frame(self):
         """
         Delete the selected frame from project.
         """
 
         self.batch[self.selectedFtype].removeFrame(self.selectedId)
-        self.updateTableView()
+        self.update_table_view()
 
-    def lineKappaChanged(self):
+    def line_kappa_changed(self):
         """
         Change values["Kappa"]
         """
@@ -463,7 +476,7 @@ class Ui(Ui_MainWindow, QObject):
         except ValueError:
             self.messageBox.information(self.messageBox, 'Error', 'You must type a decimal number eg. 3.0')
 
-    def runProgram(self):
+    def run_program(self):
         """
         Check what needs to be done and call everything necessary
         """
@@ -473,15 +486,15 @@ class Ui(Ui_MainWindow, QObject):
                                     'output goes to terminal.')
         self.threadpool.waitForDone()
         if self.checkBoxCalib.isChecked():
-            self.runCalib()
+            self.run_calib()
         if self.checkBoxDebayer.isChecked():
-            self.runDebayer()
+            self.run_debayer()
         if self.checkBoxReg.isChecked():
-            self.runRegister()
+            self.run_register()
         if self.checkBoxStack.isChecked():
-            self.runStack()
+            self.run_stack()
 
-    def runCalib(self):
+    def run_calib(self):
         """
         Run everything needed for calibrating
         """
@@ -564,7 +577,7 @@ class Ui(Ui_MainWindow, QObject):
         self.threadpool.waitForDone()
         self.threadpool.setMaxThreadCount(self.threads)
 
-    def runDebayer(self):
+    def run_debayer(self):
         """
         Run everything related to debayering
         """
@@ -583,7 +596,7 @@ class Ui(Ui_MainWindow, QObject):
 
         self.threadpool.waitForDone()
 
-    def runRegister(self):
+    def run_register(self):
         """
         Run everything related to registering
         """
@@ -612,7 +625,7 @@ class Ui(Ui_MainWindow, QObject):
 
         #self.threadpool.waitForDone()
 
-    def runStack(self):
+    def run_stack(self):
         """
         Run everything related to stacking
         """
@@ -644,7 +657,8 @@ class Ui(Ui_MainWindow, QObject):
 class ImageDialog(imageDialog):
 
     def __init__(self):
-        super(imageDialog, self).__init__()
+        imageDialog.__init__(self)
+        #super(imageDialog, self).__init__()
 
     def setupContent(self, frame):
         """
@@ -656,8 +670,8 @@ class ImageDialog(imageDialog):
 
         #self.label.setGeometry(QRect(0, 0, frame.x * .25, frame.y * .25))
         #self.label.setGeometry(QRect(0, 0, frame.x, frame.y))
-        self.label.setText(_fromUtf8(""))
-        self.label.setObjectName(_fromUtf8("label"))
+        self.label.setText("")
+        self.label.setObjectName("label")
         self.label.setScaledContents(True)
         self.label.setPixmap(pixmap)
         size = pixmap.size()
@@ -829,7 +843,8 @@ class GenericThread(QRunnable):
     refresh = pyqtSignal()
 
     def __init__(self, function, *args, **kwargs):
-        super(QRunnable, self).__init__()
+        QRunnable.__init__(self)
+        #super(QRunnable, self).__init__()
         #QThread.__init__(self)
         self.function = function
         self.args = args

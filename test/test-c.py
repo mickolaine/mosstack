@@ -12,15 +12,15 @@ try:
 except:
     pass
 
-call(["../tools/debayer", "/media/data/astrostack/Testi_light_0_orig.fits"], cwd="/home/micko/PycharmProjects/mosstack/test/")
+call(["../tools/debayer", "/media/data/astrostack/Testi1_light_0_orig.fits"], cwd="/home/micko/src/mosstack/test/")
 
-orig = fits.open("/media/data/astrostack/Testi_light_0_rgb.fits")[0].data
+orig = fits.open("/media/data/astrostack/Testi1_light_0_rgb.fits")[0].data
 
 newfiles = []
 
-newfiles.append(fits.open("/home/micko/PycharmProjects/mosstack/test/red.fits"))
-newfiles.append(fits.open("/home/micko/PycharmProjects/mosstack/test/green.fits"))
-newfiles.append(fits.open("/home/micko/PycharmProjects/mosstack/test/blue.fits"))
+newfiles.append(fits.open("/home/micko/src/mosstack/test/red.fits"))
+newfiles.append(fits.open("/home/micko/sec/mosstack/test/green.fits"))
+newfiles.append(fits.open("/home/micko/sec/mosstack/test/blue.fits"))
 
 new = []
 
