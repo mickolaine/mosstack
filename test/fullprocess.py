@@ -108,7 +108,7 @@ class FullProcess(unittest.TestCase):
         self.batch["flat"].calibrate(bias=self.batch["bias"].master)
         self.assertTrue(self.batch["flat"].master)
 
-        self.batch["light"].calibrate()
+        self.batch["light"].calibrate(bias=self.batch["bias"].master, flat=self.batch["flat"].master)
         self.assertEqual(self.batch["light"].frames[0].state["calibrate"], 2)
 
 

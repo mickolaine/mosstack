@@ -1066,7 +1066,7 @@ temporary directory, you can fix it by:
         """
 
         batch = Batch(project=self.project, ftype=ftype)
-        batch.removeFrame(frameId)
+        batch.remove_frame(frameId)
 
     def setRef(self, frameId):
         """

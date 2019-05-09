@@ -111,6 +111,39 @@ class Batch():
         print("Result image saved to " + self.master.path()[0])
         print("                  and " + self.master.path(fformat="tiff"))
 
+    def stack_new(self):
+        """
+        Stack images using stackertool
+        """
+
+        # Create new empty frame for the result
+        self.master = Frame(self.project, ftype=self.ftype, number="master")
+
+        # Call stacker
+        data = self.stackingtool.stack(self.frames, self.project)
+
+        self.master.data = data
+        # Save file
+        self.master.write(tiff=True)
+
+        # Metadata and printouts
+        self.project.addfile(self.master.path()[0], final=True)
+        dim, self.master.x, self.master.y = self.master.data.shape
+        print("Dimensions : " + str(self.master.x) + " x " + str(self.master.y))
+        totalexposure = 0.0
+        for i in self.frames:
+            try:
+                totalexposure += float(self.frames[i].shutter.split()[0])
+            except ValueError:
+                totalexposure = None
+                break
+
+        self.master.totalexposure = totalexposure
+        self.master.writeinfo()
+        self.project.set("Masters", self.ftype, self.master.infopath)
+        print("Result image saved to " + self.master.path()[0])
+        print("                  and " + self.master.path(fformat="tiff"))
+
     def subtract(self, calib, stacker):
         """
         Subtract calib from images in imagelist
@@ -269,7 +302,7 @@ class Batch():
 
         return str(max(keys) + 1)
 
-    def removeFrame(self, frameId):
+    def remove_frame(self, frameId):
         """
         Remove frame by id from the project.
         """
@@ -363,9 +396,12 @@ class Batch():
 
     def calibrate_threaded(self, bias=None, dark=None, flat=None):
         """
-        Calibrate all frames
+        Calibrate all frames in batch
+
+        Calibrating includes bias, dark and flat frame calculations and stacking
+        the master frame, except for light frames
         """
-        
+
         threadlist = []
 
         for i in sorted(self.frames):
@@ -375,9 +411,11 @@ class Batch():
                                  args=(bias, dark, flat))
             threadlist.append(t)
             t.start()
-        
+
         for t in threadlist:
             t.join()
+        if self.ftype != "light":
+            self.stack_new()
 
     def calibrate(self, bias=None, dark=None, flat=None):
         """

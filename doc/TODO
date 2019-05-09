@@ -15,11 +15,15 @@
 - Rename everything to conform pylints requests.
 - Clean CommandLine.py workflow by moving stuff to Batch and make assisting
   methods which CommandLine.start() calls
+- Related to above. Make Batch processes work with calling method without
+  arguments eg. Batch.stack(). Everything it requires should be anyways 
+  already set.
 - Begin work on automated tests
 - Remove obsolete stuff
 - Make decision on new gui
 - Hot pixels detection and removal
 - CompressedData. Test speed. What's this? Can't remember anymore
+- Work up the environment. Virtualenv, pipenv and such.
 
 
 0.7
