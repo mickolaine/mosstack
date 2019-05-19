@@ -33,6 +33,7 @@ class Ui(Ui_MainWindow, QObject):
 
     def __init__(self):
         Ui_MainWindow.__init__(self)
+        QObject.__init__(self)
         #super(Ui_MainWindow, self).__init__()
 
         self.thread = None
@@ -73,16 +74,16 @@ class Ui(Ui_MainWindow, QObject):
         self.actionExit.triggered.connect(qApp.quit)
 
         # Buttons
-        self.pushLight.clicked.connect(self.addLight)
-        self.pushDark.clicked.connect(self.addDark)
-        self.pushFlat.clicked.connect(self.addFlat)
-        self.pushBias.clicked.connect(self.addBias)
-        self.pushButtonRun.clicked.connect(self.runProgram)
-        self.pushButtonMakeRef.clicked.connect(self.makeRef)
-        self.pushButtonRemoveFrame.clicked.connect(self.delFrame)
-        self.pushButtonMasterBias.clicked.connect(self.addMasterBias)
-        self.pushButtonMasterDark.clicked.connect(self.addMasterDark)
-        self.pushButtonMasterFlat.clicked.connect(self.addMasterFlat)
+        self.pushLight.clicked.connect(self.add_light)
+        self.pushDark.clicked.connect(self.add_dark)
+        self.pushFlat.clicked.connect(self.add_flat)
+        self.pushBias.clicked.connect(self.add_bias)
+        self.pushButtonRun.clicked.connect(self.run_program)
+        self.pushButtonMakeRef.clicked.connect(self.make_ref)
+        self.pushButtonRemoveFrame.clicked.connect(self.del_frame)
+        self.pushButtonMasterBias.clicked.connect(self.add_master_bias)
+        self.pushButtonMasterDark.clicked.connect(self.add_master_dark)
+        self.pushButtonMasterFlat.clicked.connect(self.add_master_flat)
         self.pushButtonCrop.clicked.connect(self.crop)
 
         self.buttonDebayer.setExclusive(True)
@@ -94,7 +95,7 @@ class Ui(Ui_MainWindow, QObject):
 
         # LineEdits
 
-        self.lineEditKappa.editingFinished.connect(self.lineKappaChanged)
+        self.lineEditKappa.editingFinished.connect(self.line_kappa_changed)
 
         # Check setup
         try:

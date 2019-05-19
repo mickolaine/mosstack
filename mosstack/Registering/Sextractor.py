@@ -7,7 +7,7 @@ Created on 2.10.2013
 """
 
 from subprocess import call, check_output
-from .. Config import Global
+from .. config import Global
 from os.path import splitext, isfile
 
 

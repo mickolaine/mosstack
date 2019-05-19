@@ -24,7 +24,10 @@ class Batch():
 
         self.project = project
         self.fphase = fphase
-        self.master = None
+        self.master = None      # Master for this batch
+        self.masterbias = None  # Master frames to be used
+        self.masterdark = None  # in calibration
+        self.masterflat = None
 
         self.name = self.project.get("Default", key="project name")   # Name for the resulting image
 
@@ -41,11 +44,11 @@ class Batch():
         if fphase is not None:
             self.fphase = fphase
 
+        self.ref_id = "0"
         try:
-            self.refId = project.get("Reference", key=self.ftype)  # Number of reference frame
+            self.set_ref(project.get("Reference", key=self.ftype))  # Number of reference frame
         except KeyError:
-
-            self.refId = "1"
+            pass
 
         try:
             files = self.project.get(self.ftype) # Paths for the frame info files
@@ -53,25 +56,25 @@ class Batch():
             for key in files:
                 frame = Frame(self.project, infopath=files[key], fphase=self.fphase)
                 self.frames[key] = frame
-            self.setRef(self.refId)
+            self.set_ref(self.ref_id)
 
         except KeyError:
             #print("Error")
             pass
 
-    def setRef(self, refId):
+    def set_ref(self, ref_id):
         """
         Set the reference frame.
 
         Arguments:
-        refId: Id of the reference frame. Id is the same as in project file and key in frames dict
+        ref_id: Id of the reference frame. Id is the same as in project file and key in frames dict
         """
 
         try:
-            self.frames[self.refId].isref = False
-            self.refId = refId
-            self.frames[self.refId].isref = True
-            self.project.set("Reference", self.ftype, str(self.refId))
+            self.frames[self.ref_id].isref = False
+            self.ref_id = ref_id
+            self.frames[self.ref_id].isref = True
+            self.project.set("Reference", self.ftype, str(self.ref_id))
         except KeyError:
             raise
 
@@ -274,6 +277,8 @@ class Batch():
         self.project.set(ftype, str(n), frame.infopath)
 
         self.frames[n] = frame
+        if len(self.frames) == 1:
+            self.set_ref(n)
 
     def addmaster(self, file, ftype):
         """
@@ -281,9 +286,20 @@ class Batch():
         """
 
         self.master = Frame.createmaster(self.project, file, ftype)
-
         self.project.set("Masters", ftype, self.master.infopath)
 
+    def add_master_for_calib(self, master):
+        """
+        Add master frame for calibration
+        """
+
+        if master.ftype == "bias":
+            self.masterbias = master
+        elif master.ftype == "dark":
+            self.masterdark = master
+        elif master.ftype == "flat":
+            self.masterflat = master
+        
     def nextkey(self):
         """
         Return next free key for frame in dict
@@ -302,18 +318,18 @@ class Batch():
 
         return str(max(keys) + 1)
 
-    def remove_frame(self, frameId):
+    def remove_frame(self, frame_id):
         """
         Remove frame by id from the project.
         """
 
-        self.project.remove(self.ftype, frameId)
-        del self.frames[frameId]
+        self.project.remove(self.ftype, frame_id)
+        del self.frames[frame_id]
 
         # If reference frame is removed, choose a new one.
-        if frameId == self.refId:
-            self.setRef(list(self.frames.keys())[0])
-            print("Reference frame " + frameId + " removed. New reference frame is " + self.refId + ".")
+        if frame_id == self.ref_id:
+            self.set_ref(list(self.frames.keys())[0])
+            print("Reference frame " + frame_id + " removed. New reference frame is " + self.ref_id + ".")
 
     # @profile
     def debayer_old(self, debayertool):
@@ -328,7 +344,7 @@ class Batch():
             self.frames[frame].debayer()
             print("...Done")
 
-        self.frames[self.refId].isref = True
+        self.frames[self.ref_id].isref = True
         print("Debayered images saved with generic name 'rgb'.")
 
     def debayer_threaded(self):
@@ -361,10 +377,10 @@ class Batch():
         Register all frames
         """
 
-        self.frames[self.refId].register(register)
+        self.frames[self.ref_id].register(register)
 
         for frame in self.frames:
-            if frame != self.refId:
+            if frame != self.ref_id:
                 self.frames[frame].register(register)
  
     def register_threaded(self):
@@ -372,12 +388,12 @@ class Batch():
         Register all frames using threads
         """
         threadlist = []
-        print(self.refId)
-        print(self.frames[self.refId].isref)
-        self.frames[self.refId].register_worker()
+        print(self.ref_id)
+        print(self.frames[self.ref_id].isref)
+        self.frames[self.ref_id].register_worker()
 
         for i in sorted(self.frames):
-            if i == self.refId:
+            if i == self.ref_id:
                 continue
             t = threading.Thread(target=self.frames[i].register_worker)
             threadlist.append(t)

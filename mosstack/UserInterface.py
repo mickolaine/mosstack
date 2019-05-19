@@ -888,7 +888,7 @@ temporary directory, you can fix it by:
         self.matcher.tform = self.transformer
 
         # Reference frame first
-        batch.frames[batch.refId].register(self.matcher)
+        batch.frames[batch.ref_id].register(self.matcher)
 
         for i in batch.frames:
             if i == batch.refId:
@@ -1075,6 +1075,6 @@ temporary directory, you can fix it by:
 
         batch = Batch(project=self.project, ftype="light")
         try:
-            batch.setRef(frameId)
+            batch.set_ref(frameId)
         except KeyError:
             raise

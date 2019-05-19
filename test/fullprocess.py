@@ -39,6 +39,8 @@ class FullProcess(unittest.TestCase):
         self.add_frames()
         self.set_algorithms()
         self.calibrate()
+        self.register()
+        self.stack()
 
     def add_frames(self):
         """
@@ -82,6 +84,7 @@ class FullProcess(unittest.TestCase):
         self.debayertool = Debayer.VNGC()
         self.registertool = Registering.Groth()
         self.transformer = Registering.SkTransform
+        self.registertool.tform = self.transformer
         self.stackingtool = Stacker.SigmaMedian()
 
         for i in self.batch:
@@ -91,6 +94,7 @@ class FullProcess(unittest.TestCase):
 
         self.assertEqual(self.batch["light"].frames["0"].debayertool, self.debayertool)
         self.assertEqual(self.batch["light"].frames["0"].registertool, self.registertool)
+        self.assertEqual(self.batch["light"].frames["0"].registertool.tform, self.transformer)
         self.assertEqual(self.batch["light"].frames["0"].stackingtool, self.stackingtool)
         self.assertEqual(self.batch["bias"].frames["0"].stackingtool, self.stackingtool)
 
@@ -102,16 +106,29 @@ class FullProcess(unittest.TestCase):
         self.batch["bias"].calibrate()
         self.assertTrue(self.batch["bias"].master)
 
-        #self.batch["dark"].calibrate(bias=self.batch["bias"].master)
-        #self.assertTrue(self.batch["dark"].master)
+        self.batch["flat"].add_master_for_calib(self.batch["bias"].master)
+        self.assertIsNotNone(self.batch["flat"].masterbias)
+        self.batch["flat"].calibrate()
+        self.assertIsNotNone(self.batch["flat"].master)
 
-        self.batch["flat"].calibrate(bias=self.batch["bias"].master)
-        self.assertTrue(self.batch["flat"].master)
+        self.batch["light"].add_master_for_calib(self.batch["bias"].master)
+        self.batch["light"].add_master_for_calib(self.batch["flat"].master)
+        self.assertIsNotNone(self.batch["light"].masterbias)
+        self.assertIsNotNone(self.batch["light"].masterflat)
+        self.batch["light"].calibrate()
+        self.assertEqual(self.batch["light"].frames["0"].state["calibrate"], 2)
 
-        self.batch["light"].calibrate(bias=self.batch["bias"].master, flat=self.batch["flat"].master)
-        self.assertEqual(self.batch["light"].frames[0].state["calibrate"], 2)
+    def register(self):
+        """
+        Register frames
+        """
+        self.batch["light"].register()
 
-
+    def stack(self):
+        """
+        Stack the frames
+        """
+        self.batch["light"].stack_new()
 
 """
     def test(self):

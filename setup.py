@@ -43,5 +43,7 @@ setup(
         "pyopencl >= 2013",
         "astropy >= 0.2.4",
         "Cython >= 0.19",
+        "scikit-image",
+        "python-magic"
     ],
 )
