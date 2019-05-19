@@ -247,7 +247,8 @@ class Batch():
         Add a single file.
         """
 
-        # If .info file given, give only that as an argument. Uses only information from this file and returns
+        # If .info file given, give only that as an argument.
+        # Uses only information from this file and returns
         if splitext(file)[1] == ".info":
             frame = Frame(self.project, infopath=file)
             self.frames[str(frame.number)] = frame
@@ -299,7 +300,7 @@ class Batch():
             self.masterdark = master
         elif master.ftype == "flat":
             self.masterflat = master
-        
+
     def nextkey(self):
         """
         Return next free key for frame in dict
@@ -313,8 +314,10 @@ class Batch():
         keys = list(self.frames.keys())
         if not keys:
             return "0"
-        for i in range(len(keys)):
-            keys[i] = int(keys[i])
+        #for i in range(len(keys)):
+        #    keys[i] = int(keys[i])
+
+        keys = [int(i) for i in keys]
 
         return str(max(keys) + 1)
 

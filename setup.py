@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
 import numpy
@@ -10,13 +12,13 @@ MODULES = cythonize(["mosstack/Registering/_step2.pyx",
 MODULES.append(Extension("mosstack.Debayer.debayer_c",
                          sources=["mosstack/Debayer/debayermodule.c"],
                          libraries=["cfitsio", "m"],
-                         define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '7'),],
+                         define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '8'),],
                          extra_compile_args=["-O3"])
               )
 MODULES.append(Extension("mosstack.Decoding.raw2fits",
                          sources=["mosstack/Decoding/raw2fitsmodule.cpp"],
                          libraries=["cfitsio", "raw", "m"],
-                         define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '7'),],
+                         define_macros=[('MAJOR_VERSION', '0'), ('MINOR_VERSION', '8'),],
                          extra_compile_args=["-O3"])
               )
 

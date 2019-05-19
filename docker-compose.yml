@@ -3,4 +3,7 @@ services:
   mosstack:
     build: .
     volumes:
-      - /media/data/Astrokuvat:/Astrokuvat 
+      - .:/mosstack
+      - /media/Dee/Astrokuvat:/Astrokuvat 
+    stdin_open: true
+    tty: true
