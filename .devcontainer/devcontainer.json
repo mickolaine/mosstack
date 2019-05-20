@@ -1,0 +1,9 @@
+// See https://aka.ms/vscode-remote/devcontainer.json for format details.
+{
+	"name": "Mosstack devcontainer",
+	"service": "mosstack",
+	//"dockerComposeFile": "docker-compose.yml",
+	"dockerFile": "Dockerfile",
+	"appPort": [],
+	"runArgs": ["-v","/media/Dee/Astrokuvat:/mnt/Astrokuvat"]
+}

@@ -1,0 +1,9 @@
+version: '3'
+services:
+  mosstack:
+    build: .
+    volumes:
+      - .:/mosstack
+      - /media/Dee/Astrokuvat:/Astrokuvat 
+    stdin_open: true
+    tty: true

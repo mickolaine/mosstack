@@ -4,7 +4,7 @@ The Command Line Interface for mosstack
 
 import os
 import argparse
-from . import Debayer, Config, Registering, Stacker, batch
+from . import Debayer, config, Registering, Stacker, batch
 
 
 class CommandLine:
@@ -13,14 +13,14 @@ class CommandLine:
     and calls for everything necessary
     """
 
-    setup = Config.Setup()
+    setup = config.Setup()
 
     def __init__(self):
         """
         Initialize user interface and set project name if specified
         """
 
-        self.wdir = Config.Global.get("Default", "Path")
+        self.wdir = config.Global.get("Default", "Path")
 
         self.project = None
         self.project_name = None
@@ -134,7 +134,7 @@ class CommandLine:
             exit()
 
         if self.args.fixsex:
-            Config.Setup.createSExConf()
+            config.Setup.createSExConf()
         if self.args.remove:
             pass
 
@@ -287,11 +287,11 @@ class CommandLine:
         :return: true if initialized, false if not
         """
         try:
-            pfile = Config.Global.get("Default", "Project file")
+            pfile = config.Global.get("Default", "Project file")
         except KeyError:
             return False
         if os.path.isfile(pfile):
-            self.project = Config.Project(pfile=pfile)
+            self.project = config.Project(pfile=pfile)
             return True
         else:
             return False
@@ -303,12 +303,12 @@ class CommandLine:
         :return: nothing
         """
         try:
-            self.project = Config.Project()
+            self.project = config.Project()
             self.project_name = self.args.init[0]
             self.project.initproject(self.project_name)
 
-            Config.Global.set("Default", "Project", self.project_name)
-            Config.Global.set("Default", "Project file", self.project.projectfile)
+            config.Global.set("Default", "Project", self.project_name)
+            config.Global.set("Default", "Project file", self.project.projectfile)
             print("New project started: \n" + self.project.projectfile)
 
         except IndexError:
@@ -322,14 +322,14 @@ class CommandLine:
         Returns False and prints an error if no such project in working directory
         """
 
-        if not Config.Project.projectexists(pname):
+        if not config.Project.projectexists(pname):
             print("No such project " + pname + ". Start a new one with mosstack --init " + pname)
             return False
 
-        self.project = Config.Project(pname=pname)
+        self.project = config.Project(pname=pname)
         self.project_name = pname
-        Config.Global.set("Default", "Project", self.project_name)
-        Config.Global.set("Default", "Project file", self.project.projectfile)
+        config.Global.set("Default", "Project", self.project_name)
+        config.Global.set("Default", "Project file", self.project.projectfile)
         print("Project set to " + self.project.path)
 
     def list_projects(self):

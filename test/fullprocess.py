@@ -8,7 +8,10 @@ from mosstack import config, Debayer, Registering, Stacker
 from mosstack.batch import Batch
 
 # Start by cleaning up old mess
-call(["rm -v /media/data/astrostack/Autotest*"], shell=True)
+try:
+    call(["rm -v /mnt/Temp/Autotest*"], shell=True)
+except RuntimeError:
+    print("No old test runs found")
 
 class FullProcess(unittest.TestCase):
     """
@@ -34,6 +37,8 @@ class FullProcess(unittest.TestCase):
         config.Global.set("Default", "Project", self.project_name)
         config.Global.set("Default", "Project file", self.project.projectfile)
 
+        self.datapath = "/mnt/Astrokuvat"
+
         self.batch = {}
 
         self.add_frames()
@@ -53,22 +58,23 @@ class FullProcess(unittest.TestCase):
         self.batch["dark"] = Batch(self.project, "dark")
 
         light = {
-            "/media/Dee/Astrokuvat/2015-02-10/OrionNebula/OrionNebula_2015-02-10_20.08.18.010282.cr2",
-            "/media/Dee/Astrokuvat/2015-02-10/OrionNebula/OrionNebula_2015-02-10_20.09.27.999435.cr2",
-            "/media/Dee/Astrokuvat/2015-02-10/OrionNebula/OrionNebula_2015-02-10_20.10.39.472035.cr2",
+            self.datapath + "/2015-02-10/OrionNebula/OrionNebula_2015-02-10_20.08.18.010282.cr2",
+            self.datapath + "/2015-02-10/OrionNebula/OrionNebula_2015-02-10_20.09.27.999435.cr2",
+            self.datapath + "/2015-02-10/OrionNebula/OrionNebula_2015-02-10_20.10.39.472035.cr2",
         }
 
         bias = {
-            "/media/Dee/Astrokuvat/2015-02-10/Bias/IMG_3321.CR2",
-            "/media/Dee/Astrokuvat/2015-02-10/Bias/IMG_3323.CR2",
-            "/media/Dee/Astrokuvat/2015-02-10/Bias/IMG_3325.CR2", }
+            self.datapath + "/2015-02-10/Bias/IMG_3321.CR2",
+            self.datapath + "/2015-02-10/Bias/IMG_3323.CR2",
+            self.datapath + "/2015-02-10/Bias/IMG_3325.CR2", }
 
         flat = {
-            "/media/Dee/Astrokuvat/2015-02-10/Flat/IMG_3331.CR2",
-            "/media/Dee/Astrokuvat/2015-02-10/Flat/IMG_3333.CR2",
-            "/media/Dee/Astrokuvat/2015-02-10/Flat/IMG_3335.CR2", }
+            self.datapath + "/2015-02-10/Flat/IMG_3331.CR2",
+            self.datapath + "/2015-02-10/Flat/IMG_3333.CR2",
+            self.datapath + "/2015-02-10/Flat/IMG_3335.CR2", }
 
         for i in light:
+            print("Adding file " + i)
             self.batch["light"].addfile(i, "light")
         for i in bias:
             self.batch["bias"].addfile(i, "bias")
