@@ -1,9 +1,12 @@
 """
-Graphical user interface for pyAstroStack. This file holds all the functionality for GUI drafted in Qt Designer.
+Graphical user interface for pyAstroStack. This file holds all the
+functionality for GUI drafted in Qt Designer.
 """
 
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QFileDialog, qApp, QInputDialog, QDialog, QMessageBox, QAbstractItemView, QLabel, QRubberBand
+from PyQt5.QtCore import (Qt, QObject, QThreadPool, QRect, pyqtSignal,
+                          QPoint, QSize)
+from PyQt5.QtWidgets import (QFileDialog, qApp, QInputDialog, QDialog,
+                             QMessageBox, QAbstractItemView, QLabel, QRubberBand)
 from ast import literal_eval
 from subprocess import CalledProcessError
 from . UiDesign5 import Ui_MainWindow
@@ -14,13 +17,6 @@ from . import Registering
 from . import Debayer
 from . import Stacker
 from . imageDialog5 import Ui_Dialog as imageDialog
-
-#try:
-#    from PyQt5.QtCore import Qstring
-#    _fromUtf8 = QString.fromUtf8
-#except ImportError:
-#    def _fromUtf8(s):
-#        return s
 
 try:
     import pyopencl
@@ -59,6 +55,9 @@ class Ui(Ui_MainWindow, QObject):
         self.infotablemodel = None
 
         self.configurations = {"tempdir": "", "sexpath": "/usr/bin/sex", "processes": 1}
+        self.stackingwrap = None
+        self.debayerwrap = None
+        self.registerwrap = None
 
     def setupManual(self, MainWindow):
         """
@@ -153,9 +152,9 @@ class Ui(Ui_MainWindow, QObject):
         """
 
         self.messageBox.information(self.messageBox, 'About',
-                                    'Mikko\'s Open Source Stacker for astronomical photos\nmosstack\n\n' +
-                                    'Licensed under GPLv3\n\n' +
-                                    'Nothing here yet.')
+                'Mikko\'s Open Source Stacker for astronomical photos\nmosstack\n\n' +
+                'Licensed under GPLv3\n\n' +
+                'Nothing here yet.')
 
     def setValues(self, values=None):
         """
@@ -190,7 +189,7 @@ class Ui(Ui_MainWindow, QObject):
                       "SigmaMedian": 2,
                       "SigmaClip": 0,
                       "Kappa": 3.0
-            }
+                     }
 
         self.checkBoxDarkBias.setCheckState(values["CalibDarkBias"])
         self.checkBoxFlatBias.setCheckState(values["CalibFlatBias"])
@@ -282,17 +281,19 @@ class Ui(Ui_MainWindow, QObject):
 
     def saveProject(self):
         """
-        Save project settings. All the files are automatically written in project file, but this writes the settings
-        as well.
+        Save project settings. All the files are automatically written in 
+        project file, but this writes the settings as well.
         """
         self.project.set("GUI", "Values", str(self.getValues()))
 
     def newProject(self):
         """
-        Initiate a new project. Project name is required for almost everything so this needs to be done first.
+        Initiate a new project. Project name is required for almost everything
+        so this needs to be done first.
         """
 
-        self.pname, ok = self.inputDialog.getText(self.inputDialog, "New project", "Type name for the new project:")
+        self.pname, ok = self.inputDialog.getText(
+            self.inputDialog, "New project", "Type name for the new project:")
 
         if not ok:
             return
@@ -317,8 +318,10 @@ class Ui(Ui_MainWindow, QObject):
         if self.pname is None:
             self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
             return
-        files = QFileDialog.getOpenFileNames(caption="Select " + ftype + " files",
-                                            filter="Raw photos (*.CR2 *.cr2 *.arw *.ARW *.nef *.NEF);;All files (*.*)")
+        files = QFileDialog.getOpenFileNames(
+            caption="Select " + ftype + " files",
+            filter="Raw photos (*.CR2 *.cr2 *.arw *.ARW *.nef *.NEF);;All files (*.*)"
+        )
         self.add_frame(files[0], ftype)
 
     def add_light(self):
@@ -363,24 +366,32 @@ class Ui(Ui_MainWindow, QObject):
                 self.batch[ftype] = QBatch(self.project, ftype)
                 self.batch[ftype].refresh.connect(self.updateTableView)
             
-            self.threadpool.start(GenericThread(self.batch[ftype].addfile, path, ftype, str(number)))
+            self.threadpool.start(
+                GenericThread(self.batch[ftype].addfile, path, ftype, str(number))
+            )
 
             number += 1
 
         self.threadpool.waitForDone()
 
-        for i in self.batch[ftype].frames:
-            self.threadpool.start(GenericThread(self.batch[ftype].decode, i))
+        #TODO: Commented out because decoding is in batch.addfile and that will be
+        #used instead of qbatch.addfile. Remove these lines when that's working
+        #for i in self.batch[ftype].frames:
+        #    self.threadpool.start(GenericThread(self.batch[ftype].decode, i))
 
     def add_master_dialog(self, ftype):
         """
         Dialog to add a master frame
         """
         if self.pname is None:
-            self.messageBox.information(self.messageBox, 'Error', 'You need to start a new project first!')
+            self.messageBox.information(
+                self.messageBox, 'Error', 'You need to start a new project first!'
+            )
             return
-        file = QFileDialog.getOpenFileName(caption="Select master file",
-                                            filter="Fits and Tiff (*.FITS *.fits *.tiff *.TIFF *.tif *.TIF)")
+        file = QFileDialog.getOpenFileName(
+            caption="Select master file",
+            filter="Fits and Tiff (*.FITS *.fits *.tiff *.TIFF *.tif *.TIF)"
+        )
         return self.add_master_frame(file, ftype)
 
     #TODO: Why are these all separate methods?
@@ -432,7 +443,8 @@ class Ui(Ui_MainWindow, QObject):
         for i in self.batch:
             self.tablemodel += self.batch[i].framearray
         self.tablemodel = GenericTableModel(self.tablemodel)
-        self.tablemodel.header_labels = ['Id', 'File path', 'Type', 'Decoded', 'Calibrated', 'Debayered', 'Registered']
+        self.tablemodel.header_labels = [
+            'Id', 'File path', 'Type', 'Decoded', 'Calibrated', 'Debayered', 'Registered']
         self.tableView.setModel(self.tablemodel)
         self.tableView.resizeColumnsToContents()
         self.tableView.resizeRowsToContents()
@@ -444,9 +456,12 @@ class Ui(Ui_MainWindow, QObject):
         Update frame information view to the selected frame Qt.DisplayRole
         """
 
-        self.selectedId = str(self.tablemodel.data(selected.sibling(selected.row(), 0), Qt.DisplayRole))
-        self.selectedFtype = self.tablemodel.data(selected.sibling(selected.row(), 2), Qt.DisplayRole)
-        self.infotablemodel = GenericTableModel(self.batch[self.selectedFtype].frames[self.selectedId].infotable())
+        self.selectedId = str(self.tablemodel.data(
+            selected.sibling(selected.row(), 0), Qt.DisplayRole))
+        self.selectedFtype = self.tablemodel.data(
+            selected.sibling(selected.row(), 2), Qt.DisplayRole)
+        self.infotablemodel = GenericTableModel(
+            self.batch[self.selectedFtype].frames[self.selectedId].infotable())
         self.infotablemodel.header_labels = ["Attribute", "Value"]
         self.tableView_2.setModel(self.infotablemodel)
         self.tableView_2.resizeColumnsToContents()

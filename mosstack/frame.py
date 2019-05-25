@@ -1,15 +1,15 @@
 from __future__ import division
-from astropy.io import fits
+import gc
+import ast
 from os.path import splitext, exists
 from subprocess import call, check_output
 from threading import RLock
+from astropy.io import fits
+from PIL import Image as Im
+import magic
+import numpy as np
 from . import config
 from . Decoding import Raw2fits_cpp
-import numpy as np
-from PIL import Image as Im
-import gc
-import ast
-import magic
 
 
 class Frame(object):
@@ -71,14 +71,15 @@ class Frame(object):
         self._stackingtool = None
 
         # Instance variables required later
-        self.rgb = False      # Is image rgb or monochrome (Boolean)
+        self.rgb = False    # Is image rgb or monochrome (Boolean)
         self.clip = []
-        self.tri = []         # List of triangles
-        self.match = []         # List of matching triangles with reference picture
+        self.tri = []       # List of triangles
+        self.match = []     # List of matching triangles with reference picture
         self._pairs = None
-        self._points = None       # String to pass to ImageMagick convert, if star matching is already done.
+        self._points = None # String to pass to ImageMagick convert,
+                            # if star matching is already done.
         self._x = None
-        self._y = None       # Dimensions for image
+        self._y = None      # Dimensions for image
         self._path = None
 
         self.number = number
@@ -118,7 +119,8 @@ class Frame(object):
 
         if not self.checkraw(self.rawpath):
             self.state["prepare"] = -1
-            raise RuntimeError("Can't read file.", "Dcraw does not recognize this as a DSLR raw photo.")
+            raise RuntimeError("Can't read file.",
+                               "Dcraw does not recognize this as a DSLR raw photo.")
             # TODO: Tell UI the file's not good
 
         self.extractinfo()                      # 2.
@@ -139,7 +141,7 @@ class Frame(object):
         self.state["prepare"] = 2
         self.project.set("Phase", "Decoded", "1")
 
-    def calibrate(self, stacker, bias=None, dark=None, flat=None):
+    def calibrate(self, bias=None, dark=None, flat=None):
         """
         Calibrate the frame. Project tells how.
 
@@ -176,8 +178,6 @@ class Frame(object):
         self.state["calibrate"] = 2
 
         self.project.set("Phase", "Calibrated", "1")
-
-        #return
 
     def calibrate_worker(self, bias=None, dark=None, flat=None):
         """
@@ -313,11 +313,13 @@ class Frame(object):
 
     def crop(self, xrange, yrange):
         """
-        Crop the data by given coordinates. Save cropped data to self.data and write to disc with fphase="crop".
+        Crop the data by given coordinates. Save cropped data to self.data
+        and write to disc with fphase="crop".
 
         Assume data is 3 dimensional. TODO: Make it work with 2d data as well
 
-        Cropping is reasonable to do only for aligned data. Either with data that's already aligned or after registering
+        Cropping is reasonable to do only for aligned data. Either with data
+        that's already aligned or after registering
 
         Arguments:
         xrange: (x_0, x_1)
@@ -412,7 +414,8 @@ class Frame(object):
                 pass
 
         if self.number is None:
-            return self.wdir + "/" + self.name + "_" + self.ftype + "_" + self.fphase + "." + fformat
+            return self.wdir + "/" + self.name + "_" + \
+                   self.ftype + "_" + self.fphase + "." + fformat
         else:
             return self.wdir + "/" + self.name + "_" + self.ftype \
                              + "_" + str(self.number) + "_" + self.fphase + "." + fformat
@@ -604,7 +607,8 @@ class Frame(object):
             return
 
         if self.infopath is None:
-            self.infopath = self.wdir + "/" + self.name + "_" + self.ftype + "_" + str(self.number) + ".info"
+            self.infopath = self.wdir + "/" + self.name + "_" + \
+                            self.ftype + "_" + str(self.number) + ".info"
         self.frameinfo = config.Frame(self.infopath)
         self.project.addfile(self.infopath)
 
@@ -763,10 +767,10 @@ class Frame(object):
             self._debayertool = debayertool
         except:
             pass
-    
+
     def getdebayertool(self):
         return self._debayertool
-    
+
     debayertool = property(fget=getdebayertool, fset=setdebayertool)
 
     def setregistertool(self, registertool):
@@ -774,7 +778,7 @@ class Frame(object):
             self._registertool = registertool
         except:
             pass
-    
+
     def getregistertool(self):
         return self._registertool
 
@@ -783,10 +787,10 @@ class Frame(object):
     def setstackingtool(self, stackingtool):
         try:
             self._stackingtool = stackingtool
-            
+
         except:
             pass
-    
+
     def getstackingtool(self):
         return self._stackingtool
 
@@ -802,7 +806,7 @@ class Frame(object):
             pathstr = path[0]
         else:
             pathstr = path
-        
+
         self.hdu = fits.open(pathstr, memmap=True)
         self.image = self.hdu[0]
         #self.image = self.hdu[1]

@@ -46,6 +46,7 @@ setup(
         "astropy >= 0.2.4",
         "Cython >= 0.19",
         "scikit-image",
-        "python-magic"
+        "python-magic",
+        "PyQt5"
     ],
 )

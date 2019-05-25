@@ -24,6 +24,8 @@
 - Hot pixels detection and removal
 - CompressedData. Test speed. What's this? Can't remember anymore
 - Work up the environment. Virtualenv, pipenv and such.
+- Unify QFrame with Frame and QBatch with Batch so they use as much
+  the same code as possible. Now everything seems to be written twice
 
 
 0.7

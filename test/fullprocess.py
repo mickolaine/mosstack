@@ -136,25 +136,5 @@ class FullProcess(unittest.TestCase):
         """
         self.batch["light"].stack_new()
 
-"""
-    def test(self):
-
-        for i in batch["light"].frames:
-            batch["bias"].stack(stackerwrap())
-        #    batch["flat"].subtract("bias", stackerwrap())
-        #    batch["flat"].stack(stackerwrap())
-        #    batch["light"].frames[i].calibrate(stackerwrap(), bias=batch["bias"].master, flat=batch["flat"].master)
-
-        batch["light"].debayertool = debayerwrap()
-
-        batch["light"].frames[batch["light"].refId].isref = True
-
-        matcher = matcher()
-        matcher.tform = transformer
-        batch["light"].registertool = matcher
-        batch["light"].register()
-        batch["light"].stackingtool = stackerwrap()
-        batch["light"].stack(stackerwrap())
-"""
 if __name__ == '__main__':
     unittest.main()

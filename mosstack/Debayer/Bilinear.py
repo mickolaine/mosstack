@@ -21,7 +21,8 @@ class Bilinear(Debayer):
         Give cfa-image, receive rgb-image. Return numpy.array
         """
 
-        cfa = np.float32(image)
+        #cfa = np.float32(image)
+        cfa = image.astype(np.float32)
         r = np.zeros_like(image)
         g = np.zeros_like(image)
         b = np.zeros_like(image)

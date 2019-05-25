@@ -26,7 +26,8 @@ class BilinearCython(Debayer):
         Give cfa-image, receive rgb-image. Return numpy.array
         """
         #print(image)
-        cfa = np.float32(image) #.byteswap().newbyteorder()
+        #cfa = np.float32(image) #.byteswap().newbyteorder()
+        cfa = image.astype(np.float32)
         #print(cfa)
         r = np.zeros_like(cfa)
         g = np.zeros_like(cfa)

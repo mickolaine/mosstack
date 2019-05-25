@@ -1,13 +1,13 @@
 from . batch import Batch
 from . qframe import QFrame
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtCore import *
+from PyQt5.QtCore import QRunnable, pyqtSignal
 from os.path import splitext, split
 
 
 class QBatch(Batch, QWidget):
     """
-    QBatch is a PyQt4 aware extension of Batch. I'm not sure how much this
+    QBatch is a PyQt5 aware extension of Batch. I'm not sure how much this
     is needed yet so this might be integrated to Batch
     """
     refresh = pyqtSignal()
@@ -21,25 +21,17 @@ class QBatch(Batch, QWidget):
         #self.frames = {}
         self._framearray = {}
 
-    def addfile(self, file, ftype, number):
+    def addfile(self, file, ftype):
         """
-        Add a single file. Internal use only
+        Add a single file using Batch.addfile and do what gui needs
+        to be done.
         """
 
-        # Check if the file is an .info file instead of raw file
-        if splitext(file)[1] == ".info":
-            frame = QFrame(project=self.project, infopath=file)
-            self.frames[frame.number] = frame
+        f_key = Batch.addfile(self, file, ftype)
+        if f_key is None:
+            #TODO: This should probably pop a message
             return
-
-        self.frames[str(number)] = QFrame(project=self.project, rawpath=file, ftype=ftype, number=number)
-        #self._framearray[number] = [self.frames[number].rawpath, ftype, self.frames[number].state["prepare"],
-        #                                                      self.frames[number].state["calibrate"],
-        #                                                      self.frames[number].state["debayer"],
-        #                                                      self.frames[number].state["register"]]
-
-        self.project.set(ftype, str(number), self.frames[number].infopath)
-        #self.emit(SIGNAL("update"), "CALLED FROM addfile()")
+        self.framearray[f_key] = QFrame.from_frame(self.framearray[f_key])
         self.refresh.emit()
 
     def addfiles(self, allfiles, ftype):
@@ -47,7 +39,8 @@ class QBatch(Batch, QWidget):
         Add several files at once. Used only with loading a project
         """
 
-        # Check the files are indeed .info files. They should be but let this be a check that I use this method properly
+        # Check the files are indeed .info files. They should be but let
+        # this be a check that I use this method properly
         rawfiles = []
         for i in allfiles:
             if splitext(i)[1] == ".info":
@@ -55,16 +48,17 @@ class QBatch(Batch, QWidget):
 
         for i in rawfiles:
             frame = QFrame(project=self.project, infopath=i)
-            self.frames[frame.number] = frame
+            self.framearray[frame.number] = frame
 
     def getframearray(self):
         temp = []
-        for i in self.frames:
-            temp.append([i, split(self.frames[i].rawpath)[1], self.frames[i].ftype,
-                                                    self.frames[i].state["prepare"],
-                                                    self.frames[i].state["calibrate"],
-                                                    self.frames[i].state["debayer"],
-                                                    self.frames[i].state["register"]])
+        for i in self.framearray:
+            temp.append([i, split(self.framearray[i].rawpath)[1],
+                         self.framearray[i].ftype,
+                         self.framearray[i].state["prepare"],
+                         self.framearray[i].state["calibrate"],
+                         self.framearray[i].state["debayer"],
+                         self.framearray[i].state["register"]])
         #print(temp)
         for i in temp:
 
@@ -89,9 +83,9 @@ class QBatch(Batch, QWidget):
         Decode all frames.
         """
         if number is not None:
-            self.frames[str(number)].decode()
+            self.framearray[str(number)].decode()
         if frame is not None:
-            self.frames[frame].decode()
+            self.framearray[frame].decode()
 
         self.refresh.emit()
 
@@ -99,7 +93,7 @@ class QBatch(Batch, QWidget):
         """
         Calibrate a single frame
         """
-        print("Calibrating frame " + self.frames[frame].path())
+        print("Calibrating frame " + self.framearray[frame].path())
         biasframe = None
         darkframe = None
         flatframe = None
@@ -113,10 +107,10 @@ class QBatch(Batch, QWidget):
             flatpath = self.project.get("Masters", "flat")
             biasframe = QFrame(project=self.project, infopath=flatpath)
 
-        self.frames[frame].calibrate(stacker, biasframe, darkframe, flatframe)
+        self.framearray[frame].calibrate(stacker, biasframe, darkframe, flatframe)
         print("...Done")
 
-        self.frames[self.refId].isref = True
+        self.framearray[self.refId].isref = True
         print("Calibrated images saved with generic name 'calib'.")
         self.refresh.emit()
 
@@ -125,28 +119,28 @@ class QBatch(Batch, QWidget):
         Debayer a single frame
         """
 
-        print("Processing image " + self.frames[frame].path())
+        print("Processing image " + self.framearray[frame].path())
 
         #self.frames[frame].debayer(debayer)
-        self.frames[frame].debayertool = debayer
-        self.frames[frame].debayer_worker()
+        self.framearray[frame].debayertool = debayer
+        self.framearray[frame].debayer_worker()
         print("...Done")
 
-        self.frames[self.refId].isref = True
+        self.framearray[self.refId].isref = True
         print("Debayered images saved with generic name 'rgb'.")
         self.refresh.emit()
 
     def debayer_threaded(self, threadpool):
 
-        for i in sorted(self.frames):
-            threadpool.start(GenericThread(self.frames[i].debayer))
+        for i in sorted(self.framearray):
+            threadpool.start(GenericThread(self.framearray[i].debayer))
 
     def register(self, frame, register, ref=False):
         """
         Register a single frame
         """
 
-        self.frames[frame].register(register)
+        self.framearray[frame].register(register)
 
         self.refresh.emit()
 
@@ -154,15 +148,15 @@ class QBatch(Batch, QWidget):
         """
         Register all frames using threads
         """
-        self.frames[self.refId].register_worker()
+        self.framearray[self.refId].register_worker()
 
-        for i in sorted(self.frames):
+        for i in sorted(self.framearray):
             if i == self.refId:
                 continue
-            threadpool.start(GenericThread(self.frames[i].register))
+            threadpool.start(GenericThread(self.framearray[i].register))
 
-        for i in sorted(self.frames):
-            threadpool.start(GenericThread(self.frames[i].register))
+        for i in sorted(self.framearray):
+            threadpool.start(GenericThread(self.framearray[i].register))
 
     framearray = property(fget=getframearray)
 

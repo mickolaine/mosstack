@@ -1,14 +1,15 @@
 """
-Classes related to user interface. Main program "AstroStack.py" parses the input (at least for now), but
-this file controls all the actions after that.
+Classes related to user interface. Main program "AstroStack.py" parses
+the input (at least for now), but this file controls all the actions
+after that.
 """
 
+import os
 from . import config
 from . batch import Batch
 from . import Registering
 from . import Debayer
 from . import Stacker
-import os
 
 
 class UserInterface:
@@ -547,10 +548,13 @@ temporary directory, you can fix it by:
                 project = config.Project()
                 project.initproject(argv[1])
                 config.Global.set("Default", "Project", argv[1])
-                print("New project started: \n" + config.Global.get("Default", "Path") + "/" + argv[1] + ".project")
+                print("New project started: \n" +
+                      config.Global.get("Default", "Path") +
+                      "/" + argv[1] + ".project")
                 exit()
             except IndexError:
-                print("Project name not specified. Try \"mosstack help\" and see what went wrong.")
+                print("Project name not specified. Try \"mosstack help\" "+
+                      "and see what went wrong.")
                 exit()
 
         try:
@@ -680,7 +684,8 @@ temporary directory, you can fix it by:
             except IndexError:
                 print("Biaslevel not defined. Try mosstack biaslevel <ftype> <level>")
             except ValueError:
-                print("Value " + argv[2] + " not understood. Try an integer or a decimal number eg. 21 or 30.2")
+                print("Value " + argv[2] + " not understood. \
+                      Try an integer or a decimal number eg. 21 or 30.2")
 
             self.biaslevel(argv[1], level)
 
@@ -703,7 +708,8 @@ temporary directory, you can fix it by:
                 self.debayer(fphase)
 
             else:
-                print("Scrname not defined. Try 'mosstack debayer calib' or 'mosstack debayer light'\nExiting...")
+                print("Scrname not defined. Try 'mosstack debayer calib' or " +
+                      "'mosstack debayer light'\nExiting...")
                 exit()
 
         elif argv[0] == "register":
@@ -888,12 +894,12 @@ temporary directory, you can fix it by:
         self.matcher.tform = self.transformer
 
         # Reference frame first
-        batch.frames[batch.ref_id].register(self.matcher)
+        batch.framearray[batch.ref_id].register(self.matcher)
 
-        for i in batch.frames:
-            if i == batch.refId:
+        for i in batch.framearray:
+            if i == batch.ref_id:
                 continue
-            batch.frames[i].register(self.matcher)
+            batch.framearray[i].register(self.matcher)
 
     def debayer(self, fphase):
         """
@@ -903,8 +909,8 @@ temporary directory, you can fix it by:
         # Create new batch with ftype hardcoded. No need to debayer other than light
         batch = Batch(self.project, ftype="light", fphase=fphase)
 
-        for i in batch.frames:
-            batch.frames[i].debayer(self.debayerwrap)
+        for i in batch.framearray:
+            batch.framearray[i].debayer(self.debayerwrap)
         #batch.debayerAll(self.debayerwrap())
 
     def stack(self, ftype, fphase):
@@ -914,7 +920,8 @@ temporary directory, you can fix it by:
 
         batch = Batch(self.project, ftype=ftype, fphase=fphase)
 
-        if self.project.get("Default", "Stack") == "SigmaMedian" or self.project.get("Default", "Stack") == "SigmaClip":
+        if self.project.get("Default", "Stack") == "SigmaMedian" or \
+           self.project.get("Default", "Stack") == "SigmaClip":
             batch.stack(self.stackerwrap(kappa=int(self.project.get("Default", "Kappa"))))
         else:
             batch.stack(self.stackerwrap())
@@ -944,9 +951,9 @@ temporary directory, you can fix it by:
 
         batch = Batch(self.project, ftype=ftype)
 
-        for i in batch.frames:
-            batch.frames[i].biaslevel = level
-            batch.frames[i].calibrate(self.stackerwrap())
+        for i in batch.framearray:
+            batch.framearray[i].biaslevel = level
+            batch.framearray[i].calibrate(self.stackerwrap())
 
     def divide(self, genname, calib):
         """
@@ -1048,8 +1055,8 @@ temporary directory, you can fix it by:
 
         batch = Batch(project=self.project, ftype="light", fphase=fphase)
 
-        for i in batch.frames:
-            batch.frames[i].crop(xrange, yrange)
+        for i in batch.framearray:
+            batch.framearray[i].crop(xrange, yrange)
 
     def listframes(self, ftype):
         """
@@ -1057,8 +1064,8 @@ temporary directory, you can fix it by:
         """
 
         batch = Batch(project=self.project, ftype=ftype)
-        for i in batch.frames:
-            print(i + ": " + batch.frames[i].rawpath)
+        for i in batch.framearray:
+            print(i + ": " + batch.framearray[i].rawpath)
 
     def remove(self, ftype, frameId):
         """
@@ -1070,7 +1077,8 @@ temporary directory, you can fix it by:
 
     def setRef(self, frameId):
         """
-        Set the reference frame. Possible only for light frames since there's no sense changing reference from other
+        Set the reference frame. Possible only for light frames since
+        there's no sense changing reference from other
         """
 
         batch = Batch(project=self.project, ftype="light")

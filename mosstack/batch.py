@@ -31,7 +31,7 @@ class Batch():
 
         self.name = self.project.get("Default", key="project name")   # Name for the resulting image
 
-        self.frames = {}                                              # Empty dict for Photos
+        self.framearray = {}                                              # Empty dict for Photos
 
         # Variables for the tools
         self._debayertool = None
@@ -55,7 +55,7 @@ class Batch():
 
             for key in files:
                 frame = Frame(self.project, infopath=files[key], fphase=self.fphase)
-                self.frames[key] = frame
+                self.framearray[key] = frame
             self.set_ref(self.ref_id)
 
         except KeyError:
@@ -71,9 +71,9 @@ class Batch():
         """
 
         try:
-            self.frames[self.ref_id].isref = False
+            self.framearray[self.ref_id].isref = False
             self.ref_id = ref_id
-            self.frames[self.ref_id].isref = True
+            self.framearray[self.ref_id].isref = True
             self.project.set("Reference", self.ftype, str(self.ref_id))
         except KeyError:
             raise
@@ -90,7 +90,7 @@ class Batch():
         self.master = Frame(self.project, ftype=self.ftype, number="master")
 
         # Call stacker
-        data = stacker.stack(self.frames, self.project)
+        data = stacker.stack(self.framearray, self.project)
 
         self.master.data = data
         # Save file
@@ -101,9 +101,9 @@ class Batch():
         dim, self.master.x, self.master.y = self.master.data.shape
         print("Dimensions : " + str(self.master.x) + " x " + str(self.master.y))
         totalexposure = 0.0
-        for i in self.frames:
+        for i in self.framearray:
             try:
-                totalexposure += float(self.frames[i].shutter.split()[0])
+                totalexposure += float(self.framearray[i].shutter.split()[0])
             except ValueError:
                 totalexposure = None
                 break
@@ -123,7 +123,7 @@ class Batch():
         self.master = Frame(self.project, ftype=self.ftype, number="master")
 
         # Call stacker
-        data = self.stackingtool.stack(self.frames, self.project)
+        data = self.stackingtool.stack(self.framearray, self.project)
 
         self.master.data = data
         # Save file
@@ -134,9 +134,9 @@ class Batch():
         dim, self.master.x, self.master.y = self.master.data.shape
         print("Dimensions : " + str(self.master.x) + " x " + str(self.master.y))
         totalexposure = 0.0
-        for i in self.frames:
+        for i in self.framearray:
             try:
-                totalexposure += float(self.frames[i].shutter.split()[0])
+                totalexposure += float(self.framearray[i].shutter.split()[0])
             except ValueError:
                 totalexposure = None
                 break
@@ -155,14 +155,14 @@ class Batch():
         calibinfo = self.project.get("Masters", calib)
         cframe = Frame(self.project, infopath=calibinfo, ftype=calib, number="master")
 
-        for i in self.frames:
-            print("Subtracting " + calib + " from image " + str(self.frames[i].number))
-            self.frames[i].data = stacker.subtract(self.frames[i].data, cframe.data)
+        for i in self.framearray:
+            print("Subtracting " + calib + " from image " + str(self.framearray[i].number))
+            self.framearray[i].data = stacker.subtract(self.framearray[i].data, cframe.data)
 
-            if self.frames[i].fphase not in ("bias", "dark", "flat"):
-                self.frames[i].fphase = "calib"
-            self.frames[i].write()
-            self.project.addfile(self.frames[i].path())
+            if self.framearray[i].fphase not in ("bias", "dark", "flat"):
+                self.framearray[i].fphase = "calib"
+            self.framearray[i].write()
+            self.project.addfile(self.framearray[i].path())
 
         print("Calibrated images saved with generic name 'calib'.")
 
@@ -174,13 +174,13 @@ class Batch():
         calibinfo = self.project.get("Masters", calib)
         cframe = Frame(self.project, infopath=calibinfo, ftype=calib, number="master")
 
-        for i in self.frames:
-            print("Dividing image " + str(self.frames[i].number) + " with " + calib)
-            self.frames[i].data = stacker.divide(self.frames[i].data, cframe.data)
-            if self.frames[i].fphase not in ("bias", "dark", "flat"):
-                self.frames[i].fphase = "calib"
-            self.frames[i].write()
-            self.project.addfile(self.frames[i].path())
+        for i in self.framearray:
+            print("Dividing image " + str(self.framearray[i].number) + " with " + calib)
+            self.framearray[i].data = stacker.divide(self.framearray[i].data, cframe.data)
+            if self.framearray[i].fphase not in ("bias", "dark", "flat"):
+                self.framearray[i].fphase = "calib"
+            self.framearray[i].write()
+            self.project.addfile(self.framearray[i].path())
 
         print("Calibrated images saved with generic name 'calib'.")
 
@@ -199,8 +199,8 @@ class Batch():
         except ValueError:
             raise
 
-        for i in self.frames:
-            self.frames[i].biaslevel = biaslevel
+        for i in self.framearray:
+            self.framearray[i].biaslevel = biaslevel
 
     def directory(self, path, ftype):
         """
@@ -232,7 +232,7 @@ class Batch():
         try:
             self.project.get("Reference", ftype)
         except KeyError:
-            self.project.set("Reference", ftype, list(self.frames.keys())[0])
+            self.project.set("Reference", ftype, list(self.framearray.keys())[0])
 
     def addfiles(self, allfiles, ftype):
         """
@@ -244,26 +244,26 @@ class Batch():
 
     def addfile(self, file, ftype):
         """
-        Add a single file.
+        Add a single file and return its key in framearray
         """
 
         # If .info file given, give only that as an argument.
         # Uses only information from this file and returns
         if splitext(file)[1] == ".info":
             frame = Frame(self.project, infopath=file)
-            self.frames[str(frame.number)] = frame
-            return
+            self.framearray[str(frame.number)] = frame
+            return str(frame.number)
 
         # If file already in the project, ignore it and return
-        for i in self.frames:
-            if file == self.frames[i].rawpath:
+        for i in self.framearray:
+            if file == self.framearray[i].rawpath:
                 print("Trying to add a file that's already in the project. Ignoring.")
-                return
+                return i
 
-        n = self.nextkey()
+        f_key = self.nextkey()
 
         # Other than .info files
-        frame = Frame(self.project, rawpath=file, ftype=ftype, fphase=self.fphase, number=n)
+        frame = Frame(self.project, rawpath=file, ftype=ftype, fphase=self.fphase, number=f_key)
 
         # Try to prepare the file. Do not add if preparing fails. This means file's not valid
         try:
@@ -272,14 +272,15 @@ class Batch():
             print(error.args[0])
             print(error.args[1])
             print("File " + file + " not added!")
-            return
+            return None
         frame.decode()
 
-        self.project.set(ftype, str(n), frame.infopath)
+        self.project.set(ftype, str(f_key), frame.infopath)
 
-        self.frames[n] = frame
-        if len(self.frames) == 1:
-            self.set_ref(n)
+        self.framearray[f_key] = frame
+        if len(self.framearray) == 1:
+            self.set_ref(f_key)
+        return f_key
 
     def addmaster(self, file, ftype):
         """
@@ -311,7 +312,7 @@ class Batch():
         won't be a oneliner.
         """
 
-        keys = list(self.frames.keys())
+        keys = list(self.framearray.keys())
         if not keys:
             return "0"
         #for i in range(len(keys)):
@@ -327,12 +328,13 @@ class Batch():
         """
 
         self.project.remove(self.ftype, frame_id)
-        del self.frames[frame_id]
+        del self.framearray[frame_id]
 
         # If reference frame is removed, choose a new one.
         if frame_id == self.ref_id:
-            self.set_ref(list(self.frames.keys())[0])
-            print("Reference frame " + frame_id + " removed. New reference frame is " + self.ref_id + ".")
+            self.set_ref(list(self.framearray.keys())[0])
+            print("Reference frame " + frame_id +
+                  " removed. New reference frame is " + self.ref_id + ".")
 
     # @profile
     def debayer_old(self, debayertool):
@@ -340,14 +342,14 @@ class Batch():
         Debayer all frames
         """
 
-        for frame in sorted(self.frames):
+        for frame in sorted(self.framearray):
 
-            print("Processing image " + self.frames[frame].path())
-            self.frames[frame].debayertool = debayertool
-            self.frames[frame].debayer()
+            print("Processing image " + self.framearray[frame].path())
+            self.framearray[frame].debayertool = debayertool
+            self.framearray[frame].debayer()
             print("...Done")
 
-        self.frames[self.ref_id].isref = True
+        self.framearray[self.ref_id].isref = True
         print("Debayered images saved with generic name 'rgb'.")
 
     def debayer_threaded(self):
@@ -359,14 +361,14 @@ class Batch():
         """
         threadlist = []
 
-        for i in sorted(self.frames):
+        for i in sorted(self.framearray):
             print("Debayering threadlist lenght: " + str(len(threadlist)))
-            t = threading.Thread(target=self.frames[i].debayer_worker)
-            threadlist.append(t)
-            t.start()
+            thread = threading.Thread(target=self.framearray[i].debayer_worker)
+            threadlist.append(thread)
+            thread.start()
 
-        for t in threadlist:
-            t.join()
+        for thread in threadlist:
+            thread.join()
 
     def debayer(self):
         """
@@ -380,31 +382,31 @@ class Batch():
         Register all frames
         """
 
-        self.frames[self.ref_id].register(register)
+        self.framearray[self.ref_id].register(register)
 
-        for frame in self.frames:
+        for frame in self.framearray:
             if frame != self.ref_id:
-                self.frames[frame].register(register)
- 
+                self.framearray[frame].register(register)
+
     def register_threaded(self):
         """
         Register all frames using threads
         """
         threadlist = []
         print(self.ref_id)
-        print(self.frames[self.ref_id].isref)
-        self.frames[self.ref_id].register_worker()
+        print(self.framearray[self.ref_id].isref)
+        self.framearray[self.ref_id].register_worker()
 
-        for i in sorted(self.frames):
+        for i in sorted(self.framearray):
             if i == self.ref_id:
                 continue
-            t = threading.Thread(target=self.frames[i].register_worker)
-            threadlist.append(t)
-            t.start()
+            thread = threading.Thread(target=self.framearray[i].register_worker)
+            threadlist.append(thread)
+            thread.start()
 
-        for t in threadlist:
-            t.join()
-    
+        for thread in threadlist:
+            thread.join()
+
     def register(self):
         """
         Wrapper to choose from threded and non-threaded registers
@@ -423,16 +425,16 @@ class Batch():
 
         threadlist = []
 
-        for i in sorted(self.frames):
+        for i in sorted(self.framearray):
             print("Calibrating threadlist lenght: " + str(len(threadlist)))
-            self.frames[i].stackingtool = self.stackingtool
-            t = threading.Thread(target=self.frames[i].calibrate_worker,
-                                 args=(bias, dark, flat))
-            threadlist.append(t)
-            t.start()
+            self.framearray[i].stackingtool = self.stackingtool
+            thread = threading.Thread(target=self.framearray[i].calibrate_worker,
+                                      args=(bias, dark, flat))
+            threadlist.append(thread)
+            thread.start()
 
-        for t in threadlist:
-            t.join()
+        for thread in threadlist:
+            thread.join()
         if self.ftype != "light":
             self.stack_new()
 
@@ -446,40 +448,59 @@ class Batch():
     # PROPERTIES
 
     def setstackingtool(self, stackingtool):
+        """
+        Setter for stackingtool
+        """
         try:
             self._stackingtool = stackingtool
-            for i in self.frames:
-                self.frames[i].stackingtool = self.stackingtool 
+            for i in self.framearray:
+                self.framearray[i].stackingtool = self.stackingtool
         except Exception as err:
             print(err)
 
     def getstackingtool(self):
+        """
+        Getter for stackingtool
+        """
+
         return self._stackingtool
 
     stackingtool = property(fget=getstackingtool, fset=setstackingtool)
 
     def setdebayertool(self, debayertool):
+        """
+        Setter for debayertool
+        """
         try:
             self._debayertool = debayertool
-            for i in self.frames:
-                self.frames[i].debayertool = self.debayertool              
+            for i in self.framearray:
+                self.framearray[i].debayertool = self.debayertool
         except Exception as err:
             print(err)
 
     def getdebayertool(self):
+        """
+        Getter for debayertool
+        """
         return self._debayertool
 
     debayertool = property(fget=getdebayertool, fset=setdebayertool)
 
     def setregistertool(self, registertool):
+        """
+        Setter for registertool
+        """
         try:
             self._registertool = registertool
-            for i in self.frames:
-                self.frames[i].registertool = self.registertool              
+            for i in self.framearray:
+                self.framearray[i].registertool = self.registertool              
         except Exception as err:
             print(err)
 
     def getregistertool(self):
+        """
+        Getter for registertool
+        """
         return self._registertool
 
     registertool = property(fget=getregistertool, fset=setregistertool)

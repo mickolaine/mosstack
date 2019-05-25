@@ -61,11 +61,14 @@ class BilinearOpenCl(Debayer):
         if not self.init:
             self.x = image.shape[1]
             self.y = image.shape[0]
-            cfa = np.ravel(np.float32(image, order='C'))
+            #cfa = np.ravel(np.float32(image, order='C'))
+            cfa = np.ravel(image.astype(np.float32, order='C'))
+
             self.lencfa = len(cfa)
             self.real_init()
         else:
-            cfa = np.ravel(np.float32(image, order='C'))
+            cfa = np.ravel(image.astype(np.float32, order='C'))
+            #cfa = np.ravel(np.float32(image, order='C'))
 
         self.mf = cl.mem_flags
 

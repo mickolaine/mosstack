@@ -2,21 +2,23 @@
 PyQt5 specific class. Program will run just fine on command line without PyQt but GUI requires it.
 """
 
-from . Frame import Frame
-from PyQt5 import QtGui
 import numpy as np
-from PIL import Image #, ImageQt
+from PIL import Image
+from . frame import Frame
 
 
 class QFrame(Frame):
     """
-    QFrame is a variation of Frame class intended for PyQt5 gui. It inherits Frame, which represents one photo frame.
-    This class holds everything specific to GUI and its use requires PyQt5.
+    QFrame is a variation of Frame class intended for PyQt5 gui. It inherits
+    Frame, which represents one photo frame. This class holds everything
+    specific to GUI and its use requires PyQt5.
     """
 
-    def __init__(self, project=None, rawpath=None, infopath=None, ftype="light", number=None, fphase="orig"):
+    def __init__(self, project=None, rawpath=None, infopath=None,
+                 ftype="light", number=None, fphase="orig"):
         """
-
+        Initializing the QFrame is quite identical to initializing Frame. Calling
+        super is enough.
         """
         super(QFrame, self).__init__(project=project,
                                      rawpath=rawpath,
@@ -24,6 +26,19 @@ class QFrame(Frame):
                                      ftype=ftype,
                                      number=number,
                                      fphase=fphase)
+
+    @staticmethod
+    def from_frame(frame):
+        """
+        Return QFrame created from Frame
+        """
+        project = frame.project
+        rawpath = frame.rawpath
+        infopath = frame.infopath
+        ftype = frame.ftype
+        number = frame.number
+        fphase = frame.fphase
+        return QFrame(project, rawpath, infopath, ftype, number, fphase)
 
     def getQPixmap(self):
         """
@@ -45,9 +60,11 @@ class QFrame(Frame):
     @staticmethod
     def align_32bit(data):
         """
-        QImage requires 32bit aligned images. This checks the dimensions and crops some off if necessary.
+        QImage requires 32bit aligned images. This checks the dimensions
+        and crops some off if necessary.
 
-        Note that this does not affect real data, only the image shown on screen. Real data still holds every pixel.
+        Note that this does not affect real data, only the image shown on
+        screen. Real data still holds every pixel.
 
         Arguments:
         data: 2D numpy array
@@ -74,5 +91,3 @@ class QFrame(Frame):
         Tell the user interface that something has changed and state of this object needs to be read again
         """
         pass
-
-
