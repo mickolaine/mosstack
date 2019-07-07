@@ -1,3 +1,6 @@
+"""
+Module defines the Frame class. Frame represents one single photo
+"""
 from __future__ import division
 import gc
 import ast
@@ -12,13 +15,83 @@ from . import config
 from . Decoding import Raw2fits_cpp
 
 
-class Frame(object):
+class Frame():
     """
     Frame has all the information of a single photo frame and all the
     methods to read and write data on disk
     """
+    def __init__(self, project):
+        """
+        Create new empty frame
 
-    def __init__(self, project=None, rawpath=None, infopath=None,
+        Test written
+        """
+
+        self.state = {      # Dict to hold information about process state
+            "prepare": 0,   # 0 = not started
+            "calibrate": 0, # 1 = under process
+            "debayer": 0,   # 2 = done
+            "register": 0   # -1 = failed
+        }                   # -2 = invalid (eg. registration for darks)
+
+        self.project = project
+
+        # Paths
+        self.rawpath = None
+        self.infopath = None
+        self.basename = None
+        self.format = ".fits"
+
+        self.frameinfo = None
+        self.ftype = None
+        self.fphase = None
+        self.raw_format = None
+        self.rawtype = None
+        self.number = None
+        self.isref = False
+        self.staticpath = False
+        self.workdir = config.Global.get("Default", "Path")
+        self.name = self.project.get("Default", "Project name")
+
+        # Frame technical info
+        self.timestamp = None
+        self.camera = None
+        self.isospeed = None
+        self.shutter = None
+        self.aperture = None
+        self.focallength = None
+        self.bayer = None
+        self.dlmulti = None
+        self.totalexposure = None
+        self.biaslevel = None
+
+        # Variables for the tools
+        self._debayertool = None
+        self._registertool = None
+        self._stackingtool = None
+
+        # Variables for the process
+        self.rgb = False    # Is image rgb or monochrome (Boolean)
+        self.clip = []      #
+        self.tri = []       # List of triangles
+        self.match = []     # List of matching triangles with reference picture
+        self._pairs = None
+        self._points = None # String to pass to ImageMagick convert,
+                            # if star matching is already done.
+        self._x = None
+        self._y = None      # Dimensions for image
+        self._path = None
+
+        # Variables for the data
+        self.hdu = None    # HDU-object for loading fits. Not required for tiff
+        self.image = None  # Image object. Required for Tiff and Fits
+        self._data = None  # Image data as an numpy.array
+
+        # For locking the data so other threads won't mess up enything
+        self.lock = RLock()
+
+
+    def __init__old(self, project=None, rawpath=None, infopath=None,
                  ftype="light", number=None, fphase="orig"):
         """
         Create a Frame object from rawpath or frame info file
@@ -30,12 +103,12 @@ class Frame(object):
         fphase = process phase: orig, calib#, rgb, reg, master
         """
 
-        self.state = {         # Dict to hold information about process state
-            "prepare": 0,       # 0 = not started
-            "calibrate": 0,     # 1 = under process
-            "debayer": 0,       # 2 = done
-            "register": 0       # -1 = failed
-        }                       # -2 = invalid (eg. registration for darks)
+        self.state = {      # Dict to hold information about process state
+            "prepare": 0,   # 0 = not started
+            "calibrate": 0, # 1 = under process
+            "debayer": 0,   # 2 = done
+            "register": 0   # -1 = failed
+        }                   # -2 = invalid (eg. registration for darks)
 
         self.rawpath = rawpath
         self.infopath = infopath
@@ -60,7 +133,7 @@ class Frame(object):
         self.step2 = False
         self.staticpath = False
 
-        self.wdir = config.Global.get("Default", "Path")
+        self.workdir = config.Global.get("Default", "Path")
 
         if project is not None:
             self.name = self.project.get("Default", "Project name")
@@ -85,9 +158,9 @@ class Frame(object):
         self.number = number
 
         # The following objects are lists because colour channels are separate
-        self.hdu = None      # HDU-object for loading fits. Not required for tiff
-        self.image = None      # Image object. Required for Tiff and Fits
-        self._data = None      # Image data as an numpy.array
+        self.hdu = None    # HDU-object for loading fits. Not required for tiff
+        self.image = None  # Image object. Required for Tiff and Fits
+        self._data = None  # Image data as an numpy.array
 
         self.lock = RLock()
 
@@ -117,11 +190,12 @@ class Frame(object):
             self.readinfo()                     # 1.1. -- 1.2.
             return
 
-        if not self.checkraw(self.rawpath):
-            self.state["prepare"] = -1
-            raise RuntimeError("Can't read file.",
-                               "Dcraw does not recognize this as a DSLR raw photo.")
-            # TODO: Tell UI the file's not good
+        #TODO: Remove this when sure everything works without
+        #if not self.checkraw(self.rawpath):
+        #    self.state["prepare"] = -1
+        #    raise RuntimeError("Can't read file.",
+        #                       "Dcraw does not recognize this as a DSLR raw photo.")
+        #    # TODO: Tell UI the file's not good
 
         self.extractinfo()                      # 2.
         self.writeinfo()                        # 3.
@@ -132,52 +206,54 @@ class Frame(object):
 
     def decode(self):
         """
-        Decode the frame. Now just calls _decode
+        Decode the raw frame in to fits image.
         """
-
-        Raw2fits_cpp.decode(self.rawpath, self.path())
+        self.fphase = "decoded"
+        self.makepath()
+        Raw2fits_cpp.decode(self.rawpath, self.path)
         self.getdimensions()
-        self.writeinfo()
         self.state["prepare"] = 2
         self.project.set("Phase", "Decoded", "1")
+        self.frameinfo.set("Paths", self.fphase, str(self.path))
 
-    def calibrate(self, bias=None, dark=None, flat=None):
-        """
-        Calibrate the frame. Project tells how.
+    # def calibrate(self, bias=None, dark=None, flat=None):
+    #     """
+    #     Calibrate the frame. Project tells how.
 
-        All stages are optional except the last one
-        1. Subtract master bias
-        2. Subtract master dark
-        3. Divide with master flat
-        4. Inform Gui that state has changed
-        """
+    #     All stages are optional except the last one
+    #     1. Subtract master bias
+    #     2. Subtract master dark
+    #     3. Divide with master flat
+    #     4. Inform Gui that state has changed
+    #     """
 
-        self.state["calibrate"] = 1
+    #     self.state["calibrate"] = 1
 
-        data = self.data
-        biaslevel = self.biaslevel
+    #     data = self.data
+    #     biaslevel = self.biaslevel
 
-        if bias is not None:
-            data = self.stackingtool.subtract(data, bias.data)
-        elif biaslevel is not None:
-            try:
-                data -= float(biaslevel)
-            except ValueError:
-                pass
+    #     if bias is not None:
+    #         data = self.stackingtool.subtract(data, bias.data)
+    #     elif biaslevel is not None:
+    #         try:
+    #             data -= float(biaslevel)
+    #         except ValueError:
+    #             pass
 
-        if dark is not None:
-            data = self.stackingtool.subtract(data, dark.data)
+    #     if dark is not None:
+    #         data = self.stackingtool.subtract(data, dark.data)
 
-        if flat is not None:
-            data = self.stackingtool.divide(data, flat.data)
+    #     if flat is not None:
+    #         data = self.stackingtool.divide(data, flat.data)
 
-        self.data = data
-        self.fphase = "calib"
-        self.write()
-        self.project.addfile(self.path())
-        self.state["calibrate"] = 2
+    #     self.data = data
+    #     self.fphase = "calib"
+    #     self.makepath()
+    #     self.write()
+    #     self.project.addfile(self.path)
+    #     self.state["calibrate"] = 2
 
-        self.project.set("Phase", "Calibrated", "1")
+    #     self.project.set("Phase", "Calibrated", "1")
 
     def calibrate_worker(self, bias=None, dark=None, flat=None):
         """
@@ -211,39 +287,40 @@ class Frame(object):
 
         self.data = data
         self.fphase = "calib"
+        self.makepath()
         self.write()
-        self.project.addfile(self.path())
+        self.project.addfile(self.path)
         self.state["calibrate"] = 2
 
         self.project.set("Phase", "Calibrated", "1")
 
         #return
 
-    def debayer(self, debayertool=None):
-        """
-        Debayer the frame. Project tells how.
+    # def debayer(self, debayertool=None):
+    #     """
+    #     Debayer the frame. Project tells how.
 
-        1. Check what Debayer function to use
-        2. Do the thing
-        3. Inform Gui that state has changed
-        """
+    #     1. Check what Debayer function to use
+    #     2. Do the thing
+    #     3. Inform Gui that state has changed
+    #     """
 
-        self.state["debayer"] = 1
-        print("Debayering frame " + self.number)
-        #print(self._debayertool)
-        if debayertool:
-            self.debayertool = debayertool
-        data = self.debayertool.debayer(self)     
-        self.fphase = "rgb"
+    #     self.state["debayer"] = 1
+    #     print("Debayering frame " + self.number)
+    #     #print(self._debayertool)
+    #     if debayertool:
+    #         self.debayertool = debayertool
+    #     data = self.debayertool.debayer(self)
+    #     self.fphase = "rgb"
 
-        if data is not None:
-            self.data = data
-            self.write()
+    #     if data is not None:
+    #         self.data = data
+    #         self.write()
 
-        self.project.addfile(self.path())
-        self.state["debayer"] = 2
-        self.project.set("Phase", "Debayered", "1")
-        #return
+    #     self.project.addfile(self.get_path())
+    #     self.state["debayer"] = 2
+    #     self.project.set("Phase", "Debayered", "1")
+    #     #return
 
     def debayer_worker(self):
         """
@@ -256,7 +333,7 @@ class Frame(object):
 
         self.state["debayer"] = 1
         print("Debayering frame " + self.number)
-        
+
         data = self.debayertool.debayer(self)
         self.fphase = "rgb"
 
@@ -264,31 +341,31 @@ class Frame(object):
             self.data = data
             self.write()
 
-        self.project.addfile(self.path())
+        self.project.addfile(self.path)
         self.state["debayer"] = 2
         self.project.set("Phase", "Debayered", "1")
         #return
 
-    def register(self):
-        """
-        Register the frame. Project tells how.
+    # def register(self):
+    #     """
+    #     Register the frame. Project tells how.
 
-        1. Step 1
-        2. Call for register
-        3. Inform Gui that state has changed
-        """
+    #     1. Step 1
+    #     2. Call for register
+    #     3. Inform Gui that state has changed
+    #     """
 
-        self.state["register"] = 1
-        data = self.registertool.register(self)
-        self.fphase = "reg"
-        self.state["register"] = 2
-        if data is not None:
-            self.data = data
-            self.write()
-            self.project.addfile(self.path())
-            del data
-        self.project.set("Phase", "Registered", "1")
-        #return
+    #     self.state["register"] = 1
+    #     data = self.registertool.register(self)
+    #     self.fphase = "reg"
+    #     self.state["register"] = 2
+    #     if data is not None:
+    #         self.data = data
+    #         self.write()
+    #         self.project.addfile(self.get_path())
+    #         del data
+    #     self.project.set("Phase", "Registered", "1")
+    #     #return
 
     def register_worker(self):
         """
@@ -306,7 +383,7 @@ class Frame(object):
         if data is not None:
             self.data = data
             self.write()
-            self.project.addfile(self.path())
+            self.project.addfile(self.path)
             del data
         self.project.set("Phase", "Registered", "1")
         #return
@@ -334,7 +411,7 @@ class Frame(object):
 
         self.fphase = "crop"
         self.write()
-        self.project.addfile(self.path())
+        self.project.addfile(self.path)
 
         # Alter metadata
         self.x = self.data.shape[2]
@@ -343,66 +420,147 @@ class Frame(object):
         self.writeinfo()
 
     @staticmethod
-    def createmaster(project, path, ftype):
+    def from_raw(project, rawpath, ftype):
+        """
+        Add frame from raw file.
+
+        If file is identified as a raw file, this will be logged to raw_format
+
+        Test written
+        """
+        frame = Frame(project)
+
+        if Frame.identify(rawpath) == "raw":
+            frame.rawpath = rawpath
+            frame.ftype = ftype
+            frame.fphase = "raw"
+            frame.raw_format = "raw"
+        return frame
+    
+    @staticmethod
+    def from_fits(project, fitspath, ftype):
+        """
+        Add frame from fits file.
+        """
+
+    @staticmethod
+    def from_info(project, infopath, ftype):
+        """
+        Add frame from info file.
+
+        Info means mosstacks own info-files.
+
+        Test written for raw files
+        Test required for decoded, calibrated, rgb, and master
+        """
+
+        frame = Frame(project)
+        frame.frameinfo = config.Frame(infopath)
+        rawpath = frame.frameinfo.get("Paths", "raw")
+        if Frame.identify(rawpath) == "raw":
+            frame.rawpath = rawpath
+            frame.ftype = ftype
+            frame.raw_format = "raw"
+        else:
+            raise IOError("Raw file not found on path " + rawpath)
+        return frame
+
+    @staticmethod
+    def createmaster(project, ftype, path=None):
         """
         Return a Frame object with a master frame
 
         Arguments:
         project - a Project class object
-        path - unix path to fits or tiff master frame
+        path - unix path to fits (or tiff TODO) master frame
         ftype - type of master: bias, dark or flat
         """
-        if isinstance(path, list):
-            pathstr = path[0]
-        else:
-            pathstr = path
-        frame = Frame(project, ftype=ftype, number="master")
-        fileformat = Frame.identify(pathstr)
-        frame._path = pathstr
-        if fileformat == "fits":
+        # if isinstance(path, list):
+        #     pathstr = path[0]
+        # else:
+        #     pathstr = path
+        frame = Frame(project)
+        frame.ftype = ftype
+        frame.fphase = "master"
+        frame.number = "master"
+        if path:
             frame.rawtype = "fits"
             frame.staticpath = True
-            frame._load_fits(path=pathstr)
+            frame._load_fits(path=path) # TODO: Make this use Frame.from_fits()
             frame.extractinfo()
             frame.writeinfo()
-        elif fileformat == "tiff":
-            frame.rawtype = "tiff"
-            frame._load_tiff(path=pathstr)
-            frame.extractinfo()
-            frame.writeinfo()
-            frame.write()
+
+        # fileformat = Frame.identify(pathstr)
+        # frame.path = pathstr
+        # if fileformat == "fits":
+        #     frame.rawtype = "fits"
+        #     frame.staticpath = True
+        #     frame._load_fits(path=pathstr)
+        #     frame.extractinfo()
+        #     frame.writeinfo()
+        # elif fileformat == "tiff":
+        #     frame.rawtype = "tiff"
+        #     frame._load_tiff(path=pathstr)
+        #     frame.extractinfo()
+        #     frame.writeinfo()
+        #     frame.write()
 
         return frame
 
-    def getpath(self, fformat="fits", fphase=None):
+    def get_path_old(self, fformat="fits", fphase=None):
         """
         Return path, which is constructed on the fly
 
-        Will replace self.path
+        Will be removed
         """
 
         if fphase is None:
             fphase = self.fphase
 
         if fformat == "fits":
-
             if self.staticpath:
-                return self._path
+                return self.path
             try:
                 return self.frameinfo.get("Paths", fphase)
             except (KeyError, AttributeError):
                 pass
 
         if self.number is None:
-            return self.wdir + "/" + self.name + "_" + self.ftype + "_" + fphase + "." + fformat
+            path = self.workdir + "/" + self.name + "_" + self.ftype + "_" + \
+                   fphase + "." + fformat
         else:
-            return self.wdir + "/" + self.name + "_" + self.ftype \
-                             + "_" + str(self.number) + "_" + fphase + "." + fformat
+            path = self.workdir + "/" + self.name + "_" + self.ftype + "_" + \
+                   str(self.number) + "_" + fphase + "." + fformat
+        return path
 
+    def makepath(self):
+        """
+        Update basename and path to match current state
+        """
+        self.basename = self.workdir + "/" + self.name + "_" + \
+                        self.ftype + "_" + str(self.number) + "_" + \
+                        self.fphase
+        self.path = self.basename + ".fits"
+
+    def setpath(self, pathstr):
+        """
+        Set the path
+        """
+        self._path = pathstr
+
+    def getpath(self):
+        """
+        Getter for path
+        """
+        return self._path
+
+    path = property(fget=getpath, fset=setpath)
+
+    """
     def path(self, fformat="fits", ):
-        """
+        ""
         Return path, which is constructed on the fly
-        """
+        ""
 
         if fformat == "fits":
 
@@ -414,24 +572,29 @@ class Frame(object):
                 pass
 
         if self.number is None:
-            return self.wdir + "/" + self.name + "_" + \
+            path = self.wdir + "/" + self.name + "_" + \
                    self.ftype + "_" + self.fphase + "." + fformat
         else:
-            return self.wdir + "/" + self.name + "_" + self.ftype \
-                             + "_" + str(self.number) + "_" + self.fphase + "." + fformat
+            path = self.wdir + "/" + self.name + "_" + self.ftype + "_" + \
+                   str(self.number) + "_" + self.fphase + "." + fformat
+        return path
+    """
 
     def rgbpath(self, fileformat=None):
         """
         Return list of file paths where "_[rgb]" is placed before the extension
 
         eg. if self.path is /path/to/file_2_reg.tiff this returns
-         [/path/to/file_2_reg_r.tiff, /path/to/file_2_reg_g.tiff, /path/to/file_2_reg_b.tiff]
-        This is required for ImageMagicks inability to understand rgb fits, or actually fits' in general
+         [/path/to/file_2_reg_r.tiff,
+          /path/to/file_2_reg_g.tiff,
+          /path/to/file_2_reg_b.tiff]
+        This is required for ImageMagicks inability to understand rgb
+        fits, or actually fits' in general
         Arguments:
         format = if specified, change the extension to this
         """
 
-        base, ext = splitext(self.path())
+        base, ext = splitext(self.get_path())
         if fileformat:
             ext = "." + fileformat
         pathlist = []
@@ -440,7 +603,7 @@ class Frame(object):
         return pathlist
 
     @staticmethod
-    def identify(path):
+    def identify_old(path):
         """
         Identify the file in path. Return format.
 
@@ -465,11 +628,32 @@ class Frame(object):
 
         if ms.split()[0] == "TIFF":
             return "tiff"
-        if ms.split()[0] == "FITS":
+        elif ms.split()[0] == "FITS":
             return "fits"
+        elif not call(["dcraw", "-i", path]):
+            return "raw"
+        else:
+            raise TypeError(str(ms))
+
+    @staticmethod
+    def identify(path):
+        """
+        Identify the file in path. Return format.
+
+        Supported formats are TIFF, FITS and RAW (which means everything recognized by dcraw).
+        If not recognized, will return file magic's description
+        """
+
+        magic_string = magic.from_file(path)
+
+        if magic_string.split()[0] == "TIFF":
+            return "tiff"
+        if magic_string.split()[0] == "FITS":
+            return "fits"
+        # dcraw returns 0 if file is raw and 1 if it's something else
         if not call(["dcraw", "-i", path]):
             return "raw"
-        return ms
+        raise TypeError(str(magic_string))
 
     def readinfo(self):
         """
@@ -496,6 +680,7 @@ class Frame(object):
         except KeyError:
             pass
 
+    #TODO: Redundant with identify(). Remove this when sure it's not needed
     def checkraw(self, rawpath):
         """
         Check the type of the raw file
@@ -528,12 +713,12 @@ class Frame(object):
         Read the file into memory and extract all required information.
         """
 
+        self.makepath()
         if self.rawtype == "fits":
             data = self.image.data
 
             if len(data.shape) == 2:
                 self.x, self.y = data.shape
-
             elif len(data.shape) == 3:
                 temp, self.x, self.y = data.shape
 
@@ -541,17 +726,13 @@ class Frame(object):
             return
 
         if self.rawtype == "tiff":
-
             if len(self._data) == 2:
                 self.x, self.y = self._data.shape
-
             elif len(self._data.shape) == 3:
                 temp, self.x, self.y = self._data.shape
-
             return
 
         rawoutput = check_output(["dcraw", "-i", "-v", self.rawpath]).decode()
-
         output = str.split(str(rawoutput), "\n")
 
         for i in output: # Some of these are extracted for possible future use
@@ -579,14 +760,15 @@ class Frame(object):
         print("Done!")
         print("Image has dimensions X: " + str(self.x) + ", Y: " + str(self.y))
 
-    #TODO: get rid of this once decoding is done better
+    #TODO: get rid of this once decoding is done better. Redundant with extractinfo
     def getdimensions(self):
         """
         Get X and Y dimensions from FITS instead of DCRaw output.
 
         This is needed to fix problems with temporary raw2fits.cpp-solution
         """
-        self._load_fits(self.path())
+        #self._load_fits(self.get_path())
+        self._load_fits()
         data = self.image.data
 
         if len(data.shape) == 2:
@@ -607,15 +789,14 @@ class Frame(object):
             return
 
         if self.infopath is None:
-            self.infopath = self.wdir + "/" + self.name + "_" + \
-                            self.ftype + "_" + str(self.number) + ".info"
+            self.infopath = self.basename + ".info"
         self.frameinfo = config.Frame(self.infopath)
         self.project.addfile(self.infopath)
 
         self.frameinfo.set("Paths", "Raw", str(self.rawpath))
         self.frameinfo.set("Default", "Number", str(self.number))
         self.frameinfo.set("Default", "Ftype", str(self.ftype))
-        self.frameinfo.set("Paths", self.fphase, str(self.path()))
+        self.frameinfo.set("Paths", self.fphase, str(self.path))
         self.frameinfo.set("Properties", "Filter pattern", str(self.bayer))
         self.frameinfo.set("Properties", "Timestamp", str(self.timestamp))
         self.frameinfo.set("Properties", "Camera", str(self.camera))
@@ -639,7 +820,7 @@ class Frame(object):
         Return all the possible information extracted in one table (2d array)
         """
 
-        table = [["Path to image", self.path()],
+        table = [["Path to image", self.get_path()],
                  ["Path to original raw photo", self.rawpath],
                  ["Image number", self.number],
                  ["Dimensions", str(self.x) + "x" + str(self.y)],
@@ -663,6 +844,9 @@ class Frame(object):
         self.clip = clip
 
     def getpoints(self):
+        """
+        Get the star locations
+        """
         if self._points is None:
             try:
                 return self.frameinfo.get("Registering", "Points")
@@ -670,6 +854,9 @@ class Frame(object):
                 return None
 
     def setpoints(self, points):
+        """
+        Set star locations
+        """
         self._points = points
         self.frameinfo.set("Registering", "Points", self._points)
 
@@ -710,6 +897,9 @@ class Frame(object):
     data = property(getdata, setdata, deldata)
 
     def getgenname(self):
+        """
+        Get the phase name
+        """
         return self.fphase
 
     def setgenname(self, genname):
@@ -717,13 +907,16 @@ class Frame(object):
         Set genname and take care of info file changes
         """
         self.fphase = genname
-        print("Changing path to " + self.wdir +
+        print("Changing path to " + self.workdir +
               self.name + "_" + self.ftype + "_" + str(self.number) + "_" + genname + ".fits")
-        self.frameinfo.set("Paths", genname, self.path())
+        self.frameinfo.set("Paths", genname, self.get_path())
 
     genname = property(fget=getgenname, fset=setgenname)
 
     def get_x(self):
+        """
+        Get X-dimension
+        """
         if self._x:
             return self._x
         else:
@@ -731,11 +924,17 @@ class Frame(object):
             return self._x
 
     def set_x(self, x):
+        """
+        Set X-dimension
+        """
         self._x = x
 
     x = property(fget=get_x, fset=set_x)
 
     def get_y(self):
+        """
+        Get Y-dimension
+        """
         if self._y:
             return self._y
         else:
@@ -743,11 +942,17 @@ class Frame(object):
             return self._y
 
     def set_y(self, y):
+        """
+        Set Y-dimension
+        """
         self._y = y
 
     y = property(fget=get_y, fset=set_y)
 
     def getpairs(self):
+        """
+        Get paired stars
+        """
         if self._pairs is None:
             try:
                 self._pairs = ast.literal_eval(self.frameinfo.get("Registering", "pairs"))
@@ -757,34 +962,52 @@ class Frame(object):
         return self._pairs
 
     def setpairs(self, pairs):
+        """
+        Set paired stars
+        """
         self._pairs = pairs
         self.frameinfo.set("Registering", "pairs", str(pairs))
 
     pairs = property(fget=getpairs, fset=setpairs)
 
     def setdebayertool(self, debayertool):
+        """
+        Set debayering tool
+        """
         try:
             self._debayertool = debayertool
         except:
             pass
 
     def getdebayertool(self):
+        """
+        Get debayering tool
+        """
         return self._debayertool
 
     debayertool = property(fget=getdebayertool, fset=setdebayertool)
 
     def setregistertool(self, registertool):
+        """
+        Set registering tool
+        """
         try:
             self._registertool = registertool
         except:
             pass
 
     def getregistertool(self):
+        """
+        Get registering tool
+        """
         return self._registertool
 
     registertool = property(fget=getregistertool, fset=setregistertool)
 
     def setstackingtool(self, stackingtool):
+        """
+        Set stacking tool
+        """
         try:
             self._stackingtool = stackingtool
 
@@ -792,6 +1015,9 @@ class Frame(object):
             pass
 
     def getstackingtool(self):
+        """
+        Get stacking tool
+        """
         return self._stackingtool
 
     stackingtool = property(fget=getstackingtool, fset=setstackingtool)
@@ -801,12 +1027,12 @@ class Frame(object):
         Load a fits file created by this program
         """
         if path is None:
-            path = self.path()
+            path = self.path
         if isinstance(path, list):
             pathstr = path[0]
         else:
             pathstr = path
-
+        print("Opening path: " + pathstr)
         self.hdu = fits.open(pathstr, memmap=True)
         self.image = self.hdu[0]
         #self.image = self.hdu[1]
@@ -833,17 +1059,17 @@ class Frame(object):
 
         # If self.clip is set, load only piece of data
         if self.clip:
-            y0 = self.clip[0]
-            y1 = self.clip[1]
-            x0 = self.clip[2]
-            x1 = self.clip[3]
+            y_0 = self.clip[0]
+            y_1 = self.clip[1]
+            x_0 = self.clip[2]
+            x_1 = self.clip[3]
 
             self._load_fits()
 
             if len(self.image.shape) == 3:
-                self._data = self.image.data[0:3, x0:x1, y0:y1]
+                self._data = self.image.data[0:3, x_0:x_1, y_0:y_1]
             else:
-                self._data = np.array([self.image.data[x0:x1, y0:y1]])
+                self._data = np.array([self.image.data[x_0:x_1, y_0:y_1]])
 
         # Load the whole image
         else:
@@ -856,7 +1082,7 @@ class Frame(object):
     def _release_data(self):
         """
         Release data from memory and delete even the hdu
-        
+
         Lock used to prevent other threads using while memory is released
         """
 
@@ -865,7 +1091,7 @@ class Frame(object):
             self.hdu.close()
         self.image = None
         self.hdu = None
-        
+
         del self.image
         del self.hdu
         del self.data
@@ -888,13 +1114,13 @@ class Frame(object):
 
         # Changed datatype to int32 since uint16 isn't supported by standard
         if self._data.shape[0] == 1:
-            fits.writeto(self.path(), np.int32(self._data[0]), hdu.header, overwrite=True)
+            fits.writeto(self.path, np.int32(self._data[0]), hdu.header, overwrite=True)
         else:
-            fits.writeto(self.path(), np.int32(self._data), hdu.header, overwrite=True)
+            fits.writeto(self.path, np.int32(self._data), hdu.header, overwrite=True)
 
         self._release_data()
 
-    def _write_tiff(self, skimage=True):
+    def _write_tiff(self):
         """
         Write self.data to disk as a tiff file
         """
@@ -907,7 +1133,7 @@ class Frame(object):
 
             imagedata = np.flipud(data[0])
             image = Im.fromarray(imagedata)
-            image.save(self.path(fformat="tiff"), format="tiff")
+            image.save(self.basename + ".tiff", format="tiff")
 
         elif self.data.shape[0] == 3:
 
@@ -916,17 +1142,17 @@ class Frame(object):
                 imagedata = np.flipud(data[i])
                 image = Im.fromarray(imagedata)
                 image.save(rgbpath[i], format="tiff")
-            call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine", self.path(fformat="tiff")])
-            #      "-channel", "RGB", "-depth", "16", "-combine", self.path(fformat="tiff")])
-            #call(["rm", rgbpath[0], rgbpath[1], rgbpath[2]])
-        self.project.addfile(self.path(fformat="tiff"), final=True)
+            call(["convert", rgbpath[0], rgbpath[1], rgbpath[2],
+                  "-channel", "RGB", "-combine", self.basename + ".tiff"])
+        self.project.addfile(self.basename + "_final.tiff", final=True)
 
     def _write_tiff_old(self, skimage=True):
         """
         Write self.data to disk as a tiff file
         """
 
-        if check_output(["convert -version | grep Version"], shell=True).split()[2].decode()[2] == "7":
+        if check_output(["convert -version | grep Version"],
+                        shell=True).split()[2].decode()[2] == "7":
             im_version = "6.7"
         else:
             im_version = "6.8"
@@ -947,10 +1173,10 @@ class Frame(object):
                     imagedata = np.flipud(np.int16(self.data[i]))
                 image = Im.fromarray(imagedata)
                 image.save(rgbpath[i], format="tiff")
-            print("convert " + rgbpath[0] + rgbpath[1] + rgbpath[2] + " -channel RGB -combine " + self.path(fformat="tiff"))
-            call(["convert", rgbpath[0], rgbpath[1], rgbpath[2], "-channel", "RGB", "-combine", self.path(fformat="tiff")])
-            #      "-channel", "RGB", "-depth", "16", "-combine", self.path(fformat="tiff")])
-            #call(["rm", rgbpath[0], rgbpath[1], rgbpath[2]])
+            print("convert " + rgbpath[0] + rgbpath[1] + rgbpath[2] +
+                  " -channel RGB -combine " + self.path(fformat="tiff"))
+            call(["convert", rgbpath[0], rgbpath[1], rgbpath[2],
+                  "-channel", "RGB", "-combine", self.path(fformat="tiff")])
         self.project.addfile(self.path(fformat="tiff"), final=True)
 
     def write_tiff(self):
@@ -968,7 +1194,7 @@ class Frame(object):
 
         self._release_data()
 
-    def write(self, tiff=False, skimage=True):
+    def write(self, tiff=False):
         """
         Wrapper function to relay writing of the image on disk.
         This is remnants of something much more complicated...
@@ -976,11 +1202,12 @@ class Frame(object):
         Arguments:
         tiff     = Write also a tiff file in addition to fits
         """
+        self.makepath() # Make sure the path is correct before writing
         if self._data is None:
             return
         self._write_fits()
         if tiff:
-            self._write_tiff(skimage=skimage)
+            self._write_tiff()
 
     def _print_all_values(self):
         """
@@ -1009,7 +1236,7 @@ class Frame(object):
         print(self.step1)
         print(self.step2)
         print(self.staticpath)
-        print(self.wdir)
+        print(self.workdir)
         print(self.name)
         print(self.rgb)
         print(self.clip)

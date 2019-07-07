@@ -2,11 +2,11 @@
 Some tests for debayering algorithms and classes
 """
 
-from mosstack.Debayer import *
-from mosstack import Frame
 from datetime import datetime
 import numpy as np
 from PIL import Image as Im
+from mosstack.Debayer import *
+from mosstack.frame import Frame
 
 directory = "/media/data/astrostack/Testdata/"
 file1 = "Andromeda_Test.cr2"
@@ -14,7 +14,7 @@ file1 = "Andromeda_Test.cr2"
 frames = []
 
 for i in [0, 1, 2, 3]:
-    frames.append(Frame.Frame(rawpath=directory+file1, ftype="light"))
+    frames.append(Frame(rawpath=directory+file1, ftype="light"))
 
 bilinearcython = BilinearCython()
 bilinearopencl = BilinearOpenCl()

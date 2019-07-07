@@ -120,7 +120,7 @@ class Batch():
         """
 
         # Create new empty frame for the result
-        self.master = Frame(self.project, ftype=self.ftype, number="master")
+        self.master = Frame.createmaster(self.project, self.ftype)
 
         # Call stacker
         data = self.stackingtool.stack(self.framearray, self.project)
@@ -130,7 +130,7 @@ class Batch():
         self.master.write(tiff=True)
 
         # Metadata and printouts
-        self.project.addfile(self.master.path()[0], final=True)
+        self.project.addfile(self.master.path, final=True)
         dim, self.master.x, self.master.y = self.master.data.shape
         print("Dimensions : " + str(self.master.x) + " x " + str(self.master.y))
         totalexposure = 0.0
@@ -144,8 +144,8 @@ class Batch():
         self.master.totalexposure = totalexposure
         self.master.writeinfo()
         self.project.set("Masters", self.ftype, self.master.infopath)
-        print("Result image saved to " + self.master.path()[0])
-        print("                  and " + self.master.path(fformat="tiff"))
+        print("Result image saved to " + self.master.path)
+        print("                  and " + self.master.basename +".tiff")
 
     def subtract(self, calib, stacker):
         """
@@ -153,7 +153,8 @@ class Batch():
         """
 
         calibinfo = self.project.get("Masters", calib)
-        cframe = Frame(self.project, infopath=calibinfo, ftype=calib, number="master")
+        #cframe = Frame(self.project, infopath=calibinfo, ftype=calib, number="master")
+        cframe = Frame.from_info(self.project, calibinfo, calib)
 
         for i in self.framearray:
             print("Subtracting " + calib + " from image " + str(self.framearray[i].number))
@@ -250,7 +251,7 @@ class Batch():
         # If .info file given, give only that as an argument.
         # Uses only information from this file and returns
         if splitext(file)[1] == ".info":
-            frame = Frame(self.project, infopath=file)
+            frame = Frame.from_info(self.project, file, ftype)
             self.framearray[str(frame.number)] = frame
             return str(frame.number)
 
@@ -260,10 +261,9 @@ class Batch():
                 print("Trying to add a file that's already in the project. Ignoring.")
                 return i
 
-        f_key = self.nextkey()
-
         # Other than .info files
-        frame = Frame(self.project, rawpath=file, ftype=ftype, fphase=self.fphase, number=f_key)
+        frame = Frame.from_raw(self.project, file, ftype)
+        frame.number = self.nextkey()
 
         # Try to prepare the file. Do not add if preparing fails. This means file's not valid
         try:
@@ -275,12 +275,12 @@ class Batch():
             return None
         frame.decode()
 
-        self.project.set(ftype, str(f_key), frame.infopath)
+        self.project.set(ftype, str(frame.number), frame.infopath)
 
-        self.framearray[f_key] = frame
+        self.framearray[frame.number] = frame
         if len(self.framearray) == 1:
-            self.set_ref(f_key)
-        return f_key
+            self.set_ref(frame.number)
+        return frame.number
 
     def addmaster(self, file, ftype):
         """
@@ -493,7 +493,7 @@ class Batch():
         try:
             self._registertool = registertool
             for i in self.framearray:
-                self.framearray[i].registertool = self.registertool              
+                self.framearray[i].registertool = self.registertool
         except Exception as err:
             print(err)
 

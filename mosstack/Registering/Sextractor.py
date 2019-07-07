@@ -28,7 +28,7 @@ class Sextractor:
 
         self.image = image
         self.sextractor = Global.get("Programs", "sextractor")
-        self.path = image.wdir
+        self.path = image.workdir
         self.imagepath = image.frameinfo.get("Paths", "orig")
         self.catname = splitext(self.image.infopath)[0] + ".cat"
         self.confname = splitext(self.image.infopath)[0] + ".sex"

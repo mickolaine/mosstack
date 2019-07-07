@@ -1,8 +1,11 @@
-from . batch import Batch
-from . qframe import QFrame
+"""
+QBatch defines everything Batch needs to work with PyQt5
+"""
+from os.path import splitext, split
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QRunnable, pyqtSignal
-from os.path import splitext, split
+from . batch import Batch
+from . qframe import QFrame
 
 
 class QBatch(Batch, QWidget):
@@ -51,6 +54,10 @@ class QBatch(Batch, QWidget):
             self.framearray[frame.number] = frame
 
     def getframearray(self):
+        """
+        Return batch process information as an array
+        [[index, file name, frame type, states...],...]
+        """
         temp = []
         for i in self.framearray:
             temp.append([i, split(self.framearray[i].rawpath)[1],
@@ -59,9 +66,8 @@ class QBatch(Batch, QWidget):
                          self.framearray[i].state["calibrate"],
                          self.framearray[i].state["debayer"],
                          self.framearray[i].state["register"]])
-        #print(temp)
-        for i in temp:
 
+        for i in temp:
             # Do this only for states, not for rest of the table
             for j in (3, 4, 5, 6):
                 if i[j] == 0:
@@ -74,7 +80,7 @@ class QBatch(Batch, QWidget):
                     i[j] = "Error"
                 else:
                     i[j] = "FAIL"
-        #temp = sorted(temp, key=lambda frames: frames[0])
+
         self._framearray = temp
         return self._framearray
 
@@ -177,5 +183,8 @@ class GenericThread(QRunnable):
         self.kwargs = kwargs
 
     def run(self):
+        """
+        Run the thread
+        """
         self.function(*self.args, **self.kwargs)
         return

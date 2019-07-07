@@ -40,6 +40,7 @@ class QFrame(Frame):
         fphase = frame.fphase
         return QFrame(project, rawpath, infopath, ftype, number, fphase)
 
+    '''
     def getQPixmap(self):
         """
         Return frame data as QImage
@@ -54,8 +55,9 @@ class QFrame(Frame):
 
         pimage = Image.fromarray(np.int16(idata)).convert("P")
 
-        #return QtGui.QPixmap.fromImage(ImageQt.ImageQt(pimage))
-        return None
+        return QtGui.QPixmap.fromImage(ImageQt.ImageQt(pimage))
+        #return None
+    '''
 
     @staticmethod
     def align_32bit(data):
@@ -88,6 +90,7 @@ class QFrame(Frame):
 
     def update_ui(self):
         """
-        Tell the user interface that something has changed and state of this object needs to be read again
+        Tell the user interface that something has changed and state
+        of this object needs to be read again
         """
         pass

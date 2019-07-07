@@ -9,7 +9,7 @@ from mosstack.batch import Batch
 
 # Start by cleaning up old mess
 try:
-    call(["rm -v /mnt/Temp/Autotest*"], shell=True)
+    call(["rm -v ./temp/Autotest*"], shell=True)
 except RuntimeError:
     print("No old test runs found")
 
@@ -37,7 +37,7 @@ class FullProcess(unittest.TestCase):
         config.Global.set("Default", "Project", self.project_name)
         config.Global.set("Default", "Project file", self.project.projectfile)
 
-        self.datapath = "/mnt/Astrokuvat"
+        self.datapath = "./data/"
 
         self.batch = {}
 
@@ -98,11 +98,11 @@ class FullProcess(unittest.TestCase):
             self.batch[i].debayertool = self.debayertool
             self.batch[i].registertool = self.registertool
 
-        self.assertEqual(self.batch["light"].frames["0"].debayertool, self.debayertool)
-        self.assertEqual(self.batch["light"].frames["0"].registertool, self.registertool)
-        self.assertEqual(self.batch["light"].frames["0"].registertool.tform, self.transformer)
-        self.assertEqual(self.batch["light"].frames["0"].stackingtool, self.stackingtool)
-        self.assertEqual(self.batch["bias"].frames["0"].stackingtool, self.stackingtool)
+        self.assertEqual(self.batch["light"].framearray["0"].debayertool, self.debayertool)
+        self.assertEqual(self.batch["light"].framearray["0"].registertool, self.registertool)
+        self.assertEqual(self.batch["light"].framearray["0"].registertool.tform, self.transformer)
+        self.assertEqual(self.batch["light"].framearray["0"].stackingtool, self.stackingtool)
+        self.assertEqual(self.batch["bias"].framearray["0"].stackingtool, self.stackingtool)
 
     def calibrate(self):
         """
@@ -122,7 +122,7 @@ class FullProcess(unittest.TestCase):
         self.assertIsNotNone(self.batch["light"].masterbias)
         self.assertIsNotNone(self.batch["light"].masterflat)
         self.batch["light"].calibrate()
-        self.assertEqual(self.batch["light"].frames["0"].state["calibrate"], 2)
+        self.assertEqual(self.batch["light"].framearray["0"].state["calibrate"], 2)
 
     def register(self):
         """

@@ -602,7 +602,8 @@ temporary directory, you can fix it by:
 
             else:
                 print("Don't know how to set " + argv[1])
-                print("Possible options to set are \n project\n debayer\n matcher\n transformer\n stack")
+                print("Possible options to set are \n " +
+                      "project\n debayer\n matcher\n transformer\n stack")
 
         elif argv[0] == "list":
 
@@ -651,7 +652,7 @@ temporary directory, you can fix it by:
 
             itype = argv[-1]
             if len(argv[1:-1]) == 0:
-                print ("No files given?")
+                print("No files given?")
                 exit()
             for p in argv[1:-1]:
                 try:
@@ -787,7 +788,7 @@ temporary directory, you can fix it by:
 
             if len(argv) == 2:
                 try:
-                    self.setRef(argv[1])
+                    self.set_ref(argv[1])
                     print("Reference frame changed to " + argv[1])
                 except KeyError:
                     print("Frame id " + argv[1] + " not found.")
@@ -1067,15 +1068,15 @@ temporary directory, you can fix it by:
         for i in batch.framearray:
             print(i + ": " + batch.framearray[i].rawpath)
 
-    def remove(self, ftype, frameId):
+    def remove(self, ftype, frame_id):
         """
         Remove frame from project
         """
 
         batch = Batch(project=self.project, ftype=ftype)
-        batch.remove_frame(frameId)
+        batch.remove_frame(frame_id)
 
-    def setRef(self, frameId):
+    def set_ref(self, frame_id):
         """
         Set the reference frame. Possible only for light frames since
         there's no sense changing reference from other
@@ -1083,6 +1084,7 @@ temporary directory, you can fix it by:
 
         batch = Batch(project=self.project, ftype="light")
         try:
-            batch.set_ref(frameId)
+            batch.set_ref(frame_id)
+
         except KeyError:
             raise
