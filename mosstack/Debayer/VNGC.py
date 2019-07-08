@@ -23,15 +23,15 @@ class VNGC(Debayer):
 
         None should be returned because subroutine writes the file
         """
-
-        outname = image.getpath(fphase="rgb")
+        inname = image.path
+        outname = image.rgb_path()
 
         # CFITSIO fails writing the file if it exists. Remove if necessary
         if exists(outname):
             print("removing " + outname + "\n")
             remove(outname)
 
-        data = debayer_c.debayer_c(image.getpath(), outname)
-        
+        data = debayer_c.debayer_c(inname, outname)
+
         gc.collect()
         return data

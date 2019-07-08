@@ -29,7 +29,7 @@ class Sextractor:
         self.image = image
         self.sextractor = Global.get("Programs", "sextractor")
         self.path = image.workdir
-        self.imagepath = image.frameinfo.get("Paths", "orig")
+        self.imagepath = image.frameinfo.get("Paths", "decoded")
         self.catname = splitext(self.image.infopath)[0] + ".cat"
         self.confname = splitext(self.image.infopath)[0] + ".sex"
         self.image.project.addfile(self.catname)
@@ -121,13 +121,15 @@ class Sextractor:
         """
         Set star detection sensitivity.
 
-        I have no idea what kind of numbers here should be. And of course it alters
-        from image to image. This should hence be set while running the program and maybe tested as well.
+        I have no idea what kind of numbers here should be. And of
+        course it alters from image to image. This should hence be
+        set while running the program and maybe tested as well.
         """
 
-        self.config["DETECT_MINAREA"]  = str(area)
-        self.config["DETECT_THRESH"]   = str(sigma)
-        self.config["ANALYSIS_THRESH"] = str(sigma)    # This doesn't seem to affect to the number of stars detected
+        self.config["DETECT_MINAREA"] = str(area)
+        self.config["DETECT_THRESH"] = str(sigma)
+        self.config["ANALYSIS_THRESH"] = str(sigma) # This doesn't seem to
+                                                    # affect to the number of stars detected
 
     def createconf(self):
         """
@@ -140,10 +142,11 @@ class Sextractor:
 
     def findsensitivity(self):
         """
-        Run SExtractor on different DETECT_MINAREA and THRESH, in order to find suitable number of stars.
+        Run SExtractor on different DETECT_MINAREA and THRESH, in order
+        to find suitable number of stars.
 
-        I'll choose 25 as minimum and 30 as maximum. There are about n^3 triangles for n vertices, so n should
-        be kept small.
+        I'll choose 25 as minimum and 30 as maximum. There are about n^3
+        triangles for n vertices, so n should be kept small.
         """
         print("Looking for suitable DETECT_MINAREA...")
         x = 0
@@ -241,6 +244,6 @@ class Sextractor:
                     n += 1
                     tri.append([i, j, k])
 
-        print("Total number of triangles in image " + self.image.path() + " is " + str(n) + ".")
+        print("Total number of triangles in image " + self.image.path + " is " + str(n) + ".")
 
         return tri

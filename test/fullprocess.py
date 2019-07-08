@@ -44,6 +44,7 @@ class FullProcess(unittest.TestCase):
         self.add_frames()
         self.set_algorithms()
         self.calibrate()
+        self.debayer()
         self.register()
         self.stack()
 
@@ -123,6 +124,12 @@ class FullProcess(unittest.TestCase):
         self.assertIsNotNone(self.batch["light"].masterflat)
         self.batch["light"].calibrate()
         self.assertEqual(self.batch["light"].framearray["0"].state["calibrate"], 2)
+
+    def debayer(self):
+        """
+        Debayer frames
+        """
+        self.batch["light"].debayer()
 
     def register(self):
         """

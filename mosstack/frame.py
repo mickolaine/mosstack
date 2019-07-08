@@ -72,6 +72,8 @@ class Frame():
 
         # Variables for the process
         self.rgb = False    # Is image rgb or monochrome (Boolean)
+        self.step1 = False
+        self.step2 = False
         self.clip = []      #
         self.tri = []       # List of triangles
         self.match = []     # List of matching triangles with reference picture
@@ -91,86 +93,86 @@ class Frame():
         self.lock = RLock()
 
 
-    def __init__old(self, project=None, rawpath=None, infopath=None,
-                 ftype="light", number=None, fphase="orig"):
-        """
-        Create a Frame object from rawpath or frame info file
+    # def __init__old(self, project=None, rawpath=None, infopath=None,
+    #              ftype="light", number=None, fphase="orig"):
+    #     """
+    #     Create a Frame object from rawpath or frame info file
 
-        Arguments
-        rawpath = Unix path to raw file
-        infopath = Unix path to frame info file
-        ftype = frame type: light, bias, dark or flat
-        fphase = process phase: orig, calib#, rgb, reg, master
-        """
+    #     Arguments
+    #     rawpath = Unix path to raw file
+    #     infopath = Unix path to frame info file
+    #     ftype = frame type: light, bias, dark or flat
+    #     fphase = process phase: orig, calib#, rgb, reg, master
+    #     """
 
-        self.state = {      # Dict to hold information about process state
-            "prepare": 0,   # 0 = not started
-            "calibrate": 0, # 1 = under process
-            "debayer": 0,   # 2 = done
-            "register": 0   # -1 = failed
-        }                   # -2 = invalid (eg. registration for darks)
+    #     self.state = {      # Dict to hold information about process state
+    #         "prepare": 0,   # 0 = not started
+    #         "calibrate": 0, # 1 = under process
+    #         "debayer": 0,   # 2 = done
+    #         "register": 0   # -1 = failed
+    #     }                   # -2 = invalid (eg. registration for darks)
 
-        self.rawpath = rawpath
-        self.infopath = infopath
-        self.ftype = ftype
-        self.fphase = fphase
-        self.rawtype = None
-        self.project = project
-        self.format = ".fits"
-        self.isref = False
-        self.staticpath = False
-        self.timestamp = None
-        self.camera = None
-        self.isospeed = None
-        self.shutter = None
-        self.aperture = None
-        self.focallength = None
-        self.bayer = None
-        self.dlmulti = None
-        self.totalexposure = None
-        self.biaslevel = None
-        self.step1 = False
-        self.step2 = False
-        self.staticpath = False
+    #     self.rawpath = rawpath
+    #     self.infopath = infopath
+    #     self.ftype = ftype
+    #     self.fphase = fphase
+    #     self.rawtype = None
+    #     self.project = project
+    #     self.format = ".fits"
+    #     self.isref = False
+    #     self.staticpath = False
+    #     self.timestamp = None
+    #     self.camera = None
+    #     self.isospeed = None
+    #     self.shutter = None
+    #     self.aperture = None
+    #     self.focallength = None
+    #     self.bayer = None
+    #     self.dlmulti = None
+    #     self.totalexposure = None
+    #     self.biaslevel = None
+    #     self.step1 = False
+    #     self.step2 = False
+    #     self.staticpath = False
 
-        self.workdir = config.Global.get("Default", "Path")
+    #     self.workdir = config.Global.get("Default", "Path")
 
-        if project is not None:
-            self.name = self.project.get("Default", "Project name")
+    #     if project is not None:
+    #         self.name = self.project.get("Default", "Project name")
 
-        # Variables for the tools
-        self._debayertool = None
-        self._registertool = None
-        self._stackingtool = None
+    #     # Variables for the tools
+    #     self._debayertool = None
+    #     self._registertool = None
+    #     self._stackingtool = None
 
-        # Instance variables required later
-        self.rgb = False    # Is image rgb or monochrome (Boolean)
-        self.clip = []
-        self.tri = []       # List of triangles
-        self.match = []     # List of matching triangles with reference picture
-        self._pairs = None
-        self._points = None # String to pass to ImageMagick convert,
-                            # if star matching is already done.
-        self._x = None
-        self._y = None      # Dimensions for image
-        self._path = None
+    #     # Instance variables required later
+    #     self.rgb = False    # Is image rgb or monochrome (Boolean)
+    #     self.clip = []
+    #     self.tri = []       # List of triangles
+    #     self.match = []     # List of matching triangles with reference picture
+    #     self._pairs = None
+    #     self._points = None # String to pass to ImageMagick convert,
+    #                         # if star matching is already done.
+    #     self._x = None
+    #     self._y = None      # Dimensions for image
+    #     self._path = None
 
-        self.number = number
+    #     self.number = number
 
-        # The following objects are lists because colour channels are separate
-        self.hdu = None    # HDU-object for loading fits. Not required for tiff
-        self.image = None  # Image object. Required for Tiff and Fits
-        self._data = None  # Image data as an numpy.array
+    #     # The following objects are lists because colour channels are separate
+    #     self.hdu = None    # HDU-object for loading fits. Not required for tiff
+    #     self.image = None  # Image object. Required for Tiff and Fits
+    #     self._data = None  # Image data as an numpy.array
 
-        self.lock = RLock()
+    #     self.lock = RLock()
 
-        if self.infopath is not None:
-            self.frameinfo = config.Frame(infopath)
-        else:
-            self.frameinfo = None
+    #     if self.infopath is not None:
+    #         self.frameinfo = config.Frame(infopath)
+    #     else:
+    #         self.frameinfo = None
 
-        if (self.rawpath is not None) or (self.infopath is not None):
-            self.prepare()
+    #     if (self.rawpath is not None) or (self.infopath is not None):
+    #         self.prepare()
 
     def prepare(self):
         """
@@ -580,6 +582,18 @@ class Frame():
         return path
     """
 
+    def rgb_path(self):
+        """
+        Return path with identifier rgb
+        """
+        oldphase = self.fphase
+        self.fphase = "rgb"
+        self.makepath()
+        rgbpath = self.path
+        self.fphase = oldphase
+        self.makepath()
+        return rgbpath
+
     def rgbpath(self, fileformat=None):
         """
         Return list of file paths where "_[rgb]" is placed before the extension
@@ -594,7 +608,7 @@ class Frame():
         format = if specified, change the extension to this
         """
 
-        base, ext = splitext(self.get_path())
+        base, ext = splitext(self.path)
         if fileformat:
             ext = "." + fileformat
         pathlist = []
