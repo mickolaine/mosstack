@@ -10,8 +10,8 @@ Project holds lists of source files and information what has been done
 for them. Idea is you can continue the process from any point forward.
 '''
 
-import configparser
 import os
+from configparser import ConfigParser, NoOptionError
 from subprocess import check_output, CalledProcessError
 from shutil import which
 from os.path import expanduser, exists, split
@@ -33,7 +33,7 @@ class ConfigAbstractor:
         Argument type defines what kind of configuration system is used.
         """
 
-        self.conf = configparser.ConfigParser()
+        self.conf = ConfigParser()
 
     def read(self, file):
         """
@@ -203,7 +203,7 @@ class Config:
         conffile - file to hold the configurations
         """
         self.conffile = conffile
-        self.conf = configparser.ConfigParser()
+        self.conf = ConfigParser()
 
         self.pool = Queue()
         self.worker = Thread(target=self._set, daemon=True)
@@ -299,7 +299,7 @@ class Config:
             state = self.conf.remove_option(section, key)
             self.write(self.conffile)
 
-        except configparser.NoSectionError:
+        except NoSectionError:
             state = False
 
         return state
@@ -388,7 +388,7 @@ class Project(Config):
         #path  = Global.get("Default", "path")
 
         project = Project()
-        project.conf = configparser.ConfigParser()
+        project.conf = ConfigParser()
         project.conffile = pfile
         project.projectfile = project.conffile
 
@@ -485,7 +485,7 @@ class Project(Config):
 
         self.projectfile = pfile
         self.conffile = pfile
-        self.conf = configparser.ConfigParser()
+        self.conf = ConfigParser()
         if os.path.exists(self.projectfile):
 
             print("Trying to initialize a new project, but the file already exists.")
@@ -531,7 +531,7 @@ class Global():
 
     home = expanduser("~")
     configfile = home + "/.config/mosstack/settings"
-    conf = configparser.ConfigParser()
+    conf = ConfigParser()
 
     @staticmethod
     def get(section, key):
@@ -541,6 +541,12 @@ class Global():
 
         Global.conf.read(Global.configfile)
         #return Global.conf[section][key]
+        try:
+            data = Global.conf.get(section, key)
+        except NoOptionError:
+            #TODO: Handle all the errors here
+            raise KeyError
+        return data
         return Global.conf.get(section, key)
 
     @staticmethod
