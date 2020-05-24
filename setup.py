@@ -47,6 +47,6 @@ setup(
         "Cython >= 0.19",
         "scikit-image",
         "python-magic",
-        "PyQt5"
+        #"PyQt5"
     ],
 )

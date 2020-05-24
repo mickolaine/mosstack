@@ -13,6 +13,7 @@ for them. Idea is you can continue the process from any point forward.
 import configparser
 import os
 from subprocess import check_output, CalledProcessError
+from shutil import which
 from os.path import expanduser, exists, split
 from os import makedirs
 from ast import literal_eval
@@ -86,7 +87,7 @@ class Setup:
             input("Press enter to continue.")
 
             try:
-                print("Looking for SExtractor binaries...")
+                print("Looking for SExtractor / Source-Extractor binaries...")
                 try:
                     sexpath = self.findsex()
                     version_string = check_output([sexpath, "--version"]).split()[2]
@@ -172,18 +173,21 @@ FLAGS
     @staticmethod
     def findsex():
         """
-        SExtractor executable is sometimes sex and sometimes sextractor. This finds out.
+        SExtractor executable is sometimes sex and sometimes sextractor. Also on some
+        distros (such as Debian and Ubuntu starting from 2020) the program and binary
+        is source-extractor. This method finds out the name and path.
         """
-        try:
-            sexpath = check_output(["which", "sex"])
-        except CalledProcessError:
-            sexpath = check_output(["which", "sextractor"])
-
-            # print("SExtractor executable not found in $PATH.")
-            # sexpath = input("Give full path to SExtractor executable, eg. ~/bin/sex")
-            # if not os.path.exists(sexpath):
-            #     raise IOError("File not found:", sexpath)
-        return sexpath.decode().strip()
+        possible_names = ("sex", 
+                          "sextractor", 
+                          "source-extractor",
+                         )
+        
+        for name in possible_names:
+            sexpath = which(name)
+            if sexpath:
+                break
+        
+        return sexpath
 
 
 class Config:
