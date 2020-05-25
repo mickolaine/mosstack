@@ -2,7 +2,7 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License. See https://go.microsoft.com/fwlink/?linkid=2090316 for license information.
 #-------------------------------------------------------------------------------------------------------------
-FROM ubuntu:bionic
+FROM ubuntu:focal
 
 # Configure apt
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,7 +13,7 @@ RUN apt-get update \
 RUN apt-get -y install git procps lsb-release build-essential python3-setuptools python3-pip nano
 
 # Install libraries and programs required for mosstack
-RUN apt-get -y install sextractor libcfitsio-dev libraw-dev dcraw
+RUN apt-get -y install source-extractor libcfitsio-dev libraw-dev dcraw libaec-dev libblosc-dev libbrotli-dev
 
 # Install developement tools
 RUN pip3 install pylint
@@ -22,6 +22,7 @@ RUN pip3 install rope
 # Install dependencies which setuptools needs to run
 RUN pip3 install cython
 RUN pip3 install numpy
+
 
 # Clean up
 RUN apt-get autoremove -y \

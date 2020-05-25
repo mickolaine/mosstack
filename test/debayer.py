@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """
 Some tests for debayering algorithms and classes
 """

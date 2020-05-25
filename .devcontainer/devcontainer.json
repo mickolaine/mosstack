@@ -5,5 +5,5 @@
 	//"dockerComposeFile": "docker-compose.yml",
 	"dockerFile": "Dockerfile",
 	"appPort": [],
-	"runArgs": ["-v","/media/Dee/Astrokuvat:/mnt/Astrokuvat"]
+	"runArgs": ["-v","/mnt/d/Astrokuvat:/mnt/Astrokuvat"]
 }

@@ -25,7 +25,7 @@ services:
 
       # Uncomment the next line if you plan to install the Docker CLI. See the docker-in-docker-compose definition for details.
       # - /var/run/docker.sock:/var/run/docker.sock 
-      - /media/Dee/Astrokuvat:/mnt/Astrokuvat
+      - /mnt/d/Astrokuvat:/mnt/Astrokuvat
 
     # Uncomment the next four lines if you will use a ptrace-based debugger like C++, Go, and Rust.
     # cap_add:
