@@ -54,7 +54,8 @@ class Batch():
             files = self.project.get(self.ftype) # Paths for the frame info files
 
             for key in files:
-                frame = Frame(self.project, infopath=files[key], fphase=self.fphase)
+                frame = Frame.from_info(self.project, infopath=files[key], ftype=self.ftype)
+                #frame = Frame(self.project, infopath=files[key], fphase=self.fphase)
                 self.framearray[key] = frame
             self.set_ref(self.ref_id)
 
@@ -78,7 +79,7 @@ class Batch():
         except KeyError:
             raise
 
-    def stack(self, stacker):
+    def stack_old(self, stacker):
         """
         Stack images using given stacker
 
@@ -87,7 +88,7 @@ class Batch():
         """
 
         # Create new empty frame for the result
-        self.master = Frame(self.project, ftype=self.ftype, number="master")
+        self.master = Frame.createmaster(self.project, ftype=self.ftype)
 
         # Call stacker
         data = stacker.stack(self.framearray, self.project)
@@ -114,16 +115,18 @@ class Batch():
         print("Result image saved to " + self.master.path()[0])
         print("                  and " + self.master.path(fformat="tiff"))
 
-    def stack_new(self):
+    def stack(self):
         """
-        Stack images using stackertool
+        Stack images using stackingtool
         """
 
         # Create new empty frame for the result
         self.master = Frame.createmaster(self.project, self.ftype)
 
+        # Create stackertool instance
+        st = self.stackingtool()
         # Call stacker
-        data = self.stackingtool.stack(self.framearray, self.project)
+        data = st.stack(self.framearray, self.project)
 
         self.master.data = data
         # Save file
@@ -446,6 +449,14 @@ class Batch():
         self.calibrate_threaded(bias, dark, flat)
 
     # PROPERTIES
+
+    def setphase(self, phase):
+        """
+        Set phase and update phase in frames
+        """
+        self.phase = phase
+        for i in self.framearray:
+            self.framearray[i].fphase = self.phase
 
     def setstackingtool(self, stackingtool):
         """

@@ -23,6 +23,8 @@ RUN pip3 install rope
 RUN pip3 install cython
 RUN pip3 install numpy
 
+RUN pip3 install astropy
+
 
 # Clean up
 RUN apt-get autoremove -y \

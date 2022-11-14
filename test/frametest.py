@@ -33,7 +33,7 @@ class FrameTest(unittest.TestCase):
         config.Global.set("Default", "Project", self.project_name)
         config.Global.set("Default", "Project file", self.project.projectfile)
 
-        self.datapath = "./data/"
+        self.datapath = "/mnt/Astrokuvat/"
         self.lightframes = [
             self.datapath + "2015-02-10/OrionNebula/OrionNebula_2015-02-10_20.08.18.010282.cr2",
             self.datapath + "2015-02-10/OrionNebula/OrionNebula_2015-02-10_20.09.27.999435.cr2",

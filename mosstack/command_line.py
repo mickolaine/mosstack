@@ -2,9 +2,11 @@
 The Command Line Interface for mosstack
 """
 
-import os
 import argparse
-from . import Debayer, config, Registering, Stacker, batch
+import os
+import sys
+
+from . import Debayer, Registering, Stacker, batch, config
 
 
 class CommandLine:
@@ -105,7 +107,7 @@ class CommandLine:
             except ValueError:
                 print("Setting Kappa to " + str(self.args.setkappa[0]) + 
                       " failed. Try a small float.")
-                exit()
+                sys.exit()
 
         if self.args.reference:
             self.batch["light"].setRef(self.args.reference[0])
@@ -167,7 +169,7 @@ class CommandLine:
                 print(str(self.args.biaslevel[0])
                       + " not a valid biaslevel."
                       + " Try an integer or float.")
-                exit()
+                sys.exit()
         if self.args.masterflat:
             self.addmaster("flat", self.args.masterflat)
         if self.args.masterdark:
@@ -205,7 +207,7 @@ class CommandLine:
             except ValueError:
                 print("Values " + crop[0] + ", " + crop[1] + ", " + crop[2] +
                       " and " + crop[3] + " should be integers.")
-                exit()
+                sys.exit()
             for i in self.batch["light"].frames:
                 self.batch["light"].fphase = "reg"
                 self.batch["light"].frames[i].crop(xrange, yrange)
@@ -313,7 +315,7 @@ class CommandLine:
 
         except IndexError:
             print("Project name not specified. Try \"mosstack help\" and see what went wrong.")
-            exit()
+            sys.exit()
 
     def set_project(self, pname):
         """
@@ -331,6 +333,7 @@ class CommandLine:
         config.Global.set("Default", "Project", self.project_name)
         config.Global.set("Default", "Project file", self.project.projectfile)
         print("Project set to " + self.project.path)
+        return True
 
     def list_projects(self):
         """
@@ -414,7 +417,9 @@ class CommandLine:
         if self.masterbias:
             print("Using master bias.")
         elif "bias" in self.batch.keys():
-            self.batch["bias"].stack(self.stackerwrap())
+            self.batch["bias"].setphase("decoded")
+            self.batch["bias"].stackingtool = self.stackerwrap
+            self.batch["bias"].stack()
             self.masterbias = self.batch["bias"].master
 
         # Prepare masterdark
@@ -523,7 +528,7 @@ class CommandLine:
                 number = options.index(value)
             else:
                 print("Value " + value + " not recognized.")
-                exit()
+                sys.exit()
 
         if number <= len(options):
             # print("Setting \"" + setting + "\" changed to value \"" + value + "\"")
@@ -546,7 +551,7 @@ class CommandLine:
             check = os.path.isdir
         else:
             check = os.path.isfile
-      
+
         if check("/" + path):
             return path
 

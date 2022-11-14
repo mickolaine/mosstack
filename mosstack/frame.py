@@ -424,14 +424,13 @@ class Frame():
     @staticmethod
     def from_raw(project, rawpath, ftype):
         """
-        Add frame from raw file.
+        Add frame from original camera file.
 
         If file is identified as a raw file, this will be logged to raw_format
 
         Test written
         """
         frame = Frame(project)
-
         if Frame.identify(rawpath) == "raw":
             frame.rawpath = rawpath
             frame.ftype = ftype
@@ -455,9 +454,9 @@ class Frame():
         Test written for raw files
         Test required for decoded, calibrated, rgb, and master
         """
-
         frame = Frame(project)
         frame.frameinfo = config.Frame(infopath)
+        frame.readinfo()
         rawpath = frame.frameinfo.get("Paths", "raw")
         if Frame.identify(rawpath) == "raw":
             frame.rawpath = rawpath
@@ -474,8 +473,8 @@ class Frame():
 
         Arguments:
         project - a Project class object
-        path - unix path to fits (or tiff TODO) master frame
         ftype - type of master: bias, dark or flat
+        path - unix path to fits (or tiff TODO) master frame
         """
         # if isinstance(path, list):
         #     pathstr = path[0]
@@ -554,6 +553,8 @@ class Frame():
         """
         Getter for path
         """
+        if self._path is None:
+            return self.frameinfo.get("Paths", self.fphase)
         return self._path
 
     path = property(fget=getpath, fset=setpath)
@@ -807,10 +808,10 @@ class Frame():
         self.frameinfo = config.Frame(self.infopath)
         self.project.addfile(self.infopath)
 
-        self.frameinfo.set("Paths", "Raw", str(self.rawpath))
         self.frameinfo.set("Default", "Number", str(self.number))
         self.frameinfo.set("Default", "Ftype", str(self.ftype))
         self.frameinfo.set("Paths", self.fphase, str(self.path))
+        self.frameinfo.set("Paths", "Raw", str(self.rawpath))
         self.frameinfo.set("Properties", "Filter pattern", str(self.bayer))
         self.frameinfo.set("Properties", "Timestamp", str(self.timestamp))
         self.frameinfo.set("Properties", "Camera", str(self.camera))

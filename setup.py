@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+#from encodings import utf_8
 from setuptools import setup, find_packages, Extension
 from Cython.Build import cythonize
 import numpy
@@ -24,11 +25,12 @@ MODULES.append(Extension("mosstack.Decoding.raw2fits",
 
 setup(
     name='mosstack',
-    version='0.7.999',
+    version='0.7.9999',
     author='Mikko Laine',
     author_email='mikko.laine@gmail.com',
     packages=find_packages(),
-    scripts=['bin/mosstack', 'bin/mosstackgui'],
+#    scripts=['bin/mosstack', 'bin/mosstackgui'],
+    scripts=['bin/mosstack'],
     include_dirs=[numpy.get_include()],
     ext_modules=MODULES,
     data_files=[
@@ -38,7 +40,7 @@ setup(
     url='https://sites.google.com/site/mosstack',
     license='LICENSE.txt',
     description='Stacking software for astronomical images',
-    long_description=open('README.txt').read(),
+    long_description=open('README.txt', encoding="utf_8").read(),
     install_requires=[
         "Pillow >= 2.2.1",
         "NumPy >= 1.6.0",

@@ -139,6 +139,8 @@ class Sextractor:
         f = open(self.confname, "w")
         for i in self.config:
             f.write(i + " " + self.config[i] + "\n")
+            print(f"{i} - {self.config[i]}")
+        f.close()
 
     def findsensitivity(self):
         """
@@ -178,6 +180,8 @@ class Sextractor:
         """ Execute SExtractor with created conf """
         print(self.imagepath)
         commandlist = [self.sextractor, self.imagepath, "-c", self.confname]
+        print(commandlist)
+        print(self.path)
 
         call(commandlist, cwd=self.path)  # cwd changes working directory
 
@@ -196,6 +200,7 @@ class Sextractor:
                     self.coord.append((float(i.split()[4]), float(i.split()[5])))
                     #self.coord.append([float(i.split()[4]), self.image.y - float(i.split()[5])])
 
+            f.close()
             self.coord = sorted(self.coord)
             return self.coord
 

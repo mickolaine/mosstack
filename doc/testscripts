@@ -1,12 +1,12 @@
 This file has some copy paste scripts to test the working of mosstack
 
-mosstack init Testi
-mosstack set debayer VNGC
-mosstack dir /media/Dee/Astrokuvat/2013-12-30/OrionNebula/ light
-mosstack dir /media/Dee/Astrokuvat/2013-12-30/Bias/ bias
-#mosstack dir /media/Dee/Astrokuvat/2013-12-30/Dark/ dark
-mosstack dir /media/Dee/Astrokuvat/2013-12-30/Flat/ flat
-mosstack stack bias orig
+mosstack --init Testi
+mosstack --setdebayer VNGC
+mosstack --light /media/Dee/Astrokuvat/2013-12-30/OrionNebula/*.CR2
+mosstack --bias /media/Dee/Astrokuvat/2013-12-30/Bias/*.CR2
+mosstack --flat /media/Dee/Astrokuvat/2013-12-30/Flat/*.CR2
+mosstack -c
+#mosstack stack bias orig
 #mosstack subtract dark bias
 #mosstack stack dark orig
 mosstack subtract flat bias

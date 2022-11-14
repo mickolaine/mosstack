@@ -2,3 +2,4 @@ build
 _*.c
 mosstack.egg-info
 *.egg
+test/temp

@@ -28,7 +28,6 @@ class Stacking:
         self.name = None
 
 
-    #@staticmethod
     def stack(self, imagelist, project):
         """
         Stack images in list. Requires subclass that implements the stacking itself.

@@ -37,7 +37,7 @@ class FullProcess(unittest.TestCase):
         config.Global.set("Default", "Project", self.project_name)
         config.Global.set("Default", "Project file", self.project.projectfile)
 
-        self.datapath = "./data/"
+        self.datapath = "/mnt/Astrokuvat/"
 
         self.batch = {}
 
